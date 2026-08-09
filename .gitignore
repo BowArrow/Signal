@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+dist/
+dist-electron/
+release/
+*.log
+.env
+.env.local
+.env.*.local
+data/*.db
+data/*.db-shm
+data/*.db-wal
+.DS_Store
+coverage/
+.turbo/
+.firebase/

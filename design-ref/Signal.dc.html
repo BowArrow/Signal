@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-f3f04b0d-d3f3-4023-922e-3a487f01c859/styles.css">
+<script src="_ds/nocturne-f3f04b0d-d3f3-4023-922e-3a487f01c859/_ds_bundle.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<style>
+  body { margin: 0; background: var(--color-bg); text-wrap: pretty; }
+  a { color: var(--color-accent); text-decoration: none; }
+  a:hover { color: var(--color-accent-300); }
+  input[type="range"] { accent-color: var(--color-accent); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--color-neutral-800); border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</helmet>
+
+<div style="font-family: var(--font-body); color: var(--color-text); font-size: 15px; line-height: 24px; display: grid; min-height: 100vh; grid-template-columns: {{ shellCols }}; background: radial-gradient(1100px 700px at 88% -180px, color-mix(in srgb, var(--color-accent-900) 60%, transparent), transparent 62%), var(--color-bg);">
+
+  <aside style="border-right: 1px solid var(--color-neutral-800); display: flex; flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; box-sizing: border-box; overflow: hidden; padding: {{ sidebarPad }};">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 6px;">
+      <span style="width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--color-accent); display: grid; place-items: center; color: var(--color-accent); font-size: 13px; flex: none;"><i class="ph ph-broadcast"></i></span>
+      <span style="font-family: var(--font-heading); font-weight: 500; font-size: 16px; letter-spacing: -0.01em; display: {{ labelDisplay }};">Signal</span>
+      <span style="margin-left: auto; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600); display: {{ labelDisplay }};">v0.4</span>
+    </div>
+
+    <nav style="display: flex; flex-direction: column; gap: 2px;">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="7">
+        <button type="button" onClick="{{ item.go }}" title="{{ item.label }}" style="display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; text-align: left; font: inherit; font-size: 14px; padding: 7px 8px; border-radius: var(--radius-md); border: 0; cursor: pointer; color: {{ item.fg }}; background: {{ item.bg }};" style-hover="background: var(--color-neutral-900);">
+          <i class="ph {{ item.icon }}" style="font-size: 16px; opacity: 0.9; flex: none;"></i>
+          <span style="display: {{ labelDisplay }};">{{ item.label }}</span>
+          <span style="margin-left: auto; font-size: 12px; font-feature-settings: 'tnum' 1; color: {{ item.badgeFg }}; display: {{ labelDisplay }};">{{ item.badge }}</span>
+        </button>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top: auto; border-top: 1px solid var(--color-neutral-800); padding-top: 16px; flex-direction: column; gap: 9px; display: {{ statusDisplay }};">
+      <p style="margin: 0; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600);">Publish layer</p>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-neutral-400);">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent); flex: none;"></span>
+        <span>human approval required</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-neutral-400);">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--color-neutral-600); flex: none;"></span>
+        <span>{{ publishedToday }}</span>
+      </div>
+    </div>
+  </aside>
+
+  <main style="min-width: 0; display: flex; flex-direction: column; position: relative;">
+
+    <!-- ── QUEUE ─────────────────────────────────────────────── -->
+    <sc-if value="{{ isQueue }}" hint-placeholder-val="{{ true }}">
+    <div style="display: grid; min-height: 100vh; grid-template-columns: {{ queueCols }};">
+
+      <section style="display: flex; flex-direction: column; min-width: 0; border-right: {{ listBorderRight }}; border-bottom: {{ listBorderBottom }};">
+        <header style="padding: 22px 20px 16px; border-bottom: 1px solid var(--color-neutral-800);">
+          <h1 style="font-family: var(--font-heading); font-weight: 500; font-size: 20px; line-height: 28px; letter-spacing: -0.01em; margin: 0 0 4px;">Review queue</h1>
+          <p style="margin: 0; font-size: 13px; color: var(--color-neutral-500);">{{ queueSubtitle }}</p>
+        </header>
+        <div style="overflow: auto; flex: 1; max-height: {{ listMaxHeight }};">
+          <sc-for list="{{ queue }}" as="op" hint-placeholder-count="4">
+            <button type="button" onClick="{{ op.select }}" style="display: block; width: 100%; box-sizing: border-box; text-align: left; font: inherit; border: 0; border-bottom: 1px solid var(--color-neutral-900); cursor: pointer; padding: 15px 20px; border-left: 2px solid {{ op.mark }}; background: {{ op.bg }};" style-hover="background: var(--color-neutral-900);">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 7px;">
+                <span style="font-size: 12px; letter-spacing: 0.04em; color: var(--color-accent-300);">{{ op.community }}</span>
+                <span style="margin-left: auto; font-size: 12px; font-feature-settings: 'tnum' 1; color: var(--color-neutral-400);">{{ op.total }}</span>
+              </div>
+              <p style="margin: 0 0 7px; font-size: 14px; line-height: 21px;">{{ op.title }}</p>
+              <div style="display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--color-neutral-600);">
+                <span>{{ op.age }}</span>
+                <span>·</span>
+                <span>{{ op.product }}</span>
+                <span style="margin-left: auto; color: {{ op.flagFg }};">{{ op.flag }}</span>
+              </div>
+            </button>
+          </sc-for>
+          <sc-if value="{{ queueEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 40px 24px; text-align: center; color: var(--color-neutral-600); font-size: 13.5px; line-height: 23px;">Nothing above threshold right now. Lower <span style="font-family: ui-monospace, monospace;">scoring.threshold</span> or wait for the next poll.</div>
+          </sc-if>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; min-width: 0;">
+        <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ true }}">
+        <header style="padding: 18px 26px; border-bottom: 1px solid var(--color-neutral-800); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="tag tag-outline">{{ sel.community }}</span>
+          <span class="tag tag-accent">score {{ sel.total }}</span>
+          <span style="font-size: 13px; color: var(--color-neutral-500);">{{ sel.platformNote }}</span>
+          <div style="margin-left: auto; display: flex; gap: 8px;">
+            <button type="button" class="btn btn-ghost" onClick="{{ openRegenerate }}">Regenerate</button>
+            <button type="button" class="btn btn-ghost" onClick="{{ openReject }}">Reject</button>
+            <button type="button" class="btn btn-primary" onClick="{{ approve }}" disabled="{{ sel.blocked }}" title="{{ sel.blockReason }}">{{ sel.approveLabel }}</button>
+          </div>
+        </header>
+
+        <div style="overflow: auto; flex: 1; display: grid; align-items: start; grid-template-columns: {{ detailCols }};">
+
+          <div style="padding: 24px 26px 60px; min-width: 0;">
+            <p style="margin: 0 0 10px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600);">Original thread</p>
+            <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 19px; line-height: 27px; letter-spacing: -0.01em; margin: 0 0 6px;">{{ sel.title }}</h2>
+            <p style="margin: 0 0 14px; font-size: 12.5px; color: var(--color-neutral-600);">{{ sel.meta }}</p>
+            <p style="margin: 0 0 24px; font-size: 14.5px; line-height: 25px; color: color-mix(in srgb, var(--color-text) 76%, transparent); white-space: pre-wrap;">{{ sel.body }}</p>
+
+            <div style="height: 1px; background: linear-gradient(to right, transparent, var(--color-neutral-800) 24px calc(100% - 24px), transparent); margin-bottom: 22px;"></div>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+              <p style="margin: 0; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600);">Draft</p>
+              <span style="font-size: 12px; color: var(--color-neutral-600); font-family: ui-monospace, monospace;">{{ sel.promptVersion }}</span>
+              <span style="font-size: 12px; color: {{ sel.editedFg }};">{{ sel.editedNote }}</span>
+              <span style="margin-left: auto; font-size: 12px; color: var(--color-neutral-600); font-feature-settings: 'tnum' 1;">{{ draftChars }}</span>
+            </div>
+            <textarea class="input" value="{{ draftText }}" onChange="{{ editDraft }}" spellcheck="false" style="width: 100%; box-sizing: border-box; min-width: 0; min-height: 300px; resize: vertical; font-family: var(--font-body); font-size: 14.5px; line-height: 25px; padding: 16px 18px; background: var(--color-surface); border-radius: var(--radius-md);"></textarea>
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-ghost" onClick="{{ copyDraft }}"><i class="ph ph-copy" style="margin-right: 6px;"></i>{{ copyLabel }}</button>
+              <p style="margin: 0; font-size: 12.5px; color: var(--color-neutral-600);">Edits save to <span style="font-family: ui-monospace, monospace;">drafts.human_edited_body</span>; the generated body is kept for the learning loop.</p>
+            </div>
+          </div>
+
+          <aside style="display: grid; gap: 18px; min-width: 0; align-content: start; grid-template-columns: {{ asideCols }}; padding: {{ asidePad }};">
+
+            <div class="card">
+              <p class="card-kicker">Score breakdown</p>
+              <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 12px;">
+                <sc-for list="{{ sel.axes }}" as="a" hint-placeholder-count="4">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px;">
+                      <span>{{ a.label }}</span>
+                      <span style="font-feature-settings: 'tnum' 1; color: var(--color-neutral-400);">{{ a.value }} <span style="color: var(--color-neutral-600);">×{{ a.weight }}</span></span>
+                    </div>
+                    <div style="height: 3px; border-radius: 2px; background: var(--color-neutral-800);"><div style="height: 3px; border-radius: 2px; background: {{ a.fill }}; width: {{ a.pct }};"></div></div>
+                  </div>
+                </sc-for>
+              </div>
+              <p class="card-meta" style="margin-top: 14px;">Total {{ sel.total }} · threshold {{ thresholdLabel }} · matched {{ sel.product }}</p>
+            </div>
+
+            <div class="card">
+              <p class="card-kicker">Validators</p>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+                <sc-for list="{{ sel.validators }}" as="v" hint-placeholder-count="4">
+                  <div style="display: flex; gap: 9px; align-items: flex-start;">
+                    <i class="ph {{ v.icon }}" style="font-size: 15px; line-height: 21px; flex: none; color: {{ v.fg }};"></i>
+                    <span style="font-size: 13px; line-height: 21px; color: color-mix(in srgb, var(--color-text) 80%, transparent);">{{ v.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div class="card">
+              <p class="card-kicker">Community rules</p>
+              <p class="card-title" style="font-size: 15px;">{{ sel.community }}</p>
+              <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 13px;"><span style="color: var(--color-neutral-500);">Self-promo</span><span style="text-align: right;">{{ sel.rulesPromo }}</span></div>
+                <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 13px;"><span style="color: var(--color-neutral-500);">Ratio cap</span><span style="text-align: right;">{{ sel.rulesRatio }}</span></div>
+                <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 13px;"><span style="color: var(--color-neutral-500);">Flair</span><span style="text-align: right;">{{ sel.rulesFlair }}</span></div>
+                <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 13px;"><span style="color: var(--color-neutral-500);">Reviewed</span><span style="text-align: right;">{{ sel.rulesReviewed }}</span></div>
+              </div>
+            </div>
+
+          </aside>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ queueEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="flex: 1; display: grid; place-items: center; padding: 60px 24px;">
+            <div style="max-width: 42ch; text-align: center;">
+              <i class="ph ph-tray" style="font-size: 28px; color: var(--color-neutral-700);"></i>
+              <p style="margin: 14px 0 0; font-size: 14px; line-height: 24px; color: var(--color-neutral-500);">Queue clear. Ingestion keeps running; anything that clears threshold and has a rules record will appear here.</p>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+    </sc-if>
+
+    <!-- ── OPPORTUNITIES ─────────────────────────────────────── -->
+    <sc-if value="{{ isOpps }}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 28px clamp(24px, 4vw, 44px) 72px;">
+      <h1 style="font-family: var(--font-heading); font-weight: 500; font-size: 24px; line-height: 32px; letter-spacing: -0.012em; margin: 0 0 6px;">Opportunities</h1>
+      <p style="margin: 0 0 20px; font-size: 14px; color: var(--color-neutral-500); max-width: 70ch;">Everything ingestion has found, scored with the current weights. Below threshold auto-expires and never reaches the queue. Click a queued row to open it for review.</p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px;">
+        <sc-for list="{{ oppFilters }}" as="f" hint-placeholder-count="5">
+          <button type="button" onClick="{{ f.go }}" class="tag" style="cursor: pointer; border: 1px solid {{ f.bd }}; color: {{ f.fg }}; background: {{ f.bg }};">{{ f.label }}</button>
+        </sc-for>
+      </div>
+      <div style="overflow-x: auto; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+        <table class="table" style="width: 100%; min-width: 940px;">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Opportunity</th>
+              <th style="text-align: left;">Source</th>
+              <th style="text-align: right;">Contrib</th>
+              <th style="text-align: right;">Intent</th>
+              <th style="text-align: right;">Fit</th>
+              <th style="text-align: right;">Risk</th>
+              <th style="text-align: right;">Total</th>
+              <th style="text-align: left;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ oppRows }}" as="r" hint-placeholder-count="8">
+              <tr onClick="{{ r.open }}" style="cursor: {{ r.cursor }};">
+                <td style="max-width: 380px;"><span style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ r.title }}</span></td>
+                <td style="color: var(--color-neutral-400); white-space: nowrap;">{{ r.source }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1;">{{ r.contribution }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1; color: var(--color-neutral-400);">{{ r.intent }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1; color: var(--color-neutral-400);">{{ r.fit }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1; color: var(--color-neutral-400);">{{ r.risk }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1; color: {{ r.totalFg }};">{{ r.total }}</td>
+                <td><span style="font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: {{ r.statusFg }};">{{ r.status }}</span></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── SCORING ───────────────────────────────────────────── -->
+    <sc-if value="{{ isScoring }}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 28px clamp(24px, 4vw, 44px) 72px; max-width: 1000px;">
+      <h1 style="font-family: var(--font-heading); font-weight: 500; font-size: 24px; line-height: 32px; letter-spacing: -0.012em; margin: 0 0 6px;">Scoring</h1>
+      <p style="margin: 0 0 26px; font-size: 14px; color: var(--color-neutral-500); max-width: 70ch;">Four axes, stored separately so the weights stay tunable. Contribution potential carries the most weight: a post with real benchmark data has outperformed a launch post by an order of magnitude. Move a slider and the queue re-ranks.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 30px;">
+        <sc-for list="{{ weightCards }}" as="w" hint-placeholder-count="4">
+          <div class="card">
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <h3 class="card-title" style="margin: 0;">{{ w.name }}</h3>
+              <span style="margin-left: auto; font-family: ui-monospace, monospace; font-size: 13px; color: var(--color-accent-300); font-feature-settings: 'tnum' 1;">{{ w.value }}</span>
+            </div>
+            <p class="card-body" style="margin-top: 6px;">{{ w.note }}</p>
+            <input type="range" min="0" max="1" step="0.05" value="{{ w.value }}" onChange="{{ w.set }}" style="width: 100%; margin-top: 14px;" />
+          </div>
+        </sc-for>
+      </div>
+
+      <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 17px; line-height: 26px; margin: 0 0 12px;">Threshold</h2>
+      <div style="border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 20px 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 26px; align-items: center;">
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--color-neutral-500); margin-bottom: 6px;"><span>expire</span><span>draft</span></div>
+          <input type="range" min="0" max="1" step="0.01" value="{{ threshold }}" onChange="{{ setThreshold }}" style="width: 100%;" />
+          <p style="margin: 8px 0 0; font-size: 12.5px; color: var(--color-neutral-500); font-family: ui-monospace, monospace;">scoring.threshold = {{ thresholdLabel }}</p>
+        </div>
+        <div style="font-size: 13.5px; line-height: 24px; color: color-mix(in srgb, var(--color-text) 78%, transparent);">
+          <p style="margin: 0 0 8px;">At this threshold: <span style="color: var(--color-accent-300); font-feature-settings: 'tnum' 1;">{{ aboveCount }} drafted</span>, <span style="font-feature-settings: 'tnum' 1;">{{ belowCount }} expired</span>, <span style="font-feature-settings: 'tnum' 1;">{{ unknownCount }} held as rules_unknown</span>.</p>
+          <p style="margin: 0;">Below threshold there is no LLM call and no queue entry. A missing rules record forces <span style="font-family: ui-monospace, monospace; color: var(--color-accent-300);">rules_unknown</span> regardless of score.</p>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── GUARDRAILS ────────────────────────────────────────── -->
+    <sc-if value="{{ isGuardrails }}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 28px clamp(24px, 4vw, 44px) 72px; max-width: 1040px;">
+      <h1 style="font-family: var(--font-heading); font-weight: 500; font-size: 24px; line-height: 32px; letter-spacing: -0.012em; margin: 0 0 6px;">Guardrails</h1>
+      <p style="margin: 0 0 26px; font-size: 14px; color: var(--color-neutral-500); max-width: 70ch;">Enforced at the publish layer, not in the interface. The four fixed rules have no off switch; the limits below are configurable and take effect on the queue immediately.</p>
+
+      <div style="display: grid; gap: 0; margin-bottom: 34px;">
+        <sc-for list="{{ fixedRules }}" as="g" hint-placeholder-count="4">
+          <div style="display: grid; grid-template-columns: 26px minmax(0, 250px) minmax(0, 1fr) auto; gap: 18px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--color-neutral-900);">
+            <i class="ph {{ g.icon }}" style="font-size: 17px; color: var(--color-accent);"></i>
+            <h3 style="font-family: var(--font-heading); font-weight: 500; font-size: 15.5px; line-height: 24px; margin: 0;">{{ g.title }}</h3>
+            <p style="margin: 0; font-size: 13.5px; line-height: 23px; color: color-mix(in srgb, var(--color-text) 76%, transparent);">{{ g.note }}</p>
+            <span style="font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600); white-space: nowrap;">no off switch</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 17px; line-height: 26px; margin: 0 0 12px;">Limits</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 34px;">
+        <div class="card">
+          <p class="card-kicker">replies per platform / day</p>
+          <input class="input" type="number" min="1" max="20" value="{{ limitPerDay }}" onChange="{{ setPerDay }}" style="width: 100%; box-sizing: border-box; margin-top: 10px; font-feature-settings: 'tnum' 1;" />
+          <p class="card-meta" style="margin-top: 8px;">{{ publishedToday }}</p>
+        </div>
+        <div class="card">
+          <p class="card-kicker">cooldown in one community (days)</p>
+          <input class="input" type="number" min="0" max="30" value="{{ limitCooldown }}" onChange="{{ setCooldown }}" style="width: 100%; box-sizing: border-box; margin-top: 10px; font-feature-settings: 'tnum' 1;" />
+          <p class="card-meta" style="margin-top: 8px;">{{ cooldownBlocked }}</p>
+        </div>
+        <div class="card">
+          <p class="card-kicker">rolling self-promo ratio cap (%)</p>
+          <input class="input" type="number" min="1" max="50" value="{{ limitRatio }}" onChange="{{ setRatio }}" style="width: 100%; box-sizing: border-box; margin-top: 10px; font-feature-settings: 'tnum' 1;" />
+          <p class="card-meta" style="margin-top: 8px;">Checked per community over the last 30 posts.</p>
+        </div>
+      </div>
+
+      <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 17px; line-height: 26px; margin: 0 0 6px;">Community rules registry</h2>
+      <p style="margin: 0 0 14px; font-size: 13.5px; color: var(--color-neutral-500); max-width: 68ch;">No rules record, no draft. Values here need confirming against each community's current sidebar — anything marked unverified is a placeholder I entered, not a researched fact.</p>
+      <div style="overflow-x: auto; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+        <table class="table" style="width: 100%; min-width: 860px;">
+          <thead>
+            <tr><th style="text-align: left;">Community</th><th style="text-align: left;">Self-promo</th><th style="text-align: left;">Ratio</th><th style="text-align: left;">Flair</th><th style="text-align: left;">Reviewed</th><th style="text-align: left;">State</th><th></th></tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ ruleRows }}" as="c" hint-placeholder-count="7">
+              <tr>
+                <td>{{ c.name }}</td>
+                <td style="color: var(--color-neutral-400);">{{ c.promo }}</td>
+                <td style="color: var(--color-neutral-400); font-feature-settings: 'tnum' 1;">{{ c.ratio }}</td>
+                <td style="color: var(--color-neutral-400);">{{ c.flair }}</td>
+                <td style="color: var(--color-neutral-400); font-feature-settings: 'tnum' 1;">{{ c.reviewed }}</td>
+                <td><span style="font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: {{ c.stateFg }};">{{ c.state }}</span></td>
+                <td style="text-align: right;"><button type="button" class="btn btn-ghost" onClick="{{ c.action }}" style="font-size: 12.5px; padding: 3px 10px;">{{ c.actionLabel }}</button></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── ATTRIBUTION ───────────────────────────────────────── -->
+    <sc-if value="{{ isAttribution }}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 28px clamp(24px, 4vw, 44px) 72px;">
+      <h1 style="font-family: var(--font-heading); font-weight: 500; font-size: 24px; line-height: 32px; letter-spacing: -0.012em; margin: 0 0 6px;">Publications &amp; attribution</h1>
+      <p style="margin: 0 0 22px; font-size: 14px; color: var(--color-neutral-500); max-width: 72ch;">Every outbound link is a tracked redirect carrying product, source and publication id. Last-touch, 30-day window. Where no click was recorded the conversion stays unattributed — it is never guessed.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 26px;">
+        <div class="card"><p class="card-kicker">Published / 30d</p><p style="font-family: var(--font-heading); font-weight: 500; font-size: 30px; line-height: 40px; margin: 4px 0 0; font-feature-settings: 'tnum' 1;">{{ publishedCount }}</p></div>
+        <div class="card"><p class="card-kicker">Tracked clicks</p><p style="font-family: var(--font-heading); font-weight: 500; font-size: 30px; line-height: 40px; margin: 4px 0 0; font-feature-settings: 'tnum' 1;">412</p></div>
+        <div class="card"><p class="card-kicker">Attributed orders</p><p style="font-family: var(--font-heading); font-weight: 500; font-size: 30px; line-height: 40px; margin: 4px 0 0; font-feature-settings: 'tnum' 1;">9</p></div>
+        <div class="card"><p class="card-kicker">Unattributed</p><p style="font-family: var(--font-heading); font-weight: 500; font-size: 30px; line-height: 40px; margin: 4px 0 0; font-feature-settings: 'tnum' 1; color: var(--color-neutral-500);">4</p></div>
+      </div>
+
+      <div style="overflow-x: auto; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); margin-bottom: 30px;">
+        <table class="table" style="width: 100%; min-width: 920px;">
+          <thead>
+            <tr><th style="text-align: left;">Publication</th><th style="text-align: left;">Community</th><th style="text-align: right;">Upvotes</th><th style="text-align: right;">Replies</th><th style="text-align: right;">Clicks</th><th style="text-align: right;">Orders</th><th style="text-align: right;">Revenue</th></tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ pubRows }}" as="p" hint-placeholder-count="6">
+              <tr>
+                <td style="max-width: 340px;"><span style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ p.title }}</span></td>
+                <td style="color: var(--color-neutral-400); white-space: nowrap;">{{ p.community }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1; color: var(--color-neutral-400);">{{ p.upvotes }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1; color: var(--color-neutral-400);">{{ p.replies }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1; color: var(--color-neutral-400);">{{ p.clicks }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1;">{{ p.orders }}</td>
+                <td style="text-align: right; font-feature-settings: 'tnum' 1; color: {{ p.revFg }};">{{ p.revenue }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 17px; line-height: 26px; margin: 0 0 12px;">Link records</h2>
+      <div style="border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 18px 20px; font-family: ui-monospace, monospace; font-size: 12.5px; line-height: 23px; color: color-mix(in srgb, var(--color-text) 78%, transparent); white-space: pre-wrap; overflow-x: auto;">{{ linkSnippet }}</div>
+    </div>
+    </sc-if>
+
+    <!-- ── DIGEST ────────────────────────────────────────────── -->
+    <sc-if value="{{ isDigest }}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 28px clamp(24px, 4vw, 44px) 72px; max-width: 900px;">
+      <p style="margin: 0 0 6px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-accent);">Week 32 · 3–9 August</p>
+      <h1 style="font-family: var(--font-heading); font-weight: 500; font-size: 24px; line-height: 32px; letter-spacing: -0.012em; margin: 0 0 22px;">Weekly digest</h1>
+
+      <div style="border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 22px 24px; margin-bottom: 26px;">
+        <p style="margin: 0; font-size: 15px; line-height: 26px; color: color-mix(in srgb, var(--color-text) 85%, transparent);">Lemonade converted 6 of 9 attributed orders this week, all from threads where the reply led with sizing numbers and mentioned the product in a single closing line. Both drafts that named the product in the first paragraph were rejected. Contribution-led framing is holding.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px; margin-bottom: 30px;">
+        <div>
+          <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 15px; line-height: 24px; margin: 0 0 10px;">What converted</h2>
+          <sc-for list="{{ digestConverted }}" as="d" hint-placeholder-count="4">
+            <div style="display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--color-neutral-900); font-size: 13.5px;">
+              <span style="color: color-mix(in srgb, var(--color-text) 82%, transparent);">{{ d.label }}</span>
+              <span style="font-feature-settings: 'tnum' 1; color: var(--color-neutral-400); white-space: nowrap;">{{ d.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 15px; line-height: 24px; margin: 0 0 10px;">Why you rejected drafts</h2>
+          <sc-for list="{{ digestRejections }}" as="d" hint-placeholder-count="4">
+            <div style="display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--color-neutral-900); font-size: 13.5px;">
+              <span style="color: color-mix(in srgb, var(--color-text) 82%, transparent);">{{ d.label }}</span>
+              <span style="font-feature-settings: 'tnum' 1; color: var(--color-neutral-400); white-space: nowrap;">{{ d.value }}</span>
+            </div>
+          </sc-for>
+          <p style="margin: 10px 0 0; font-size: 12.5px; color: var(--color-neutral-600);">Counts update live as you reject drafts in the queue.</p>
+        </div>
+      </div>
+
+      <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 15px; line-height: 24px; margin: 0 0 10px;">Fed back into the voice file</h2>
+      <div class="card" style="margin-bottom: 26px;">
+        <p class="card-kicker">src/prompts/voice.md · appended 2 samples</p>
+        <p class="card-body" style="font-family: ui-monospace, monospace; font-size: 12.5px; line-height: 22px; white-space: pre-wrap;">{{ voiceSample }}</p>
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-primary" onClick="{{ sendDigest }}">Send to email list</button>
+        <button type="button" class="btn btn-ghost" onClick="{{ exportDigest }}">Export markdown</button>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── SYSTEM ────────────────────────────────────────────── -->
+    <sc-if value="{{ isSystem }}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 28px clamp(24px, 4vw, 44px) 72px; max-width: 1040px;">
+      <h1 style="font-family: var(--font-heading); font-weight: 500; font-size: 24px; line-height: 32px; letter-spacing: -0.012em; margin: 0 0 6px;">System</h1>
+      <p style="margin: 0 0 26px; font-size: 14px; color: var(--color-neutral-500); max-width: 70ch;">Single repo, TypeScript, SQLite on a mounted volume. Config is validated with Zod at boot and fails loudly.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; align-items: start;">
+        <div>
+          <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 15px; line-height: 24px; margin: 0 0 10px;">Data model</h2>
+          <sc-for list="{{ tables }}" as="t" hint-placeholder-count="9">
+            <div style="display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--color-neutral-900); font-size: 13px; line-height: 21px;">
+              <span style="font-family: ui-monospace, monospace; color: var(--color-accent-300);">{{ t.name }}</span>
+              <span style="color: color-mix(in srgb, var(--color-text) 74%, transparent);">{{ t.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 15px; line-height: 24px; margin: 0 0 10px;">Sources</h2>
+          <div style="margin-bottom: 26px;">
+            <sc-for list="{{ sourceRows }}" as="s" hint-placeholder-count="7">
+              <div style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--color-neutral-900); font-size: 13px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; flex: none; background: {{ s.dot }};"></span>
+                <span style="color: {{ s.fg }};">{{ s.name }}</span>
+                <span style="margin-left: auto; color: var(--color-neutral-600); font-feature-settings: 'tnum' 1;">{{ s.poll }}</span>
+                <button type="button" class="btn btn-ghost" onClick="{{ s.toggle }}" style="font-size: 12px; padding: 2px 9px;">{{ s.action }}</button>
+              </div>
+            </sc-for>
+          </div>
+
+          <h2 style="font-family: var(--font-heading); font-weight: 500; font-size: 15px; line-height: 24px; margin: 0 0 10px;">Run it</h2>
+          <div style="border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-sm); padding: 16px 18px; font-family: ui-monospace, monospace; font-size: 12.5px; line-height: 22px; color: color-mix(in srgb, var(--color-text) 80%, transparent); white-space: pre-wrap;">{{ runSnippet }}</div>
+          <p style="margin: 12px 0 0; font-size: 13px; line-height: 22px; color: var(--color-neutral-500);">Containerized for Cloud Run with the SQLite file on a mounted volume. Postgres is a config change, not a rewrite.</p>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── DIALOG ────────────────────────────────────────────── -->
+    <sc-if value="{{ dialogOpen }}" hint-placeholder-val="{{ false }}">
+      <div class="dialog-backdrop" style="position: fixed; inset: 0; display: grid; place-items: center; z-index: 40;">
+        <div class="dialog" style="width: min(520px, calc(100vw - 48px));">
+          <p class="dialog-title">{{ dialogTitle }}</p>
+          <div class="dialog-body">
+            <p style="margin: 0 0 14px; font-size: 13.5px; line-height: 23px; color: color-mix(in srgb, var(--color-text) 78%, transparent);">{{ dialogNote }}</p>
+            <sc-if value="{{ isRejectDialog }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+                <sc-for list="{{ reasonChips }}" as="r" hint-placeholder-count="5">
+                  <button type="button" onClick="{{ r.go }}" class="tag" style="cursor: pointer; border: 1px solid {{ r.bd }}; color: {{ r.fg }}; background: {{ r.bg }};">{{ r.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <textarea class="input" value="{{ dialogText }}" onChange="{{ setDialogText }}" placeholder="{{ dialogPlaceholder }}" style="width: 100%; box-sizing: border-box; min-height: 92px; resize: vertical; font-family: var(--font-body); font-size: 14px; line-height: 23px;"></textarea>
+          </div>
+          <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" onClick="{{ closeDialog }}">Cancel</button>
+            <button type="button" class="btn btn-primary" onClick="{{ confirmDialog }}">{{ dialogConfirm }}</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ── TOAST ─────────────────────────────────────────────── -->
+    <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-lg); font-size: 13.5px;">
+        <i class="ph {{ toastIcon }}" style="font-size: 16px; color: {{ toastFg }};"></i>
+        <span>{{ toast }}</span>
+      </div>
+    </sc-if>
+
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;queue&quot;,&quot;opps&quot;,&quot;scoring&quot;,&quot;guardrails&quot;,&quot;attribution&quot;,&quot;digest&quot;,&quot;system&quot;],&quot;default&quot;:&quot;queue&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+const OPPS = [
+  {
+    id: 'o1', community: 'r/LocalLLaMA', source: 'r/LocalLLaMA', platform: 'reddit', age: '2h',
+    product: 'Lemonade', rulesKnown: true, lastPostDays: 9, ratioPct: 8,
+    axes: { contribution: 0.94, intent: 0.81, fit: 0.72, risk: 0.18 },
+    title: 'VRAM sizing: what actually fits on 16GB — 7B vs 13B?',
+    meta: 'u/ferrous_oxide · 2h ago · 41 comments · reddit.com/r/LocalLLaMA',
+    body: "i keep seeing people say 13b runs fine on 16gb and other people say it thrashes. what's the actual arithmetic? i'm on an m2 with 16gb unified and i'd like to keep a browser open while it runs.",
+    promptVersion: 'reply.v4',
+    rules: { promo: 'Allowed with disclosure', ratio: 'max 10%', flair: 'not required', reviewed: '12d ago' },
+    draft: "the arithmetic is weights + kv cache + everything else you're running.\n\n13b at q4_k_m is ~7.9gb of weights. kv cache at 4k context adds ~1.2gb, so you're at ~9.1gb before the os and the browser. on a 16gb mac the compositor and a chrome window take 4-5gb on a normal day, so it fits, but you're living inside the last gigabyte and a long context pushes you into swap.\n\n7b at q5_k_m is ~5.1gb, ~6.2gb with the same 4k cache. that leaves enough headroom to run an embedding model alongside it, which is what most people actually want.\n\nnumbers i measured on an m2 16gb, 4k context, ollama defaults:\n  llama3 8b q4_k_m — 5.6gb resident, 31 tok/s\n  13b q4_k_m — 9.4gb resident, 14 tok/s, first swap at ~6k context\n\nso: 13b works if the machine is doing nothing else. if it's your work laptop, stay at 7-8b and spend the headroom on context.\n\ni build Lemonade, a local-only desktop assistant on top of ollama, which is where those measurements came from. disclosure: my product."
+  },
+  {
+    id: 'o2', community: 'r/privacy', source: 'r/privacy', platform: 'reddit', age: '5h',
+    product: 'Lemonade', rulesKnown: true, lastPostDays: 22, ratioPct: 4,
+    axes: { contribution: 0.71, intent: 0.93, fit: 0.90, risk: 0.34 },
+    title: 'Anything that runs a model offline on a work laptop? IT blocks cloud AI',
+    meta: 'u/quiet_tuesday · 5h ago · 27 comments · reddit.com/r/privacy',
+    body: 'our security policy blocks every hosted assistant and i have no appetite for arguing with legal. i already have ollama installed. is there something with a real interface on top of it that never phones home?',
+    promptVersion: 'reply.v4',
+    rules: { promo: 'Discouraged; answer-first only', ratio: 'max 5%', flair: 'not required', reviewed: '30d ago' },
+    draft: "the thing worth checking first is whether the tool ever opens a socket you didn't ask for. a lot of \"local\" wrappers still call out for telemetry, model catalogues or update checks.\n\nquick way to verify on macos:\n  lsof -i -P | grep <appname>\non linux, run it under `strace -f -e trace=network` for a minute. if you see anything but localhost:11434, it isn't local.\n\nalso worth pinning: point ollama at a fixed model directory and turn off auto-pull, otherwise the first missing model triggers a download you may not be allowed to make on a work network.\n\nfor an interface on top: i build Lemonade — ollama-only, no telemetry, no account, works with the network off, $49 one-time. disclosure: my product. happy to answer the socket question for anything else you're evaluating too."
+  },
+  {
+    id: 'o3', community: 'Hacker News', source: 'Hacker News', platform: 'hn', age: '1h',
+    product: 'CineGen', rulesKnown: true, lastPostDays: 40, ratioPct: 0,
+    axes: { contribution: 0.88, intent: 0.52, fit: 0.69, risk: 0.22 },
+    title: 'Show HN: real-time gaussian splat renderer in the browser',
+    meta: 'news.ycombinator.com/item?id=… · 1h ago · 63 comments',
+    body: "we're rendering 3DGS scenes at 60fps in webgpu. curious how people handle audio-reactive parameter drives without frame drops — every approach we tried either lags the audio or stutters the render.",
+    promptVersion: 'reply.v4',
+    rules: { promo: 'Draft-only by policy', ratio: 'n/a', flair: 'n/a', reviewed: 'policy, not scraped' },
+    draft: "the stutter usually isn't the render, it's that you're driving parameters from the audio callback thread and then waiting on the main thread to pick them up.\n\nwhat worked for us: run the analyser in an AudioWorklet, write band energies into a SharedArrayBuffer as float32, and have the render loop read the latest slot without locking. one frame of latency at worst, and the audio thread never blocks.\n\nthe second thing is smoothing. raw fft bins at 60fps look like noise on a splat scale parameter — an exponential moving average with separate attack and release constants (we use ~40ms attack, ~250ms release) reads as musical rather than jittery.\n\nif you're driving per-splat opacity from audio, precompute the depth sort once per beat rather than per frame; the sort is what costs you, not the audio."
+  },
+  {
+    id: 'o4', community: 'r/selfhosted', source: 'r/selfhosted', platform: 'reddit', age: '11h',
+    product: 'Sunshore', rulesKnown: true, lastPostDays: 3, ratioPct: 6,
+    axes: { contribution: 0.66, intent: 0.78, fit: 0.61, risk: 0.41 },
+    title: 'Anyone automating invoice triage without shipping data to a vendor?',
+    meta: 'u/rackmount_dave · 11h ago · 19 comments · reddit.com/r/selfhosted',
+    body: "small ops team, a few hundred invoices a month. every tool i've looked at wants the documents in their cloud. is there a sane self-hosted path here or am i writing it myself?",
+    promptVersion: 'reply.v4',
+    rules: { promo: 'Sundays only, self-promo thread', ratio: 'max 10%', flair: 'required: Need Help', reviewed: '4d ago' },
+    draft: "you can get most of the way with three boring pieces: a watched folder, a local ocr pass, and a classifier that only has to sort into about six buckets.\n\nthe part people underestimate is that invoice triage is mostly layout, not language. paddleocr or tesseract with layout output plus a small model for field extraction beats a large model reading raw text, and it runs on cpu.\n\nbudget roughly 2-4s per page on a modern cpu core; a few hundred invoices a month is nothing. keep a human in the loop for anything the classifier scores under ~0.8 and you'll spend ten minutes a week on it.\n\nwe build Sunshore for exactly this shape of workflow, self-hosted included. disclosure: my product."
+  },
+  {
+    id: 'o5', community: 'r/LocalLLaMA', source: 'r/LocalLLaMA', platform: 'reddit', age: '1d',
+    product: 'Lemonade', rulesKnown: true, lastPostDays: 9, ratioPct: 8,
+    axes: { contribution: 0.79, intent: 0.44, fit: 0.55, risk: 0.20 },
+    title: 'Best offline STT pairing for a local assistant stack?',
+    meta: 'u/half_duplex · 1d ago · 12 comments · reddit.com/r/LocalLLaMA',
+    body: 'looking for something that transcribes locally without eating the same vram my model needs. whisper.cpp vs faster-whisper vs something else?',
+    promptVersion: 'reply.v4',
+    rules: { promo: 'Allowed with disclosure', ratio: 'max 10%', flair: 'not required', reviewed: '12d ago' },
+    draft: "whisper.cpp small.en on cpu is the pairing that stays out of your way: ~0.5gb resident, roughly 4x realtime on four performance cores, and it leaves the gpu entirely to the model.\n\nfaster-whisper is quicker per minute but wants the gpu, so on a single-gpu box you end up serialising transcription against generation and the latency you saved comes straight back.\n\nif you need better accuracy than small.en, medium.en on cpu is ~1.5gb and about 1.5x realtime — still fine for push-to-talk, too slow for live captioning."
+  },
+  {
+    id: 'o6', community: 'r/generative', source: 'r/generative', platform: 'reddit', age: '2d',
+    product: 'CineGen', rulesKnown: false, lastPostDays: 60, ratioPct: 0,
+    axes: { contribution: 0.72, intent: 0.38, fit: 0.58, risk: 0.55 },
+    title: 'Audio-reactive visuals: which parameter smoothing actually looks musical?',
+    meta: 'u/scanline_ · 2d ago · 8 comments · reddit.com/r/generative',
+    body: 'everything i try either lags behind the beat or twitches on every transient. what are people using?',
+    promptVersion: '—',
+    rules: { promo: '—', ratio: '—', flair: '—', reviewed: 'never' },
+    draft: "No draft generated. This community has no rules record, so the opportunity is held as rules_unknown."
+  },
+  {
+    id: 'o7', community: 'Hacker News', source: 'Hacker News', platform: 'hn', age: '3d',
+    product: 'Lemonade', rulesKnown: true, lastPostDays: 40, ratioPct: 0,
+    axes: { contribution: 0.31, intent: 0.29, fit: 0.44, risk: 0.30 },
+    title: 'Does anyone actually pay for desktop AI apps?',
+    meta: 'news.ycombinator.com/item?id=… · 3d ago · 210 comments',
+    body: 'genuine question, not a dig. the whole category feels like a thin wrapper business.',
+    promptVersion: '—',
+    rules: { promo: 'Draft-only by policy', ratio: 'n/a', flair: 'n/a', reviewed: 'policy' },
+    draft: "No draft generated. Total score is below threshold — this is a discussion, not someone trying to solve a problem."
+  },
+  {
+    id: 'o8', community: 'r/SideProject', source: 'r/SideProject', platform: 'reddit', age: '4d',
+    product: 'Lemonade', rulesKnown: true, lastPostDays: 30, ratioPct: 2,
+    axes: { contribution: 0.18, intent: 0.12, fit: 0.40, risk: 0.15 },
+    title: 'Weekly what-are-you-working-on thread',
+    meta: 'u/automoderator · 4d ago · 340 comments · reddit.com/r/SideProject',
+    body: 'post what you shipped this week.',
+    promptVersion: '—',
+    rules: { promo: 'Allowed in weekly thread', ratio: 'n/a', flair: 'not required', reviewed: '20d ago' },
+    draft: "No draft generated. Total score is below threshold — a promo thread is not a contribution opportunity."
+  }
+];
+
+const NAV = [
+  { key: 'queue', label: 'Review queue', icon: 'ph-tray' },
+  { key: 'opps', label: 'Opportunities', icon: 'ph-radar' },
+  { key: 'scoring', label: 'Scoring', icon: 'ph-sliders-horizontal' },
+  { key: 'guardrails', label: 'Guardrails', icon: 'ph-shield-check' },
+  { key: 'attribution', label: 'Attribution', icon: 'ph-link' },
+  { key: 'digest', label: 'Weekly digest', icon: 'ph-newspaper' },
+  { key: 'system', label: 'System', icon: 'ph-terminal-window' }
+];
+
+const AXIS_META = [
+  { key: 'contribution', label: 'Contribution', fill: 'var(--color-accent)', note: 'Can you add benchmarks, architecture detail or a hard-won gotcha here, independent of the product?' },
+  { key: 'intent', label: 'Intent', fill: 'var(--color-accent-400)', note: 'Is the author actively trying to solve a problem a product solves? A question beats a discussion.' },
+  { key: 'fit', label: 'Fit', fill: 'var(--color-accent-400)', note: "Semantic match against one product's positioning. Stores which product matched." },
+  { key: 'risk', label: 'Risk', fill: 'var(--color-neutral-500)', note: 'Community rules, thread age, karma requirements. Subtracts from the total.' }
+];
+
+const REASONS = ['Product named too early', 'Marketing register', 'Numbers I cannot verify', 'Thread already answered', 'Wrong community'];
+
+const WARN = '#c9b46a';
+const BLOCK = '#d98a8a';
+
+class Component extends DCLogic {
+  state = {
+    screen: null, selId: 'o1', drafts: {}, resolved: {},
+    weights: { contribution: 0.4, intent: 0.25, fit: 0.25, risk: 0.1 },
+    threshold: 0.55,
+    limits: { perDay: 6, cooldown: 7, ratio: 10 },
+    disabledSources: {}, addedRules: {},
+    dialog: null, dialogText: '', reason: REASONS[0],
+    toast: null, toastKind: 'ok', copied: false,
+    vw: typeof window !== 'undefined' ? window.innerWidth : 1440
+  };
+
+  componentDidMount() {
+    this._onResize = () => this.setState({ vw: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+    this._onResize();
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this._t);
+    if (this._onResize) window.removeEventListener('resize', this._onResize);
+  }
+
+  say(msg, kind) {
+    clearTimeout(this._t);
+    this.setState({ toast: msg, toastKind: kind || 'ok' });
+    this._t = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+
+  total(op) {
+    const w = this.state.weights;
+    const a = op.axes;
+    const v = a.contribution * w.contribution + a.intent * w.intent + a.fit * w.fit - a.risk * w.risk;
+    return Math.max(0, v);
+  }
+
+  rulesKnown(op) { return op.rulesKnown || !!this.state.addedRules[op.community]; }
+
+  live(op) {
+    return !this.state.disabledSources[op.source];
+  }
+
+  statusOf(op) {
+    const r = this.state.resolved[op.id];
+    if (r) return r.action === 'approve' ? 'published' : 'rejected';
+    if (!this.live(op)) return 'paused';
+    if (!this.rulesKnown(op)) return 'rules_unknown';
+    if (this.total(op) < this.state.threshold) return 'expired';
+    return 'queued';
+  }
+
+  queueList() { return OPPS.filter((o) => this.statusOf(o) === 'queued'); }
+
+  current() {
+    const q = this.queueList();
+    return q.filter((o) => o.id === this.state.selId)[0] || q[0] || null;
+  }
+
+  draftFor(op) {
+    return this.state.drafts[op.id] != null ? this.state.drafts[op.id] : op.draft;
+  }
+
+  validate(op, text) {
+    const L = this.state.limits;
+    const out = [];
+    const named = text.indexOf(op.product) !== -1;
+    const disclosed = /disclosure|i build|we build/i.test(text);
+    if (named && disclosed) out.push({ label: 'Disclosure line present alongside the product mention', state: 'pass' });
+    else if (named) out.push({ label: 'Product named without a disclosure line — publishing is blocked until you add one', state: 'block' });
+    else out.push({ label: 'Product omitted — no disclosure required', state: 'pass' });
+
+    if (this.rulesKnown(op)) out.push({ label: 'Community rules record found (' + op.rules.reviewed + ')', state: 'pass' });
+    else out.push({ label: 'No rules record for this community — draft withheld', state: 'block' });
+
+    if (op.lastPostDays >= L.cooldown) out.push({ label: 'Cooldown clear — last post here ' + op.lastPostDays + 'd ago, minimum ' + L.cooldown + 'd', state: 'pass' });
+    else out.push({ label: 'Cooldown: last post here ' + op.lastPostDays + 'd ago, minimum is ' + L.cooldown + 'd', state: 'block' });
+
+    if (op.ratioPct <= L.ratio) out.push({ label: 'Self-promo ratio ' + op.ratioPct + '% — under the ' + L.ratio + '% cap', state: op.ratioPct > L.ratio - 3 ? 'warn' : 'pass' });
+    else out.push({ label: 'Self-promo ratio ' + op.ratioPct + '% exceeds the ' + L.ratio + '% cap', state: 'block' });
+
+    if (op.platform === 'hn') out.push({ label: 'Hacker News is draft-only — no publish path exists', state: 'warn' });
+    return out;
+  }
+
+  resolve(op, action, note) {
+    const resolved = Object.assign({}, this.state.resolved);
+    resolved[op.id] = { action, note };
+    const rest = this.queueList().filter((o) => o.id !== op.id);
+    this.setState({ resolved, selId: rest.length ? rest[0].id : null, dialog: null, dialogText: '' });
+  }
+
+  renderVals() {
+    const S = this.state;
+    const screen = S.screen || this.props.startScreen || 'queue';
+    const queue = this.queueList();
+    const op = this.current();
+    const draftText = op ? this.draftFor(op) : '';
+    const validators = op ? this.validate(op, draftText) : [];
+    const blocked = validators.some((v) => v.state === 'block');
+    const publishedCount = Object.keys(S.resolved).filter((k) => S.resolved[k].action === 'approve').length;
+    const rejections = Object.keys(S.resolved).map((k) => S.resolved[k]).filter((r) => r.action === 'reject');
+
+    const counts = { above: 0, below: 0, unknown: 0 };
+    OPPS.forEach((o) => {
+      const st = this.statusOf(o);
+      if (st === 'rules_unknown') counts.unknown++;
+      else if (st === 'expired') counts.below++;
+      else if (st === 'queued') counts.above++;
+    });
+
+    const rejectionTally = [
+      { label: 'Product named too early', base: 2 },
+      { label: 'Marketing register', base: 2 },
+      { label: 'Numbers I cannot verify', base: 1 },
+      { label: 'Thread already answered', base: 1 },
+      { label: 'Wrong community', base: 0 }
+    ].map((r) => ({
+      label: r.label,
+      value: String(r.base + rejections.filter((x) => x.note === r.label).length)
+    }));
+
+    const vw = S.vw || 1440;
+    const railOnly = vw < 860;          // sidebar collapses to icons
+    const stackList = vw < 1000;        // queue list stacks above the detail pane
+    const stackAside = vw < 1280;       // score / validators / rules move under the draft
+
+    const vals = {
+      shellCols: (railOnly ? '58px' : '236px') + ' minmax(0, 1fr)',
+      sidebarPad: railOnly ? '22px 8px' : '22px 14px',
+      labelDisplay: railOnly ? 'none' : 'inline',
+      statusDisplay: railOnly ? 'none' : 'flex',
+      queueCols: stackList ? 'minmax(0, 1fr)' : 'minmax(0, 336px) minmax(0, 1fr)',
+      listBorderRight: stackList ? '0' : '1px solid var(--color-neutral-800)',
+      listBorderBottom: stackList ? '1px solid var(--color-neutral-800)' : '0',
+      listMaxHeight: stackList ? '260px' : 'none',
+      detailCols: stackAside ? 'minmax(0, 1fr)' : 'minmax(0, 1.3fr) minmax(0, 296px)',
+      asidePad: stackAside ? '0 26px 60px' : '24px 26px 60px 0',
+      asideCols: stackAside ? 'repeat(auto-fit, minmax(240px, 1fr))' : 'minmax(0, 1fr)',
+
+      nav: NAV.map((n) => {
+        const badge = n.key === 'queue' ? String(queue.length)
+          : n.key === 'opps' ? String(OPPS.length)
+          : n.key === 'attribution' ? String(6 + publishedCount) : '';
+        return {
+          label: n.label, icon: n.icon, badge,
+          badgeFg: n.key === screen ? 'var(--color-accent-300)' : 'var(--color-neutral-600)',
+          bg: n.key === screen ? 'var(--color-neutral-900)' : 'transparent',
+          fg: n.key === screen ? 'var(--color-text)' : 'var(--color-neutral-400)',
+          go: () => this.setState({ screen: n.key })
+        };
+      }),
+      isQueue: screen === 'queue', isOpps: screen === 'opps', isScoring: screen === 'scoring',
+      isGuardrails: screen === 'guardrails', isAttribution: screen === 'attribution',
+      isDigest: screen === 'digest', isSystem: screen === 'system',
+
+      publishedToday: 'reddit ' + Math.min(publishedCount, S.limits.perDay) + '/' + S.limits.perDay + ' replies today',
+      publishedCount: String(12 + publishedCount),
+
+      queueEmpty: queue.length === 0,
+      hasSelection: !!op,
+      queueSubtitle: queue.length
+        ? queue.length + ' drafts waiting on you. Nothing publishes until you approve it.'
+        : 'Queue clear.',
+      queue: queue.map((o) => ({
+        community: o.community, title: o.title, age: o.age, product: o.product,
+        total: this.total(o).toFixed(2),
+        flag: o.platform === 'hn' ? 'draft-only' : '',
+        flagFg: o.platform === 'hn' ? WARN : 'transparent',
+        bg: op && o.id === op.id ? 'var(--color-neutral-900)' : 'transparent',
+        mark: op && o.id === op.id ? 'var(--color-accent)' : 'transparent',
+        select: () => this.setState({ selId: o.id, copied: false })
+      })),
+
+      thresholdLabel: S.threshold.toFixed(2),
+      threshold: S.threshold,
+      draftText,
+      draftChars: draftText.length + ' chars',
+      copyLabel: S.copied ? 'Copied to clipboard' : 'Copy draft',
+
+      oppFilters: [
+        { key: 'all', label: 'All ' + OPPS.length },
+        { key: 'queued', label: 'Queued ' + counts.above },
+        { key: 'expired', label: 'Expired ' + counts.below },
+        { key: 'rules_unknown', label: 'rules_unknown ' + counts.unknown },
+        { key: 'published', label: 'Published ' + publishedCount }
+      ].map((f) => ({
+        label: f.label,
+        go: () => this.setState({ oppFilter: f.key }),
+        bg: (S.oppFilter || 'all') === f.key ? 'var(--color-accent-900)' : 'transparent',
+        fg: (S.oppFilter || 'all') === f.key ? 'var(--color-accent-200)' : 'var(--color-neutral-400)',
+        bd: (S.oppFilter || 'all') === f.key ? 'var(--color-accent-600)' : 'var(--color-neutral-800)'
+      })),
+
+      oppRows: OPPS.filter((o) => {
+        const f = S.oppFilter || 'all';
+        return f === 'all' || this.statusOf(o) === f;
+      }).map((o) => {
+        const st = this.statusOf(o);
+        const t = this.total(o);
+        return {
+          title: o.title, source: o.source,
+          contribution: o.axes.contribution.toFixed(2), intent: o.axes.intent.toFixed(2),
+          fit: o.axes.fit.toFixed(2), risk: o.axes.risk.toFixed(2),
+          total: t.toFixed(2), status: st,
+          totalFg: t >= S.threshold ? 'var(--color-accent-300)' : 'var(--color-neutral-600)',
+          statusFg: st === 'queued' ? 'var(--color-accent-300)'
+            : st === 'rules_unknown' ? BLOCK
+            : st === 'published' ? 'var(--color-accent-200)'
+            : st === 'rejected' ? WARN : 'var(--color-neutral-600)',
+          cursor: st === 'queued' ? 'pointer' : 'default',
+          open: st === 'queued' ? () => this.setState({ screen: 'queue', selId: o.id }) : null
+        };
+      }),
+
+      weightCards: AXIS_META.map((a) => ({
+        name: a.label, note: a.note, value: S.weights[a.key].toFixed(2),
+        set: (e) => {
+          const weights = Object.assign({}, S.weights);
+          weights[a.key] = parseFloat(e.target.value);
+          this.setState({ weights });
+        }
+      })),
+      setThreshold: (e) => this.setState({ threshold: parseFloat(e.target.value) }),
+      aboveCount: counts.above, belowCount: counts.below, unknownCount: counts.unknown,
+
+      fixedRules: [
+        { icon: 'ph-hand-palm', title: 'No autonomous posting', note: 'Reddit, HN, Discord, X, forums — every draft lands in this queue. Publishing needs an explicit approve action.' },
+        { icon: 'ph-clipboard-text', title: 'Hacker News is draft-only', note: 'Signal writes the comment and surfaces the thread. There is no publish path: copy, paste it yourself, mark as posted.' },
+        { icon: 'ph-user-circle', title: 'One identity per platform', note: 'The schema has no multi-account support. Nothing in the data model can express a second persona.' },
+        { icon: 'ph-seal-check', title: 'Mandatory disclosure', note: 'A draft naming a product without a disclosure line is blocked by the validator. Not a warning you can dismiss.' },
+        { icon: 'ph-robot', title: 'Official APIs, honored robots.txt', note: 'Scraping is rate-limited and robots-aware. A source with no legitimate access path gets dropped and reported.' }
+      ],
+
+      limitPerDay: S.limits.perDay,
+      limitCooldown: S.limits.cooldown,
+      limitRatio: S.limits.ratio,
+      setPerDay: (e) => this.setState({ limits: Object.assign({}, S.limits, { perDay: parseInt(e.target.value, 10) || 1 }) }),
+      setCooldown: (e) => this.setState({ limits: Object.assign({}, S.limits, { cooldown: parseInt(e.target.value, 10) || 0 }) }),
+      setRatio: (e) => this.setState({ limits: Object.assign({}, S.limits, { ratio: parseInt(e.target.value, 10) || 1 }) }),
+      cooldownBlocked: OPPS.filter((o) => o.lastPostDays < S.limits.cooldown).length + ' opportunities currently blocked',
+
+      ruleRows: [
+        { name: 'r/LocalLLaMA', promo: 'Allowed with disclosure', ratio: 'max 10%', flair: 'not required', reviewed: '12d ago', state: 'verified' },
+        { name: 'r/privacy', promo: 'Discouraged; answer-first', ratio: 'max 5%', flair: 'not required', reviewed: '30d ago', state: 'unverified' },
+        { name: 'r/selfhosted', promo: 'Sundays only', ratio: 'max 10%', flair: 'required', reviewed: '4d ago', state: 'unverified' },
+        { name: 'r/ollama', promo: 'Allowed with disclosure', ratio: 'max 10%', flair: 'not required', reviewed: '9d ago', state: 'unverified' },
+        { name: 'r/SideProject', promo: 'Weekly thread only', ratio: 'n/a', flair: 'not required', reviewed: '20d ago', state: 'unverified' },
+        { name: 'r/generative', promo: '—', ratio: '—', flair: '—', reviewed: 'never', state: 'rules_unknown' },
+        { name: 'Hacker News', promo: 'Draft-only by policy', ratio: 'n/a', flair: 'n/a', reviewed: 'policy', state: 'verified' }
+      ].map((c) => {
+        const added = !!S.addedRules[c.name];
+        const state = added ? 'unverified' : c.state;
+        return Object.assign({}, c, {
+          state,
+          promo: added ? 'Allowed with disclosure' : c.promo,
+          ratio: added ? 'max 10%' : c.ratio,
+          flair: added ? 'not required' : c.flair,
+          reviewed: added ? 'just now' : c.reviewed,
+          stateFg: state === 'verified' ? 'var(--color-accent-300)' : state === 'rules_unknown' ? BLOCK : WARN,
+          actionLabel: state === 'rules_unknown' ? 'Add record' : 'Mark reviewed',
+          action: state === 'rules_unknown'
+            ? () => {
+                const addedRules = Object.assign({}, S.addedRules);
+                addedRules[c.name] = true;
+                this.setState({ addedRules });
+                this.say('Rules record added for ' + c.name + ' — drafting unblocked');
+              }
+            : () => this.say(c.name + ' marked reviewed today')
+        });
+      }),
+
+      pubRows: [
+        { title: 'Quantization headroom on 16GB unified memory', community: 'r/LocalLLaMA', upvotes: '184', replies: '31', clicks: '96', orders: '4', revenue: '$196' },
+        { title: 'Verifying a local assistant never opens a socket', community: 'r/privacy', upvotes: '92', replies: '18', clicks: '61', orders: '3', revenue: '$147' },
+        { title: 'Model directory pinning with auto-pull disabled', community: 'r/ollama', upvotes: '57', replies: '9', clicks: '38', orders: '2', revenue: '$98' },
+        { title: 'Splat depth sorting per beat, not per frame', community: 'r/generative', upvotes: '141', replies: '22', clicks: '74', orders: '0', revenue: '—' },
+        { title: 'Invoice triage on CPU: what the numbers look like', community: 'r/selfhosted', upvotes: '48', replies: '14', clicks: '29', orders: '0', revenue: '—' },
+        { title: 'Why offline-first changes your update strategy', community: 'r/LocalLLaMA', upvotes: '73', replies: '11', clicks: '44', orders: '0', revenue: '—' }
+      ].map((p) => Object.assign({}, p, { revFg: p.revenue === '—' ? 'var(--color-neutral-600)' : 'var(--color-accent-300)' })),
+
+      linkSnippet: 'GET /r/8f2a1c  →  302 lemonade.app/?utm_source=reddit\n                    &utm_medium=comment\n                    &utm_campaign=localllama\n                    &pub=114\n\nclick logged · cookie sig_ref=114 · 30d window\nstripe checkout.session.completed → conversions.attributed_publication_id = 114',
+
+      digestConverted: [
+        { label: 'r/LocalLLaMA', value: '6 orders · $294' },
+        { label: 'r/privacy', value: '3 orders · $147' },
+        { label: 'Benchmark-table framing', value: '8 of 9 orders' },
+        { label: 'Lemonade', value: '9 of 9 orders' }
+      ],
+      digestRejections: rejectionTally,
+      voiceSample: "the arithmetic is weights + kv cache + everything\nelse you're running. 13b at q4_k_m is ~7.9gb of\nweights...\n\n— appended from publication #114, 184 upvotes,\n  4 attributed orders",
+      sendDigest: () => this.say('Digest queued to the email list'),
+      exportDigest: () => this.say('digest-w32.md written to content/'),
+
+      tables: [
+        { name: 'products', note: 'positioning, target buyer, price, proof points, UTM base' },
+        { name: 'sources', note: 'subreddit / HN / RSS / Discord, poll interval, enabled' },
+        { name: 'community_rules', note: 'self-promo policy, ratio, notes, last reviewed' },
+        { name: 'opportunities', note: 'discovered item, raw score components, total, status' },
+        { name: 'drafts', note: 'prompt version, body, disclosure flag, validator results' },
+        { name: 'publications', note: 'platform, external post id, published_at, tracked_url' },
+        { name: 'metrics', note: 'time-series rows per publication, never overwritten' },
+        { name: 'conversions', note: 'order id, amount, attributed_publication_id (nullable)' },
+        { name: 'content_calendar', note: 'owned-channel items: posts, devlogs, launches' }
+      ],
+
+      sourceRows: [
+        { name: 'r/LocalLLaMA', poll: '15m' }, { name: 'r/privacy', poll: '30m' },
+        { name: 'r/selfhosted', poll: '30m' }, { name: 'r/ollama', poll: '30m' },
+        { name: 'Hacker News', poll: '10m' }, { name: 'r/generative', poll: '60m' },
+        { name: 'r/SideProject', poll: '6h' }
+      ].map((s) => {
+        const off = !!S.disabledSources[s.name];
+        return {
+          name: s.name, poll: off ? 'paused' : s.poll,
+          dot: off ? 'var(--color-neutral-700)' : 'var(--color-accent)',
+          fg: off ? 'var(--color-neutral-600)' : 'var(--color-text)',
+          action: off ? 'Enable' : 'Pause',
+          toggle: () => {
+            const disabledSources = Object.assign({}, S.disabledSources);
+            if (off) delete disabledSources[s.name]; else disabledSources[s.name] = true;
+            this.setState({ disabledSources });
+            this.say(s.name + (off ? ' polling resumed' : ' polling paused'));
+          }
+        };
+      }),
+      runSnippet: 'pnpm install\npnpm db:migrate && pnpm db:seed\npnpm dev\n\n# container\ndocker build -t signal .\ndocker run -v signal-data:/data signal',
+
+      dialogOpen: !!S.dialog,
+      isRejectDialog: S.dialog === 'reject',
+      dialogTitle: S.dialog === 'reject' ? 'Reject with reason' : 'Regenerate with a note',
+      dialogNote: S.dialog === 'reject'
+        ? 'Reasons are stored on the draft and surfaced in the weekly digest so the prompts can be fixed.'
+        : 'The note is appended to the drafting prompt for this opportunity only. The original generation is kept.',
+      dialogPlaceholder: S.dialog === 'reject' ? 'Anything else worth recording' : 'e.g. drop the product mention entirely; lead with the swap threshold',
+      dialogConfirm: S.dialog === 'reject' ? 'Reject draft' : 'Regenerate',
+      dialogText: S.dialogText,
+      setDialogText: (e) => this.setState({ dialogText: e.target.value }),
+      reasonChips: REASONS.map((r) => ({
+        label: r,
+        go: () => this.setState({ reason: r }),
+        bg: S.reason === r ? 'var(--color-accent-900)' : 'transparent',
+        fg: S.reason === r ? 'var(--color-accent-200)' : 'var(--color-neutral-400)',
+        bd: S.reason === r ? 'var(--color-accent-600)' : 'var(--color-neutral-800)'
+      })),
+      openReject: () => this.setState({ dialog: 'reject', dialogText: '' }),
+      openRegenerate: () => this.setState({ dialog: 'regenerate', dialogText: '' }),
+      closeDialog: () => this.setState({ dialog: null, dialogText: '' }),
+      confirmDialog: () => {
+        if (!op) return;
+        if (S.dialog === 'reject') {
+          this.resolve(op, 'reject', S.reason);
+          this.say('Rejected — reason stored as "' + S.reason + '"');
+        } else {
+          const drafts = Object.assign({}, S.drafts);
+          delete drafts[op.id];
+          this.setState({ drafts, dialog: null, dialogText: '' });
+          this.say('Regenerating with your note · prompt reply.v4');
+        }
+      },
+
+      hasToast: !!S.toast,
+      toast: S.toast,
+      toastIcon: S.toastKind === 'warn' ? 'ph-warning-circle' : 'ph-check-circle',
+      toastFg: S.toastKind === 'warn' ? WARN : 'var(--color-accent-400)',
+
+      copyDraft: () => {
+        if (navigator.clipboard) navigator.clipboard.writeText(draftText);
+        this.setState({ copied: true });
+        this.say('Draft copied');
+      },
+      editDraft: (e) => {
+        const drafts = Object.assign({}, S.drafts);
+        drafts[op.id] = e.target.value;
+        this.setState({ drafts });
+      },
+      approve: () => {
+        if (!op || blocked) return;
+        this.resolve(op, 'approve');
+        this.say(op.platform === 'hn'
+          ? 'Copied and marked as posted — no API call made'
+          : 'Published to ' + op.community + ' with tracked link /r/8f2a1c');
+        if (op.platform === 'hn' && navigator.clipboard) navigator.clipboard.writeText(draftText);
+      }
+    };
+
+    if (op) {
+      const blocker = validators.filter((v) => v.state === 'block')[0];
+      vals.sel = {
+        community: op.community, title: op.title, meta: op.meta, body: op.body,
+        product: op.product, promptVersion: op.promptVersion,
+        total: this.total(op).toFixed(2),
+        platformNote: op.platform === 'hn' ? 'draft-only · paste it yourself' : 'publishes via the Reddit API on approval',
+        approveLabel: op.platform === 'hn' ? 'Copy & mark posted' : 'Approve & publish',
+        blocked: blocked,
+        blockReason: blocker ? blocker.label : 'All validators pass',
+        editedNote: S.drafts[op.id] != null ? 'edited by you' : '',
+        editedFg: 'var(--color-accent-300)',
+        axes: AXIS_META.map((a) => ({
+          label: a.label, fill: a.fill,
+          value: op.axes[a.key].toFixed(2),
+          weight: S.weights[a.key].toFixed(2),
+          pct: Math.round(op.axes[a.key] * 100) + '%'
+        })),
+        validators: validators.map((v) => ({
+          label: v.label,
+          icon: v.state === 'pass' ? 'ph-check-circle' : v.state === 'warn' ? 'ph-warning-circle' : 'ph-prohibit',
+          fg: v.state === 'pass' ? 'var(--color-accent-400)' : v.state === 'warn' ? WARN : BLOCK
+        })),
+        rulesPromo: op.rules.promo, rulesRatio: op.rules.ratio,
+        rulesFlair: op.rules.flair, rulesReviewed: op.rules.reviewed
+      };
+    } else {
+      vals.sel = { axes: [], validators: [] };
+    }
+
+    return vals;
+  }
+}
+
+</script>
+</body>
+</html>
