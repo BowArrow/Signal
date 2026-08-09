@@ -1,0 +1,440 @@
+/* Signal-specific layer on top of Nocturne. Everything here resolves to a
+   Nocturne token; the only new values are the two status colors the design
+   comp uses that the system itself does not carry. */
+
+:root {
+  /* From the comp: warn and block states on validators and statuses. */
+  --color-warn: #c9b46a;
+  --color-block: #d98a8a;
+
+  --sidebar-width: 236px;
+  --sidebar-rail-width: 58px;
+  /* Must match TITLEBAR_HEIGHT in electron/main/index.ts. */
+  --titlebar-height: 40px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  text-wrap: pretty;
+  /* Flat. The accent bloom lives on .main, below the title bar — see there. */
+  background: var(--color-bg);
+  font-size: 15px;
+  line-height: 24px;
+  /* This is a desktop app, not a document. */
+  user-select: none;
+  cursor: default;
+  overflow: hidden;
+}
+
+/* Text you would actually want to copy stays selectable. */
+.selectable,
+input,
+textarea {
+  user-select: text;
+  cursor: auto;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-accent-300);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-800);
+  border-radius: var(--radius-md);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ─────────────────────────────────────────────────────────── shell ── */
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  height: 100vh;
+  font-family: var(--font-body);
+  color: var(--color-text);
+}
+
+@media (max-width: 860px) {
+  .shell {
+    grid-template-columns: var(--sidebar-rail-width) minmax(0, 1fr);
+  }
+  .sidebar-label {
+    display: none;
+  }
+  .sidebar-footer {
+    display: none;
+  }
+  .sidebar {
+    padding: 8px 8px 22px;
+  }
+}
+
+.sidebar {
+  border-right: 1px solid var(--color-neutral-800);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 8px 14px 22px;
+}
+
+/* The native title bar is gone, so the app has to supply its own drag
+   surfaces or the window cannot be moved. The brand row is one; the strip
+   above the main pane is the other. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 6px;
+  height: var(--titlebar-height);
+  box-sizing: border-box;
+  -webkit-app-region: drag;
+}
+
+/* macOS puts its traffic lights where the brand mark wants to be. */
+.platform-mac .brand {
+  padding-left: 78px;
+}
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-accent);
+  display: grid;
+  place-items: center;
+  color: var(--color-accent);
+  font-size: 13px;
+  flex: none;
+}
+.brand-name {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.brand-version {
+  margin-left: auto;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-600);
+}
+
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 8px;
+  border-radius: var(--radius-md);
+  border: 0;
+  cursor: pointer;
+  color: var(--color-neutral-400);
+  background: transparent;
+}
+.nav-item:hover:not(:disabled) {
+  background: var(--color-neutral-900);
+}
+.nav-item[aria-current='page'] {
+  background: var(--color-neutral-900);
+  color: var(--color-text);
+}
+.nav-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.nav-item i {
+  font-size: 16px;
+  opacity: 0.9;
+  flex: none;
+}
+.nav-badge {
+  margin-left: auto;
+  font-size: 12px;
+  font-feature-settings: 'tnum' 1;
+  color: var(--color-neutral-600);
+}
+.nav-item[aria-current='page'] .nav-badge {
+  color: var(--color-accent-300);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--color-neutral-800);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.sidebar-kicker {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-600);
+}
+.sidebar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-neutral-400);
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--color-neutral-600);
+}
+.dot-live {
+  background: var(--color-accent);
+}
+.dot-warn {
+  background: var(--color-warn);
+}
+.dot-block {
+  background: var(--color-block);
+}
+
+/* ────────────────────────────────────────────────────────── content ── */
+
+.main {
+  min-width: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* The comp's ambient accent bloom, top right.
+     Chromium paints the window-control overlay itself, as a flat rectangle in
+     one colour it cannot read from CSS — so wherever those buttons sit, the
+     page has to be exactly that colour or the rectangle shows as a seam. The
+     top linear layer holds the first 140px at a solid --color-bg and fades the
+     bloom in underneath, which keeps the glow and makes the buttons vanish
+     into the ground at any window size. */
+  background:
+    linear-gradient(to bottom, var(--color-bg) 0, var(--color-bg) 56px, transparent 150px),
+    radial-gradient(
+      1100px 700px at 88% -140px,
+      color-mix(in srgb, var(--color-accent-900) 60%, transparent),
+      transparent 62%
+    ),
+    var(--color-bg);
+}
+
+/* The strip the window controls sit over. A flex item rather than an overlay,
+   so page content scrolls beneath it and never under the close button. */
+.titlebar {
+  flex: none;
+  height: var(--titlebar-height);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 clamp(24px, 4vw, 44px);
+  -webkit-app-region: drag;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-600);
+  user-select: none;
+}
+.titlebar > * {
+  -webkit-app-region: no-drag;
+}
+.titlebar .titlebar-crumb {
+  -webkit-app-region: drag;
+}
+
+.main-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Buttons and links must opt out of the drag region or they stop being
+   clickable — the whole strip is a window handle otherwise. */
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-app-region: no-drag;
+}
+
+.page {
+  padding: 28px clamp(24px, 4vw, 44px) 72px;
+  max-width: 1100px;
+}
+
+.page-title {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: -0.012em;
+  margin: 0 0 6px;
+}
+.page-lede {
+  margin: 0 0 26px;
+  font-size: 14px;
+  color: var(--color-neutral-500);
+  max-width: 70ch;
+}
+.section-title {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 15px;
+  line-height: 24px;
+  margin: 0 0 10px;
+}
+
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 30px;
+  align-items: start;
+}
+
+.stat {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 30px;
+  line-height: 40px;
+  margin: 4px 0 0;
+  font-feature-settings: 'tnum' 1;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-neutral-900);
+  font-size: 13px;
+}
+.row-spacer {
+  margin-left: auto;
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+}
+.tnum {
+  font-feature-settings: 'tnum' 1;
+}
+.muted {
+  color: var(--color-neutral-600);
+}
+.warn {
+  color: var(--color-warn);
+}
+.block {
+  color: var(--color-block);
+}
+.ok {
+  color: var(--color-accent-300);
+}
+
+.snippet {
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  padding: 16px 18px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 22px;
+  color: color-mix(in srgb, var(--color-text) 80%, transparent);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.empty {
+  display: grid;
+  place-items: center;
+  padding: 60px 24px;
+  text-align: center;
+}
+.empty p {
+  max-width: 46ch;
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 24px;
+  color: var(--color-neutral-500);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  font-size: 13.5px;
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
