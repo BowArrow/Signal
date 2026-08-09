@@ -1,0 +1,37 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/r/**",
+        "function": "redirect"
+      },
+      {
+        "source": "/webhooks/stripe",
+        "function": "stripeWebhook"
+      },
+      {
+        "source": "/pull",
+        "function": "pull"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/r/**",
+        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs20"
+    }
+  ]
+}
