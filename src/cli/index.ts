@@ -36,9 +36,16 @@ db.command('seed')
     const app = createApp();
     const result = seed(app.db, app.config, app.logger);
     console.log(
-      `${green('✓')} products ${result.productsInserted} new, ${result.productsUpdated} updated  ·  ` +
-        `sources ${result.sourcesInserted} new, ${result.sourcesUpdated} updated`,
+      `${green('✓')} products ${result.productsInserted} new, ${result.productsUpdated} updated` +
+        (result.productsRetired ? yellow(`, ${result.productsRetired} retired`) : '') +
+        `  ·  sources ${result.sourcesInserted} new, ${result.sourcesUpdated} updated` +
+        (result.sourcesRetired ? yellow(`, ${result.sourcesRetired} retired`) : ''),
     );
+    if (result.productsRetired || result.sourcesRetired) {
+      console.log(
+        dim('  Retired means disabled, not deleted — existing history still references it.'),
+      );
+    }
     console.log(
       dim(
         '  Communities and their rules are not seeded from config. Signal meets a\n' +
@@ -179,12 +186,16 @@ program
     console.log(heading('Products'));
     console.log(
       table(prodRows, [
-        { header: 'key', value: (p) => magenta(p.key) },
-        { header: 'name', value: (p) => p.name },
+        { header: 'key', value: (p) => (p.enabled ? magenta(p.key) : dim(p.key)) },
+        { header: 'name', value: (p) => (p.enabled ? p.name : dim(`${p.name}  retired`)) },
         { header: 'price', align: 'right', value: (p) => (p.priceCents ? `$${(p.priceCents / 100).toFixed(0)}` : dim('—')) },
         {
           header: 'utm base',
-          value: (p) => (p.utmBase.includes('example.invalid') ? yellow(`${p.utmBase}  ← placeholder`) : dim(p.utmBase)),
+          value: (p) =>
+            // A placeholder only matters for a product still in play.
+            p.enabled && p.utmBase.includes('example.invalid')
+              ? yellow(`${p.utmBase}  ← placeholder`)
+              : dim(p.utmBase),
           max: 60,
         },
       ]),

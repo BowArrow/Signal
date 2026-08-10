@@ -8,8 +8,10 @@ import type { Logger } from '../lib/logger.js';
 export interface SeedResult {
   readonly productsInserted: number;
   readonly productsUpdated: number;
+  readonly productsRetired: number;
   readonly sourcesInserted: number;
   readonly sourcesUpdated: number;
+  readonly sourcesRetired: number;
 }
 
 /**
@@ -24,7 +26,14 @@ export interface SeedResult {
  * wrong and the fastest way to get banned from it.
  */
 export function seed(db: Db, config: SignalConfig, logger?: Logger): SeedResult {
-  const result = { productsInserted: 0, productsUpdated: 0, sourcesInserted: 0, sourcesUpdated: 0 };
+  const result = {
+    productsInserted: 0,
+    productsUpdated: 0,
+    productsRetired: 0,
+    sourcesInserted: 0,
+    sourcesUpdated: 0,
+    sourcesRetired: 0,
+  };
 
   db.transaction((tx) => {
     for (const p of config.products) {
@@ -76,6 +85,38 @@ export function seed(db: Db, config: SignalConfig, logger?: Logger): SeedResult 
         tx.insert(sources).values({ id: newId(), ...row }).run();
         result.sourcesInserted += 1;
       }
+    }
+
+    // Anything removed from config gets disabled, not deleted.
+    //
+    // Deleting would cascade away the opportunities, drafts and publications
+    // that reference it, taking real history with it. Disabling stops a
+    // retired product being offered to the classifier and stops a retired
+    // source being polled, while leaving what already happened intact.
+    const configuredProducts = new Set(config.products.map((p) => p.key));
+    for (const row of tx.select().from(products).all()) {
+      if (configuredProducts.has(row.key) || !row.enabled) continue;
+      tx.update(products)
+        .set({ enabled: false, updatedAt: Date.now() })
+        .where(eq(products.id, row.id))
+        .run();
+      result.productsRetired += 1;
+      logger?.warn('product retired — no longer in signal.config.ts', { key: row.key });
+    }
+
+    const configuredSources = new Set(config.sources.map((s) => `${s.kind}:${s.identifier}`));
+    for (const row of tx.select().from(sources).all()) {
+      if (configuredSources.has(`${row.kind}:${row.identifier}`) || !row.enabled) continue;
+      // A source Signal proposed itself is not config drift — leave it alone.
+      if (row.discovered) continue;
+      tx.update(sources)
+        .set({ enabled: false, updatedAt: Date.now() })
+        .where(eq(sources.id, row.id))
+        .run();
+      result.sourcesRetired += 1;
+      logger?.warn('source retired — no longer in signal.config.ts', {
+        source: row.displayName,
+      });
     }
   });
 

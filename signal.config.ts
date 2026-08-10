@@ -55,10 +55,9 @@ const config: SignalConfig = {
         'Works with the network interface down',
         'Sits on top of an existing Ollama install rather than bundling its own runtime',
       ],
-      // TODO(casey): replace with the real Lemonade domain before Phase 3.
       // Tracked links are built from this, so a wrong value breaks attribution
       // silently rather than loudly.
-      utmBase: 'https://example.invalid/lemonade',
+      utmBase: 'https://siplemona.de',
       links: {},
     },
     {
@@ -74,22 +73,7 @@ const config: SignalConfig = {
         '3D Gaussian splat rendering',
         'Audio-reactive parameter drives',
       ],
-      // TODO(casey): real domain.
-      utmBase: 'https://example.invalid/cinegen',
-      links: {},
-    },
-    {
-      key: 'sunshore',
-      name: 'Sunshore',
-      positioning:
-        'AI agents for business automation. Self-hostable, aimed at ops workflows that ' +
-        'small teams currently do by hand.',
-      targetBuyer: 'SMB operations teams.',
-      priceCents: 0,
-      currency: 'USD',
-      proofPoints: ['Self-hosted deployment supported'],
-      // TODO(casey): real domain.
-      utmBase: 'https://example.invalid/sunshore',
+      utmBase: 'https://cinegenaimedia.com',
       links: {},
     },
   ],
@@ -134,7 +118,7 @@ const config: SignalConfig = {
   http: {
     // Reddit wants a descriptive, unique agent. A generic or spoofed one gets
     // throttled hard.
-    userAgent: 'windows:com.aionx.signal:v0.1.0 (by /u/CHANGE_ME)',
+    userAgent: 'windows:com.aionx.signal:v0.1.0 (by /u/OutdatedMemeKing)',
     minRequestIntervalMs: 1200,
     requestTimeoutMs: 15_000,
     maxRetries: 3,
