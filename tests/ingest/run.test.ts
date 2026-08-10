@@ -28,6 +28,7 @@ function oneItem(externalId: string, postedAt: number | null = null): PollResult
       {
         externalId,
         url: `https://example.test/${externalId}`,
+        community: { platform: 'hn', name: 'news', displayName: 'Hacker News' },
         author: 'someone',
         title: `Item ${externalId}`,
         body: 'body',

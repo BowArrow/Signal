@@ -12,6 +12,7 @@ function item(overrides: Partial<NormalizedItem> = {}): NormalizedItem {
   return {
     externalId: 't3_abc',
     url: 'https://www.reddit.com/r/LocalLLaMA/comments/abc/',
+    community: { platform: 'reddit', name: 'LocalLLaMA', displayName: 'r/LocalLLaMA' },
     author: 'someone',
     title: 'VRAM sizing',
     body: 'what is the arithmetic',
