@@ -4,6 +4,7 @@ import { opportunities, type Opportunity, type Source } from '../db/schema.js';
 import { newId } from '../lib/id.js';
 import type { Clock } from '../lib/clock.js';
 import { systemClock } from '../lib/clock.js';
+import { upsertCommunity } from '../communities/registry.js';
 import type { NormalizedItem } from './types.js';
 
 export interface PersistOutcome {
@@ -12,6 +13,8 @@ export interface PersistOutcome {
   /** Seen before and nothing volatile changed. */
   readonly unchanged: number;
   readonly ids: string[];
+  /** Communities met for the first time in this batch. */
+  readonly newCommunities: string[];
 }
 
 /**
@@ -36,7 +39,13 @@ export function persistItems(
   items: readonly NormalizedItem[],
   clock: Clock = systemClock,
 ): PersistOutcome {
-  const outcome = { inserted: 0, updated: 0, unchanged: 0, ids: [] as string[] };
+  const outcome = {
+    inserted: 0,
+    updated: 0,
+    unchanged: 0,
+    ids: [] as string[],
+    newCommunities: [] as string[],
+  };
   const now = clock.now();
 
   // Two pollers can hand us the same external id in one batch (an HN query
@@ -48,7 +57,25 @@ export function persistItems(
   }
 
   db.transaction((tx) => {
+    // Communities are resolved once per batch. A site-wide search routinely
+    // returns fifty threads from twenty subreddits, and meeting one Signal
+    // has never seen is the normal case for discovery, not an error.
+    const communityIds = new Map<string, string>();
+    const resolveCommunity = (item: NormalizedItem): string | null => {
+      if (!item.community) return null;
+      const key = `${item.community.platform}:${item.community.name.toLowerCase()}`;
+      const cached = communityIds.get(key);
+      if (cached) return cached;
+
+      const community = upsertCommunity(tx as unknown as Db, item.community, clock);
+      if (community.firstSeenAt === now) outcome.newCommunities.push(community.displayName);
+      communityIds.set(key, community.id);
+      return community.id;
+    };
+
     for (const item of deduped.values()) {
+      const communityId = resolveCommunity(item);
+
       const existing: Opportunity | undefined = tx
         .select()
         .from(opportunities)
@@ -61,6 +88,7 @@ export function persistItems(
           .values({
             id,
             sourceId: source.id,
+            communityId,
             externalId: item.externalId,
             url: item.url,
             author: item.author,

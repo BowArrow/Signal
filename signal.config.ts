@@ -103,6 +103,15 @@ const config: SignalConfig = {
     { kind: 'reddit', identifier: 'selfhosted', displayName: 'r/selfhosted', pollIntervalSeconds: 1800, enabled: true },
     { kind: 'reddit', identifier: 'generative', displayName: 'r/generative', pollIntervalSeconds: 3600, enabled: true },
     { kind: 'reddit', identifier: 'SideProject', displayName: 'r/SideProject', pollIntervalSeconds: 21600, enabled: true },
+    // Discovery. These search all of Reddit rather than one subreddit, so they
+    // turn up threads in communities that are not listed above — which is the
+    // point. Anything they find is held at rules_unknown until that
+    // community's rules have been fetched and read.
+    { kind: 'reddit_search', identifier: '"local llm" self:yes', displayName: 'Discover · local llm', pollIntervalSeconds: 1800, enabled: true },
+    { kind: 'reddit_search', identifier: 'ollama help self:yes', displayName: 'Discover · ollama help', pollIntervalSeconds: 1800, enabled: true },
+    { kind: 'reddit_search', identifier: '"offline ai" OR "runs offline" self:yes', displayName: 'Discover · offline ai', pollIntervalSeconds: 3600, enabled: true },
+    { kind: 'reddit_search', identifier: '"blocks chatgpt" OR "cant use chatgpt at work" self:yes', displayName: 'Discover · blocked at work', pollIntervalSeconds: 3600, enabled: true },
+
     // Read-only via the Algolia search API. There is no publish path for HN
     // and there will not be one.
     //

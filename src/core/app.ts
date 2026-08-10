@@ -6,9 +6,16 @@ import { createLogger, type Logger } from './lib/logger.js';
 import { HttpClient } from './lib/http.js';
 import { systemClock, type Clock } from './lib/clock.js';
 import { RedditClient, RedditPoller } from './ingest/reddit.js';
+import { RedditSearchPoller } from './ingest/reddit-search.js';
 import { HackerNewsPoller } from './ingest/hackernews.js';
 import { RssPoller } from './ingest/rss.js';
 import type { Poller } from './ingest/types.js';
+import { AnthropicClient, type LlmClient } from './llm/client.js';
+import {
+  HackerNewsRulesFetcher,
+  RedditRulesFetcher,
+  type RulesFetcher,
+} from './rules/fetch.js';
 
 /**
  * One place that builds the whole engine from config. The CLI and the Electron
@@ -24,6 +31,8 @@ export interface App {
   readonly http: HttpClient;
   readonly clock: Clock;
   readonly pollers: Poller[];
+  readonly llm: LlmClient;
+  readonly rulesFetchers: Map<string, RulesFetcher>;
   readonly capabilities: Capability[];
   close(): void;
 }
@@ -72,11 +81,23 @@ export function createApp(options: CreateAppOptions = {}): App {
 
   const pollers: Poller[] = [
     new RedditPoller(redditClient, logger.child({ mod: 'reddit' })),
+    new RedditSearchPoller(redditClient, logger.child({ mod: 'discover' })),
     new HackerNewsPoller(http, logger.child({ mod: 'hn' }), {
       maxAgeHours: config.scoring.maxThreadAgeHours,
     }),
     new RssPoller(http, logger.child({ mod: 'rss' })),
   ];
+
+  const llm = new AnthropicClient(
+    env.ANTHROPIC_API_KEY,
+    logger.child({ mod: 'llm' }),
+    env.SIGNAL_OFFLINE === '1',
+  );
+
+  const rulesFetchers = new Map<string, RulesFetcher>([
+    ['reddit', new RedditRulesFetcher(redditClient)],
+    ['hn', new HackerNewsRulesFetcher()],
+  ]);
 
   return {
     config,
@@ -87,6 +108,8 @@ export function createApp(options: CreateAppOptions = {}): App {
     http,
     clock,
     pollers,
+    llm,
+    rulesFetchers,
     capabilities: capabilities(env),
     close: () => dbHandle.close(),
   };

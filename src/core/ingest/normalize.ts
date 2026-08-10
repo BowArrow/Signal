@@ -183,6 +183,11 @@ export function normalizeRedditPost(child: RedditListingChild): NormalizedItem |
     url: d.permalink
       ? `https://www.reddit.com${d.permalink}`
       : (d.url ?? `https://www.reddit.com/comments/${d.id ?? ''}`),
+    // Read from the payload rather than assumed from the source, so a
+    // site-wide search attributes each thread to the subreddit it came from.
+    community: d.subreddit
+      ? { platform: 'reddit', name: d.subreddit, displayName: `r/${d.subreddit}` }
+      : null,
     author: d.author ?? null,
     title: title.text,
     body: body.text,
@@ -242,6 +247,8 @@ export function normalizeHnHit(hit: AlgoliaHit): NormalizedItem | { skip: string
   return {
     externalId: hit.objectID,
     url: `https://news.ycombinator.com/item?id=${hit.objectID}`,
+    // HN is one community with one set of norms.
+    community: { platform: 'hn', name: 'news', displayName: 'Hacker News' },
     author: hit.author ?? null,
     title: displayTitle,
     body: body.text,
@@ -300,6 +307,8 @@ export function normalizeRssEntry(entry: RssEntry, feedUrl: string): NormalizedI
   return {
     externalId: guid,
     url: link ?? feedUrl,
+    // A feed is a publication, not a community with rules to obey.
+    community: null,
     author: pickString(entry.author) ?? entry['dc:creator'] ?? null,
     title: title.text,
     body: body.text,

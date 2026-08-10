@@ -90,7 +90,8 @@ export class RedditClient {
     return this.token.value;
   }
 
-  async listing(path: string, params: Record<string, string> = {}): Promise<Listing> {
+  /** Any authenticated GET against the OAuth host. */
+  async get<T>(path: string, params: Record<string, string> = {}): Promise<T> {
     const token = await this.accessToken();
     const url = new URL(path, OAUTH_HOST);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
@@ -98,10 +99,14 @@ export class RedditClient {
     // otherwise put &amp;#39; in every apostrophe.
     url.searchParams.set('raw_json', '1');
 
-    return this.http.json<Listing>(url.toString(), {
+    return this.http.json<T>(url.toString(), {
       official: true,
       headers: { authorization: `Bearer ${token}` },
     });
+  }
+
+  listing(path: string, params: Record<string, string> = {}): Promise<Listing> {
+    return this.get<Listing>(path, params);
   }
 }
 

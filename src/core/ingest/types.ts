@@ -1,4 +1,15 @@
-import type { Source } from '../db/schema.js';
+import type { Source, SourceKindValue } from '../db/schema.js';
+
+/**
+ * Where a reply would land. Distinct from the source that found the item: one
+ * site-wide search surfaces threads from dozens of communities, and it is the
+ * community whose rules decide whether a draft may exist at all.
+ */
+export interface ItemCommunity {
+  readonly platform: SourceKindValue;
+  readonly name: string;
+  readonly displayName?: string;
+}
 
 /**
  * What every poller produces, whatever platform it came from. Anything
@@ -8,6 +19,8 @@ export interface NormalizedItem {
   /** Platform's own id. Unique within a source, and the dedup key. */
   readonly externalId: string;
   readonly url: string;
+  /** Null when the platform has no community concept, e.g. a single RSS feed. */
+  readonly community: ItemCommunity | null;
   readonly author: string | null;
   readonly title: string;
   readonly body: string;
