@@ -13,9 +13,30 @@ CREATE TABLE `clicks` (
 CREATE INDEX `clicks_link_idx` ON `clicks` (`link_id`);--> statement-breakpoint
 CREATE INDEX `clicks_cookie_idx` ON `clicks` (`cookie_id`);--> statement-breakpoint
 CREATE INDEX `clicks_clicked_at_idx` ON `clicks` (`clicked_at`);--> statement-breakpoint
+CREATE TABLE `communities` (
+	`id` text PRIMARY KEY NOT NULL,
+	`platform` text NOT NULL,
+	`name` text NOT NULL,
+	`display_name` text NOT NULL,
+	`url` text,
+	`description` text,
+	`subscribers` integer,
+	`monitored` integer DEFAULT false NOT NULL,
+	`first_seen_at` integer DEFAULT (unixepoch() * 1000) NOT NULL,
+	`blocked_at` integer,
+	`blocked_reason` text,
+	`created_at` integer DEFAULT (unixepoch() * 1000) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch() * 1000) NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `communities_platform_name_idx` ON `communities` (`platform`,`name`);--> statement-breakpoint
 CREATE TABLE `community_rules` (
 	`id` text PRIMARY KEY NOT NULL,
-	`source_id` text NOT NULL,
+	`community_id` text NOT NULL,
+	`raw_rules` text,
+	`raw_sidebar` text,
+	`source_url` text,
+	`fetched_at` integer,
 	`self_promo` text NOT NULL,
 	`self_promo_ratio_max_pct` real,
 	`flair_required` integer DEFAULT false NOT NULL,
@@ -23,15 +44,17 @@ CREATE TABLE `community_rules` (
 	`min_account_age_days` integer,
 	`min_karma` integer,
 	`notes` text,
-	`source_url` text,
+	`evidence` text,
+	`interpreted_by` text,
+	`confidence` real,
 	`verified` integer DEFAULT false NOT NULL,
 	`last_reviewed_at` integer,
 	`created_at` integer DEFAULT (unixepoch() * 1000) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch() * 1000) NOT NULL,
-	FOREIGN KEY (`source_id`) REFERENCES `sources`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`community_id`) REFERENCES `communities`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `community_rules_source_idx` ON `community_rules` (`source_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `community_rules_community_idx` ON `community_rules` (`community_id`);--> statement-breakpoint
 CREATE TABLE `content_calendar` (
 	`id` text PRIMARY KEY NOT NULL,
 	`channel` text NOT NULL,
@@ -143,6 +166,7 @@ CREATE INDEX `metrics_captured_at_idx` ON `metrics` (`captured_at`);--> statemen
 CREATE TABLE `opportunities` (
 	`id` text PRIMARY KEY NOT NULL,
 	`source_id` text NOT NULL,
+	`community_id` text,
 	`external_id` text NOT NULL,
 	`url` text NOT NULL,
 	`author` text,
@@ -167,6 +191,7 @@ CREATE TABLE `opportunities` (
 	`created_at` integer DEFAULT (unixepoch() * 1000) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch() * 1000) NOT NULL,
 	FOREIGN KEY (`source_id`) REFERENCES `sources`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`community_id`) REFERENCES `communities`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`matched_product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
@@ -174,6 +199,7 @@ CREATE UNIQUE INDEX `opportunities_source_external_idx` ON `opportunities` (`sou
 CREATE INDEX `opportunities_status_idx` ON `opportunities` (`status`);--> statement-breakpoint
 CREATE INDEX `opportunities_discovered_idx` ON `opportunities` (`discovered_at`);--> statement-breakpoint
 CREATE INDEX `opportunities_score_total_idx` ON `opportunities` (`score_total`);--> statement-breakpoint
+CREATE INDEX `opportunities_community_idx` ON `opportunities` (`community_id`);--> statement-breakpoint
 CREATE TABLE `products` (
 	`id` text PRIMARY KEY NOT NULL,
 	`key` text NOT NULL,
@@ -195,6 +221,7 @@ CREATE TABLE `publications` (
 	`id` text PRIMARY KEY NOT NULL,
 	`draft_id` text NOT NULL,
 	`source_id` text NOT NULL,
+	`community_id` text,
 	`platform` text NOT NULL,
 	`method` text NOT NULL,
 	`external_post_id` text,
@@ -205,10 +232,12 @@ CREATE TABLE `publications` (
 	`promotional` integer NOT NULL,
 	`created_at` integer DEFAULT (unixepoch() * 1000) NOT NULL,
 	FOREIGN KEY (`draft_id`) REFERENCES `drafts`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`source_id`) REFERENCES `sources`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`source_id`) REFERENCES `sources`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`community_id`) REFERENCES `communities`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE INDEX `publications_source_idx` ON `publications` (`source_id`);--> statement-breakpoint
+CREATE INDEX `publications_community_idx` ON `publications` (`community_id`);--> statement-breakpoint
 CREATE INDEX `publications_published_at_idx` ON `publications` (`published_at`);--> statement-breakpoint
 CREATE INDEX `publications_platform_idx` ON `publications` (`platform`);--> statement-breakpoint
 CREATE TABLE `settings` (
@@ -224,6 +253,8 @@ CREATE TABLE `sources` (
 	`display_name` text NOT NULL,
 	`poll_interval_seconds` integer NOT NULL,
 	`enabled` integer DEFAULT true NOT NULL,
+	`discovered` integer DEFAULT false NOT NULL,
+	`discovered_via` text,
 	`last_polled_at` integer,
 	`last_poll_error` text,
 	`created_at` integer DEFAULT (unixepoch() * 1000) NOT NULL,

@@ -57,7 +57,7 @@ export const publishLimitsSchema = z
   })
   .strict();
 
-export const sourceKindSchema = z.enum(['reddit', 'hn', 'rss', 'discord', 'x']);
+export const sourceKindSchema = z.enum(['reddit', 'reddit_search', 'hn', 'rss', 'discord', 'x']);
 export type SourceKind = z.infer<typeof sourceKindSchema>;
 
 export const sourceConfigSchema = z

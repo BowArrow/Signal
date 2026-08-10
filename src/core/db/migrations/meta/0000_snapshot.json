@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4a8049c9-0018-4bd3-909b-d49dfa869fcc",
+  "id": "d6d99768-7518-4abe-8280-4f87aaef2d56",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "clicks": {
@@ -107,6 +107,120 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "communities": {
+      "name": "communities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "platform": {
+          "name": "platform",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "subscribers": {
+          "name": "subscribers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "monitored": {
+          "name": "monitored",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
+        },
+        "blocked_at": {
+          "name": "blocked_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "blocked_reason": {
+          "name": "blocked_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
+        }
+      },
+      "indexes": {
+        "communities_platform_name_idx": {
+          "name": "communities_platform_name_idx",
+          "columns": [
+            "platform",
+            "name"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "community_rules": {
       "name": "community_rules",
       "columns": {
@@ -117,11 +231,39 @@
           "notNull": true,
           "autoincrement": false
         },
-        "source_id": {
-          "name": "source_id",
+        "community_id": {
+          "name": "community_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "raw_rules": {
+          "name": "raw_rules",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "raw_sidebar": {
+          "name": "raw_sidebar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_url": {
+          "name": "source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "self_promo": {
@@ -174,9 +316,23 @@
           "notNull": false,
           "autoincrement": false
         },
-        "source_url": {
-          "name": "source_url",
+        "evidence": {
+          "name": "evidence",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "interpreted_by": {
+          "name": "interpreted_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "real",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -214,21 +370,21 @@
         }
       },
       "indexes": {
-        "community_rules_source_idx": {
-          "name": "community_rules_source_idx",
+        "community_rules_community_idx": {
+          "name": "community_rules_community_idx",
           "columns": [
-            "source_id"
+            "community_id"
           ],
           "isUnique": true
         }
       },
       "foreignKeys": {
-        "community_rules_source_id_sources_id_fk": {
-          "name": "community_rules_source_id_sources_id_fk",
+        "community_rules_community_id_communities_id_fk": {
+          "name": "community_rules_community_id_communities_id_fk",
           "tableFrom": "community_rules",
-          "tableTo": "sources",
+          "tableTo": "communities",
           "columnsFrom": [
-            "source_id"
+            "community_id"
           ],
           "columnsTo": [
             "id"
@@ -1016,6 +1172,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "community_id": {
+          "name": "community_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "external_id": {
           "name": "external_id",
           "type": "text",
@@ -1212,6 +1375,13 @@
             "score_total"
           ],
           "isUnique": false
+        },
+        "opportunities_community_idx": {
+          "name": "opportunities_community_idx",
+          "columns": [
+            "community_id"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -1226,6 +1396,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "opportunities_community_id_communities_id_fk": {
+          "name": "opportunities_community_id_communities_id_fk",
+          "tableFrom": "opportunities",
+          "tableTo": "communities",
+          "columnsFrom": [
+            "community_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
         "opportunities_matched_product_id_products_id_fk": {
@@ -1382,6 +1565,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "community_id": {
+          "name": "community_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "platform": {
           "name": "platform",
           "type": "text",
@@ -1455,6 +1645,13 @@
           ],
           "isUnique": false
         },
+        "publications_community_idx": {
+          "name": "publications_community_idx",
+          "columns": [
+            "community_id"
+          ],
+          "isUnique": false
+        },
         "publications_published_at_idx": {
           "name": "publications_published_at_idx",
           "columns": [
@@ -1495,6 +1692,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "publications_community_id_communities_id_fk": {
+          "name": "publications_community_id_communities_id_fk",
+          "tableFrom": "publications",
+          "tableTo": "communities",
+          "columnsFrom": [
+            "community_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -1579,6 +1789,21 @@
           "notNull": true,
           "autoincrement": false,
           "default": true
+        },
+        "discovered": {
+          "name": "discovered",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "discovered_via": {
+          "name": "discovered_via",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "last_polled_at": {
           "name": "last_polled_at",

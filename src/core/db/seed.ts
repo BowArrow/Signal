@@ -17,9 +17,11 @@ export interface SeedResult {
  * often as you like. Config is the source of truth for products and sources,
  * so an edit there plus a re-seed is the whole workflow for adding a subreddit.
  *
- * Deliberately does not seed community_rules. Those need researching against
- * each community's actual sidebar, and inventing them is the fastest way to
- * get banned. Phase 2 adds them with a `verified` flag and a source URL.
+ * Deliberately does not seed communities or their rules. A community is met
+ * when something is ingested from it, and its rules are then fetched from the
+ * platform's own API — see src/core/rules. Hardcoding a self-promo policy here
+ * would be inventing a fact about someone else's community, which is both
+ * wrong and the fastest way to get banned from it.
  */
 export function seed(db: Db, config: SignalConfig, logger?: Logger): SeedResult {
   const result = { productsInserted: 0, productsUpdated: 0, sourcesInserted: 0, sourcesUpdated: 0 };

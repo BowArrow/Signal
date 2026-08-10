@@ -55,7 +55,20 @@ export const products = sqliteTable(
 
 // ────────────────────────────────────────────────────────── sources ──
 
-export const SOURCE_KINDS = ['reddit', 'hn', 'rss', 'discord', 'x'] as const;
+export const SOURCE_KINDS = [
+  /** One subreddit's /new listing. */
+  'reddit',
+  /**
+   * A site-wide Reddit search. This is the discovery engine: it surfaces
+   * threads from communities Signal has never heard of, which is how new
+   * places to be useful get found instead of hand-listed.
+   */
+  'reddit_search',
+  'hn',
+  'rss',
+  'discord',
+  'x',
+] as const;
 export type SourceKindValue = (typeof SOURCE_KINDS)[number];
 
 export const sources = sqliteTable(
@@ -63,17 +76,62 @@ export const sources = sqliteTable(
   {
     id: id(),
     kind: text('kind').$type<SourceKindValue>().notNull(),
-    /** Subreddit name without r/, HN query, or feed URL. */
+    /**
+     * Subreddit name without r/, a search query, or a feed URL. What this
+     * means depends on the kind — see the poller.
+     */
     identifier: text('identifier').notNull(),
     displayName: text('display_name').notNull(),
     pollIntervalSeconds: integer('poll_interval_seconds').notNull(),
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+    /**
+     * True when Signal proposed this source itself rather than reading it from
+     * signal.config.ts. Discovered sources arrive disabled: finding a promising
+     * community is a suggestion, not a decision.
+     */
+    discovered: integer('discovered', { mode: 'boolean' }).notNull().default(false),
+    /** Which source surfaced it, for auditing a discovery chain. */
+    discoveredVia: text('discovered_via'),
     lastPolledAt: integer('last_polled_at'),
     lastPollError: text('last_poll_error'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [uniqueIndex('sources_kind_identifier_idx').on(t.kind, t.identifier)],
+);
+
+// ────────────────────────────────────────────────────── communities ──
+
+/**
+ * A place with its own rules: a subreddit, a forum, Hacker News.
+ *
+ * Deliberately separate from `sources`. A source is how Signal looks — a
+ * subreddit listing, a site-wide search, an RSS feed. A community is where a
+ * reply would actually land. One search source surfaces threads from dozens of
+ * communities, and it is the community whose rules decide whether a draft is
+ * allowed to exist.
+ */
+export const communities = sqliteTable(
+  'communities',
+  {
+    id: id(),
+    platform: text('platform').$type<SourceKindValue>().notNull(),
+    /** Canonical name on the platform: "LocalLLaMA", or "news" for HN. */
+    name: text('name').notNull(),
+    displayName: text('display_name').notNull(),
+    url: text('url'),
+    description: text('description'),
+    subscribers: integer('subscribers'),
+    /** Whether Signal polls this community directly, vs only meeting it in search. */
+    monitored: integer('monitored', { mode: 'boolean' }).notNull().default(false),
+    firstSeenAt: integer('first_seen_at').notNull().default(now),
+    /** Set when a human has explicitly said no. Nothing is drafted here again. */
+    blockedAt: integer('blocked_at'),
+    blockedReason: text('blocked_reason'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex('communities_platform_name_idx').on(t.platform, t.name)],
 );
 
 // ────────────────────────────────────────────────── community rules ──
@@ -94,13 +152,34 @@ export const SELF_PROMO_POLICIES = [
 ] as const;
 export type SelfPromoPolicy = (typeof SELF_PROMO_POLICIES)[number];
 
+/** One verbatim rule as the platform published it. Never paraphrased. */
+export interface RawRule {
+  readonly shortName: string;
+  readonly description: string;
+  readonly kind?: string;
+}
+
 export const communityRules = sqliteTable(
   'community_rules',
   {
     id: id(),
-    sourceId: text('source_id')
+    communityId: text('community_id')
       .notNull()
-      .references(() => sources.id, { onDelete: 'cascade' }),
+      .references(() => communities.id, { onDelete: 'cascade' }),
+
+    // — What the platform actually said —
+    /**
+     * The rules exactly as fetched, before anyone interpreted them. This is
+     * the evidence. Every structured field below is a reading of this, and
+     * when the two disagree this wins.
+     */
+    rawRules: text('raw_rules', { mode: 'json' }).$type<RawRule[]>(),
+    rawSidebar: text('raw_sidebar'),
+    /** Where the raw text came from, so a claim can always be traced. */
+    sourceUrl: text('source_url'),
+    fetchedAt: integer('fetched_at'),
+
+    // — The reading of it —
     selfPromo: text('self_promo').$type<SelfPromoPolicy>().notNull(),
     /** Community's own stated ratio cap as a percentage, when it states one. */
     selfPromoRatioMaxPct: real('self_promo_ratio_max_pct'),
@@ -109,19 +188,26 @@ export const communityRules = sqliteTable(
     minAccountAgeDays: integer('min_account_age_days'),
     minKarma: integer('min_karma'),
     notes: text('notes'),
-    /** Link to the sidebar or wiki page these values came from. */
-    sourceUrl: text('source_url'),
+    /** The rule text the interpretation leaned on, quoted. Shown at review. */
+    evidence: text('evidence', { mode: 'json' }).$type<string[]>(),
+    /** Which model and prompt produced the reading, or 'human'. */
+    interpretedBy: text('interpreted_by'),
+    /** The model's own confidence, 0..1. Low confidence is surfaced, not hidden. */
+    confidence: real('confidence'),
+
+    // — Whether a human has signed off —
     /**
-     * False means a human has not confirmed these values against the current
-     * sidebar. The dashboard shows unverified records differently and the
-     * digest nags about stale ones.
+     * False means nobody has checked this reading against the real sidebar.
+     * An unverified record is still enough to draft — refusing would make
+     * discovery useless — but the queue shows it and the digest nags.
+     * `selfPromo: 'forbidden'` is honoured either way.
      */
     verified: integer('verified', { mode: 'boolean' }).notNull().default(false),
     lastReviewedAt: integer('last_reviewed_at'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [uniqueIndex('community_rules_source_idx').on(t.sourceId)],
+  (t) => [uniqueIndex('community_rules_community_idx').on(t.communityId)],
 );
 
 // ──────────────────────────────────────────────────── opportunities ──
@@ -149,9 +235,16 @@ export const opportunities = sqliteTable(
   'opportunities',
   {
     id: id(),
+    /** Which poller found it. */
     sourceId: text('source_id')
       .notNull()
       .references(() => sources.id, { onDelete: 'cascade' }),
+    /**
+     * Where a reply would land. Not derivable from sourceId: a site-wide
+     * search surfaces threads from dozens of communities, and it is this one
+     * whose rules decide whether a draft may exist.
+     */
+    communityId: text('community_id').references(() => communities.id, { onDelete: 'set null' }),
     /** Platform's own id: a Reddit fullname, an HN object id, an RSS guid. */
     externalId: text('external_id').notNull(),
     url: text('url').notNull(),
@@ -196,6 +289,7 @@ export const opportunities = sqliteTable(
     index('opportunities_status_idx').on(t.status),
     index('opportunities_discovered_idx').on(t.discoveredAt),
     index('opportunities_score_total_idx').on(t.scoreTotal),
+    index('opportunities_community_idx').on(t.communityId),
   ],
 );
 
@@ -278,6 +372,12 @@ export const publications = sqliteTable(
     sourceId: text('source_id')
       .notNull()
       .references(() => sources.id, { onDelete: 'cascade' }),
+    /**
+     * Where it was actually posted. The cooldown and the self-promo ratio are
+     * both per-community, so this is the column those checks read — not
+     * sourceId, which only says how the thread was found.
+     */
+    communityId: text('community_id').references(() => communities.id, { onDelete: 'set null' }),
     platform: text('platform').$type<SourceKindValue>().notNull(),
     method: text('method').$type<PublishMethod>().notNull(),
     /** The comment id the platform gave back. Null for a manual paste. */
@@ -294,6 +394,7 @@ export const publications = sqliteTable(
   },
   (t) => [
     index('publications_source_idx').on(t.sourceId),
+    index('publications_community_idx').on(t.communityId),
     index('publications_published_at_idx').on(t.publishedAt),
     index('publications_platform_idx').on(t.platform),
   ],
@@ -499,6 +600,8 @@ export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
 export type Source = typeof sources.$inferSelect;
 export type NewSource = typeof sources.$inferInsert;
+export type Community = typeof communities.$inferSelect;
+export type NewCommunity = typeof communities.$inferInsert;
 export type CommunityRule = typeof communityRules.$inferSelect;
 export type NewCommunityRule = typeof communityRules.$inferInsert;
 export type Opportunity = typeof opportunities.$inferSelect;
