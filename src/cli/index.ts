@@ -7,6 +7,8 @@ import { opportunities, sources, products } from '../core/db/schema.js';
 import { runIngest } from '../core/ingest/run.js';
 import { createScheduler } from '../core/jobs/scheduler.js';
 import { queueStats } from '../core/jobs/queue.js';
+import { registerRulesCommands } from './commands/rules.js';
+import { registerPipelineCommands } from './commands/pipeline.js';
 import { bold, cyan, dim, green, heading, magenta, red, relativeTime, table, yellow } from './format.js';
 
 const program = new Command();
@@ -39,8 +41,9 @@ db.command('seed')
     );
     console.log(
       dim(
-        '  community_rules are deliberately not seeded. Rules get researched per\n' +
-          '  community in Phase 2; an invented self-promo policy is how you get banned.',
+        '  Communities and their rules are not seeded from config. Signal meets a\n' +
+          '  community when it ingests something from it, then fetches that\n' +
+          "  community's own published rules: pnpm signal rules fetch --all",
       ),
     );
     app.close();
@@ -223,6 +226,9 @@ program
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
   });
+
+registerRulesCommands(program);
+registerPipelineCommands(program);
 
 // ──────────────────────────────────────────────────────────────────────
 

@@ -10,19 +10,25 @@ const alias = {
 };
 
 /**
- * Drizzle migrations are .sql files the bundler has no reason to notice, but
- * the app cannot open its database without them. Copy them next to the main
- * bundle, where migrate.ts looks first.
+ * Two directories the bundler has no reason to notice, and the app cannot run
+ * without either: the Drizzle .sql migrations, and the .md prompt templates.
+ * Both are read from disk at runtime — prompts deliberately so, since voice.md
+ * is a file Casey edits by hand and Phase 4 appends to.
  */
-function copyMigrations(): Plugin {
+function copyRuntimeAssets(): Plugin {
+  const copy = (from: string, to: string): void => {
+    cpSync(
+      fileURLToPath(new URL(from, import.meta.url)),
+      fileURLToPath(new URL(to, import.meta.url)),
+      { recursive: true },
+    );
+  };
+
   return {
-    name: 'signal:copy-migrations',
+    name: 'signal:copy-runtime-assets',
     writeBundle() {
-      cpSync(
-        fileURLToPath(new URL('./src/core/db/migrations', import.meta.url)),
-        fileURLToPath(new URL('./out/main/migrations', import.meta.url)),
-        { recursive: true },
-      );
+      copy('./src/core/db/migrations', './out/main/migrations');
+      copy('./src/prompts', './out/main/prompts');
     },
   };
 }
@@ -31,7 +37,7 @@ export default defineConfig({
   main: {
     // better-sqlite3 is a native module: it has to stay external and be
     // loaded from node_modules at runtime, never bundled.
-    plugins: [externalizeDepsPlugin(), copyMigrations()],
+    plugins: [externalizeDepsPlugin(), copyRuntimeAssets()],
     resolve: { alias },
     build: {
       rollupOptions: {

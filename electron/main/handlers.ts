@@ -2,6 +2,7 @@ import { shell, type IpcMain } from 'electron';
 import { desc, eq, sql } from 'drizzle-orm';
 import type { App as SignalApp } from '../../src/core/app.js';
 import {
+  communities,
   communityRules,
   opportunities,
   products,
@@ -20,8 +21,14 @@ import { IPC, type IngestSummary, type OpportunityView, type SystemStatus } from
 export function registerHandlers(ipc: IpcMain, signal: SignalApp): void {
   ipc.handle(IPC.status, (): SystemStatus => {
     const sourceRows = signal.db.select().from(sources).all();
-    const ruleRows = signal.db.select({ sourceId: communityRules.sourceId }).from(communityRules).all();
-    const withRules = new Set(ruleRows.map((r) => r.sourceId));
+    // Rules belong to communities now, not sources. A source is "monitored"
+    // for rules purposes when the community it points at has a record.
+    const ruleRows = signal.db
+      .select({ name: communities.name, platform: communities.platform })
+      .from(communityRules)
+      .innerJoin(communities, eq(communityRules.communityId, communities.id))
+      .all();
+    const withRules = new Set(ruleRows.map((r) => `${r.platform}:${r.name}`));
 
     const counts = signal.db
       .select({ status: opportunities.status, n: sql<number>`count(*)` })
@@ -45,7 +52,10 @@ export function registerHandlers(ipc: IpcMain, signal: SignalApp): void {
         pollIntervalSeconds: s.pollIntervalSeconds,
         lastPolledAt: s.lastPolledAt,
         lastPollError: s.lastPollError,
-        hasRulesRecord: withRules.has(s.id),
+        // A search source spans many communities, so a single yes/no is
+        // meaningless for it — the Phase 3 UI shows those per community.
+        hasRulesRecord:
+          s.kind === 'reddit_search' || withRules.has(`${s.kind}:${s.identifier.toLowerCase()}`),
       })),
       products: signal.db
         .select()
