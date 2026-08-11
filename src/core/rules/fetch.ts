@@ -1,4 +1,5 @@
 import type { RedditClient } from '../ingest/reddit.js';
+import type { RedditScrapeClient } from '../ingest/reddit-scrape.js';
 import type { Community, RawRule } from '../db/schema.js';
 import { cleanText } from '../ingest/normalize.js';
 
@@ -90,6 +91,50 @@ export class RedditRulesFetcher implements RulesFetcher {
       sourceUrl: `https://www.reddit.com/r/${sub}/about/rules`,
       subscribers: typeof about?.subscribers === 'number' ? about.subscribers : null,
       description: about?.public_description?.trim() || null,
+      empty: rules.length === 0 && !sidebar,
+    };
+  }
+}
+
+/**
+ * The same job over public HTML, for when there are no API credentials.
+ *
+ * Reads exactly what a person visiting the rules page would see. The output is
+ * identical in shape to the API fetcher's, so the interpreter and the registry
+ * cannot tell the difference — and the evidence stored against every reading
+ * is still the community's own words.
+ */
+export class RedditScrapeRulesFetcher implements RulesFetcher {
+  readonly platform = 'reddit' as const;
+
+  constructor(private readonly client: RedditScrapeClient) {}
+
+  available(): { ready: boolean } {
+    return this.client.available();
+  }
+
+  async fetch(community: Community): Promise<FetchedRules> {
+    const sub = community.name;
+    const rules = await this.client.rules(sub);
+
+    // The sidebar is a second request, and only worth making when the rules
+    // page came back thin — plenty of communities put the real posting norms
+    // in prose rather than in numbered rules.
+    let sidebar = '';
+    if (rules.length < 2) {
+      try {
+        sidebar = await this.client.sidebar(sub);
+      } catch {
+        // A missing sidebar is not a failed fetch. The rules stand on their own.
+      }
+    }
+
+    return {
+      rules,
+      sidebar: sidebar || null,
+      sourceUrl: `https://old.reddit.com/r/${sub}/about/rules/`,
+      subscribers: null,
+      description: null,
       empty: rules.length === 0 && !sidebar,
     };
   }

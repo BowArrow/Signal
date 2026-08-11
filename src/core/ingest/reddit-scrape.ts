@@ -2,6 +2,7 @@ import { HttpError, type HttpClient } from '../lib/http.js';
 import type { Logger } from '../lib/logger.js';
 import { decodeEntities } from './normalize.js';
 import type { RedditListingChild } from './normalize.js';
+import type { RawRule } from '../db/schema.js';
 
 /**
  * Reddit without the API.
@@ -259,21 +260,47 @@ export class RedditScrapeClient {
   }
 
   /** The rules page, as the community wrote them. */
-  async rules(subreddit: string): Promise<{ shortName: string; description: string }[]> {
-    const html = await this.page(`/r/${subreddit}/about/rules/`);
-    const rules: { shortName: string; description: string }[] = [];
-
-    // Each rule is a table row: the short name in a header cell, the body in
-    // the following markdown block.
-    const rows = html.split(/(?=<div class="rule[ "])/).slice(1);
-    for (const row of rows) {
-      const name = /<div class="rule-header"[^>]*>([\s\S]*?)<\/div>/.exec(row);
-      const desc = /<div class="md">([\s\S]*?)<\/div>/.exec(row);
-      const shortName = name ? textOf(name[1] ?? '') : '';
-      const description = desc ? textOf(desc[1] ?? '') : '';
-      if (shortName || description) rules.push({ shortName, description });
-    }
-
-    return rules;
+  async rules(subreddit: string): Promise<RawRule[]> {
+    return parseRules(await this.page(`/r/${subreddit}/about/rules/`));
   }
+
+  /** The sidebar description, which often carries the real posting norms. */
+  async sidebar(subreddit: string): Promise<string> {
+    const html = await this.page(`/r/${subreddit}/about/sidebar`);
+    const body = /<div class="usertext-body[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/.exec(html);
+    return body ? textOf(body[1] ?? '') : '';
+  }
+}
+
+/**
+ * Reads the rules off old.reddit's rules page.
+ *
+ * Each rule's own container carries the full text as attributes —
+ * `data-description`, `data-violation-reason`, `data-kind` — so this reads
+ * those rather than walking the nested presentation markup underneath. Fewer
+ * moving parts, and attributes survive a CSS reshuffle that would break a
+ * selector chain.
+ */
+export function parseRules(html: string): RawRule[] {
+  const rules: RawRule[] = [];
+
+  for (const match of html.matchAll(/<div class="subreddit-rule-item"([^>]*)>/g)) {
+    const attrs = match[1] ?? '';
+    const shortName = decodeEntities(
+      /data-violation-reason="([^"]*)"/.exec(attrs)?.[1] ?? '',
+    ).trim();
+    const description = decodeEntities(/data-description="([^"]*)"/.exec(attrs)?.[1] ?? '').trim();
+    const kind = /data-kind="([^"]*)"/.exec(attrs)?.[1];
+
+    if (!shortName && !description) continue;
+    rules.push({
+      shortName: shortName || '(unnamed rule)',
+      description,
+      // "link", "comment" or "all" — a rule that only governs posts says
+      // nothing about whether a reply may mention a product.
+      ...(kind ? { kind } : {}),
+    });
+  }
+
+  return rules;
 }

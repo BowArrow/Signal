@@ -16,6 +16,7 @@ import { AnthropicClient, type LlmClient } from './llm/client.js';
 import {
   HackerNewsRulesFetcher,
   RedditRulesFetcher,
+  RedditScrapeRulesFetcher,
   type RulesFetcher,
 } from './rules/fetch.js';
 
@@ -113,7 +114,13 @@ export function createApp(options: CreateAppOptions = {}): App {
   );
 
   const rulesFetchers = new Map<string, RulesFetcher>([
-    ['reddit', new RedditRulesFetcher(redditClient)],
+    [
+      'reddit',
+      // Same source of truth either way: the community's own published rules.
+      redditClient
+        ? new RedditRulesFetcher(redditClient)
+        : new RedditScrapeRulesFetcher(scrapeClient),
+    ],
     ['hn', new HackerNewsRulesFetcher()],
   ]);
 
