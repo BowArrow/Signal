@@ -105,15 +105,41 @@ export const productConfigSchema = z
   })
   .strict();
 
-export const anthropicSchema = z
+/**
+ * The three jobs a model does here. Kept separate because they fail
+ * differently: a bad classification wastes a slot in the queue, a bad draft
+ * wastes a review, and a bad rules reading gets the account banned.
+ */
+export const llmTaskSchema = z.enum(['classify', 'draft', 'interpret-rules']);
+export type LlmTask = z.infer<typeof llmTaskSchema>;
+
+export const llmSchema = z
   .object({
-    /** Drafting model. Quality matters more than cost on this call. */
-    draftModel: z.string().min(1),
-    /** Scoring classifier. Runs on every opportunity, so cost matters. */
-    classifierModel: z.string().min(1),
+    /**
+     * `anthropic` uses the SDK. `openai-compatible` is the de facto standard
+     * spoken by llama.cpp's server, vLLM, LM Studio and Ollama's compat
+     * endpoint — which is how a local model gets used here.
+     */
+    provider: z.enum(['anthropic', 'openai-compatible']),
+    /** Required for openai-compatible. Ignored by the Anthropic provider. */
+    baseUrl: z.string().url().optional(),
+    /** Per task, so one can move to a local model without moving all three. */
+    models: z
+      .object({
+        classify: z.string().min(1),
+        draft: z.string().min(1),
+        'interpret-rules': z.string().min(1),
+      })
+      .strict(),
     maxOutputTokens: z.number().int().positive(),
+    /** A local model on a big context can be slow. Give it room. */
+    requestTimeoutMs: z.number().int().positive().default(120_000),
   })
-  .strict();
+  .strict()
+  .refine((c) => c.provider !== 'openai-compatible' || c.baseUrl != null, {
+    message: 'provider "openai-compatible" needs a baseUrl, e.g. http://localhost:8080/v1',
+    path: ['baseUrl'],
+  });
 
 export const httpSchema = z
   .object({
@@ -150,7 +176,7 @@ export const signalConfigSchema = z
     publishLimits: publishLimitsSchema,
     products: z.array(productConfigSchema).min(1),
     sources: z.array(sourceConfigSchema),
-    anthropic: anthropicSchema,
+    llm: llmSchema,
     http: httpSchema,
     attribution: attributionSchema,
   })

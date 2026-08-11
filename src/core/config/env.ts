@@ -15,8 +15,13 @@ export const envSchema = z
     /** Overrides signal.config.ts databaseUrl. Useful for tests and Docker. */
     SIGNAL_DATABASE_URL: z.string().min(1).optional(),
 
-    // — Anthropic —
+    // — Models —
     ANTHROPIC_API_KEY: z.string().startsWith('sk-ant-').optional(),
+    /**
+     * Bearer token for an openai-compatible server. Usually unset: a local
+     * runtime does not want one, and some reject the header outright.
+     */
+    LLM_API_KEY: z.string().min(1).optional(),
 
     // — Reddit: a "script" type app registered at reddit.com/prefs/apps —
     REDDIT_CLIENT_ID: z.string().min(1).optional(),

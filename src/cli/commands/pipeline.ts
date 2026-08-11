@@ -34,7 +34,7 @@ export function registerPipelineCommands(program: Command): void {
         app.db,
         app.llm,
         {
-          classifierModel: app.config.anthropic.classifierModel,
+          classifierModel: app.config.llm.models.classify,
           weights: app.config.scoring.weights,
           threshold: app.config.scoring.threshold,
           maxThreadAgeHours: app.config.scoring.maxThreadAgeHours,
@@ -118,8 +118,8 @@ export function registerPipelineCommands(program: Command): void {
         app.db,
         app.llm,
         {
-          draftModel: app.config.anthropic.draftModel,
-          maxOutputTokens: app.config.anthropic.maxOutputTokens,
+          draftModel: app.config.llm.models.draft,
+          maxOutputTokens: app.config.llm.maxOutputTokens,
         },
         app.logger,
         {

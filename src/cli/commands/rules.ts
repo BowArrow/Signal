@@ -169,7 +169,7 @@ export function registerRulesCommands(program: Command): void {
           community,
           fetcher,
           app.llm,
-          app.config.anthropic.classifierModel,
+          app.config.llm.models['interpret-rules'],
           app.logger,
           app.clock,
         );

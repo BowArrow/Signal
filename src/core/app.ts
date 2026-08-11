@@ -13,6 +13,8 @@ import { HackerNewsPoller } from './ingest/hackernews.js';
 import { RssPoller } from './ingest/rss.js';
 import type { Poller } from './ingest/types.js';
 import { AnthropicClient, type LlmClient } from './llm/client.js';
+import { OpenAiCompatibleClient } from './llm/openai-compatible.js';
+import { RecordingLlmClient } from './llm/recording.js';
 import {
   HackerNewsRulesFetcher,
   RedditRulesFetcher,
@@ -107,11 +109,20 @@ export function createApp(options: CreateAppOptions = {}): App {
     new RssPoller(http, logger.child({ mod: 'rss' })),
   );
 
-  const llm = new AnthropicClient(
-    env.ANTHROPIC_API_KEY,
-    logger.child({ mod: 'llm' }),
-    env.SIGNAL_OFFLINE === '1',
-  );
+  // One provider, chosen in config. Every call is recorded either way, which
+  // is what makes swapping between them a measured decision rather than a
+  // preference.
+  const offline = env.SIGNAL_OFFLINE === '1';
+  const baseLlm: LlmClient =
+    config.llm.provider === 'openai-compatible'
+      ? new OpenAiCompatibleClient(config.llm.baseUrl ?? '', logger.child({ mod: 'llm' }), {
+          apiKey: env.LLM_API_KEY,
+          timeoutMs: config.llm.requestTimeoutMs,
+          offline,
+        })
+      : new AnthropicClient(env.ANTHROPIC_API_KEY, logger.child({ mod: 'llm' }), offline);
+
+  const llm = new RecordingLlmClient(baseLlm, dbHandle.db, config.llm.provider, clock);
 
   const rulesFetchers = new Map<string, RulesFetcher>([
     [

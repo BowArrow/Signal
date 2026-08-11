@@ -155,6 +155,8 @@ export async function generateReply(
     prompt: rendered,
     maxTokens,
     prefill: '{',
+    task: 'draft',
+    expectsJson: true,
     // Some variation is wanted here; two regenerations should differ.
     temperature: 0.7,
   });

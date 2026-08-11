@@ -149,6 +149,22 @@ CREATE TABLE `links` (
 );
 --> statement-breakpoint
 CREATE INDEX `links_publication_idx` ON `links` (`publication_id`);--> statement-breakpoint
+CREATE TABLE `llm_calls` (
+	`id` text PRIMARY KEY NOT NULL,
+	`task` text NOT NULL,
+	`provider` text NOT NULL,
+	`model` text NOT NULL,
+	`ok` integer NOT NULL,
+	`json_ok` integer,
+	`latency_ms` integer NOT NULL,
+	`input_tokens` integer,
+	`output_tokens` integer,
+	`error` text,
+	`created_at` integer DEFAULT (unixepoch() * 1000) NOT NULL
+);
+--> statement-breakpoint
+CREATE INDEX `llm_calls_task_idx` ON `llm_calls` (`task`);--> statement-breakpoint
+CREATE INDEX `llm_calls_created_idx` ON `llm_calls` (`created_at`);--> statement-breakpoint
 CREATE TABLE `metrics` (
 	`id` text PRIMARY KEY NOT NULL,
 	`publication_id` text NOT NULL,

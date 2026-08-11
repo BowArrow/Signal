@@ -177,6 +177,47 @@ real comment history from the Reddit API is the fix and it lands with
 publishing in Phase 3. Until then the number errs toward caution, which is the
 right direction to be wrong in.
 
+## Which model runs this
+
+Set in `signal.config.ts` under `llm`, per task:
+
+```ts
+llm: {
+  provider: 'openai-compatible',        // or 'anthropic'
+  baseUrl: 'http://localhost:8080/v1',
+  models: {
+    classify: 'muse-glimmer-30b',
+    draft: 'muse-glimmer-30b',
+    'interpret-rules': 'muse-glimmer-30b',
+  },
+}
+```
+
+`openai-compatible` is the chat-completions shape that llama.cpp's
+`llama-server`, vLLM, LM Studio and Ollama's compat endpoint all speak, which
+is how a local model gets used here. No API key is sent unless `LLM_API_KEY`
+is set, because local runtimes generally don't want one.
+
+The three tasks are configured separately on purpose, because they fail
+differently. A bad classification wastes a slot in the queue. A bad draft
+wastes a review. A bad rules reading gets the account banned — though that one
+degrades safely: unparseable output and schema mismatches both land on
+`discouraged` with confidence 0, so a weaker model becomes more cautious rather
+than more dangerous.
+
+**Every call is recorded**, so choosing between models is a measurement rather
+than an impression:
+
+```bash
+pnpm signal llm check      # is it reachable, and does it serve these models
+pnpm signal llm stats      # latency, tok/s, and JSON compliance per task
+```
+
+The column that matters for a smaller model is `json ok`. The whole pipeline
+depends on structured output, and holding that contract is usually what a
+smaller model gives out on first — not reasoning quality. Below 95% the stats
+command says so and suggests moving that one task rather than all three.
+
 ## Drafting
 
 Prompts live in `src/prompts/` as versioned markdown, never as string literals.

@@ -117,11 +117,26 @@ const config: SignalConfigInput = {
     { kind: 'hn', identifier: '"audio reactive"', displayName: 'Hacker News · audio reactive', pollIntervalSeconds: 3600, enabled: true },
   ],
 
-  anthropic: {
-    draftModel: 'claude-sonnet-5',
-    // Runs on every ingested item, so it needs to be cheap.
-    classifierModel: 'claude-haiku-4-5-20251001',
+  llm: {
+    // Point this at the Lemonade runtime serving Glimmer. Any server speaking
+    // the OpenAI chat-completions shape works — llama.cpp's llama-server,
+    // vLLM, LM Studio, Ollama's compat endpoint.
+    //
+    // Switch to 'anthropic' and drop baseUrl to go back to the hosted models;
+    // every call is recorded either way, so `signal llm stats` compares them
+    // on latency, tokens and JSON compliance rather than on impressions.
+    provider: 'openai-compatible',
+    baseUrl: 'http://localhost:8080/v1',
+    models: {
+      // Whatever name the server reports. `signal llm check` lists them.
+      classify: 'muse-glimmer-30b',
+      draft: 'muse-glimmer-30b',
+      'interpret-rules': 'muse-glimmer-30b',
+    },
     maxOutputTokens: 2048,
+    // A 30B on local hardware is far slower than a hosted API, and a drafting
+    // call with the whole voice file in context is not a quick one.
+    requestTimeoutMs: 180_000,
   },
 
   http: {

@@ -13,6 +13,14 @@ export interface CompletionRequest {
   /** Seeds the assistant turn. Used to force JSON without a code fence. */
   readonly prefill?: string;
   readonly temperature?: number;
+  /** Which of the three jobs this is. Recorded, so the tasks can be compared. */
+  readonly task?: string;
+  /**
+   * True when the prompt demands JSON. The recorder checks whether it got
+   * any, which is the metric that decides whether a smaller model can hold
+   * these contracts.
+   */
+  readonly expectsJson?: boolean;
 }
 
 export interface CompletionResult {

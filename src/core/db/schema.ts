@@ -601,6 +601,42 @@ export const jobs = sqliteTable(
   ],
 );
 
+// ──────────────────────────────────────────────────────── llm calls ──
+
+/**
+ * One row per model call.
+ *
+ * Exists to answer a question that cannot be answered by opinion: is a local
+ * 30B good enough for these three jobs? Latency and token counts say what it
+ * costs; `jsonOk` says whether it can hold a structured-output contract, which
+ * is the thing a smaller model actually tends to fail at. Swapping providers
+ * without this would be a vibe rather than a decision.
+ */
+export const llmCalls = sqliteTable(
+  'llm_calls',
+  {
+    id: id(),
+    /** classify | draft | interpret-rules */
+    task: text('task').notNull(),
+    provider: text('provider').notNull(),
+    model: text('model').notNull(),
+    ok: integer('ok', { mode: 'boolean' }).notNull(),
+    /**
+     * Whether the response parsed as the JSON the prompt asked for. Null when
+     * the call did not complete, or did not expect JSON.
+     */
+    jsonOk: integer('json_ok', { mode: 'boolean' }),
+    latencyMs: integer('latency_ms').notNull(),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    error: text('error'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('llm_calls_task_idx').on(t.task), index('llm_calls_created_idx').on(t.createdAt)],
+);
+
+export type LlmCall = typeof llmCalls.$inferSelect;
+
 // ───────────────────────────────────────────────────────── settings ──
 
 /**

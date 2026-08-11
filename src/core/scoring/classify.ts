@@ -76,6 +76,8 @@ export async function classify(
     prompt: rendered,
     maxTokens: 500,
     prefill: '{',
+    task: 'classify',
+    expectsJson: true,
     // Triage should be repeatable. The same thread on two days should not
     // land on different sides of the threshold because of sampling.
     temperature: 0,

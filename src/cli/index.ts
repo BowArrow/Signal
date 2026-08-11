@@ -9,6 +9,7 @@ import { createScheduler } from '../core/jobs/scheduler.js';
 import { queueStats } from '../core/jobs/queue.js';
 import { registerRulesCommands } from './commands/rules.js';
 import { registerPipelineCommands } from './commands/pipeline.js';
+import { registerLlmCommands } from './commands/llm.js';
 import { bold, cyan, dim, green, heading, magenta, red, relativeTime, table, yellow } from './format.js';
 
 const program = new Command();
@@ -251,6 +252,7 @@ program
 
 registerRulesCommands(program);
 registerPipelineCommands(program);
+registerLlmCommands(program);
 
 // ──────────────────────────────────────────────────────────────────────
 

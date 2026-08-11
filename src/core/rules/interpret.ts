@@ -93,6 +93,8 @@ export async function interpretRules(
       prompt: rendered,
       maxTokens: 1200,
       prefill: '{',
+      task: 'interpret-rules',
+      expectsJson: true,
       // Reading rules is not a creative task.
       temperature: 0,
     });
