@@ -178,9 +178,20 @@ program
         { header: 'kind', value: (s) => dim(s.kind) },
         { header: 'every', align: 'right', value: (s) => dim(`${Math.round(s.pollIntervalSeconds / 60)}m`) },
         { header: 'last poll', align: 'right', value: (s) => dim(relativeTime(s.lastPolledAt)) },
-        { header: 'error', value: (s) => (s.lastPollError ? red(s.lastPollError) : ''), max: 50 },
+        // Listed rather than buried in config, so an exemption stays visible
+        // to whoever runs this next.
+        { header: 'robots', value: (s) => (s.ignoreRobotsTxt ? yellow('exempt') : dim('honored')) },
+        { header: 'error', value: (s) => (s.lastPollError ? red(s.lastPollError) : ''), max: 40 },
       ]),
     );
+
+    const exempt = srcRows.filter((s) => s.ignoreRobotsTxt);
+    if (exempt.length > 0) {
+      console.log(
+        `\n  ${yellow(`${exempt.length} sources bypass robots.txt`)}  ` +
+          dim(exempt[0]?.robotsExemptionReason ?? ''),
+      );
+    }
 
     const prodRows = app.db.select().from(products).all();
     console.log(heading('Products'));

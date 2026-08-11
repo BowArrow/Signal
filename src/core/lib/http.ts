@@ -121,19 +121,28 @@ export class HttpClient {
 
   async request(
     url: string,
-    init: RequestInit & { official?: boolean } = {},
+    init: RequestInit & {
+      official?: boolean;
+      /**
+       * Set only by a source carrying a named robots exemption in config.
+       * There is no global switch — see sourceConfigSchema.
+       */
+      ignoreRobotsTxt?: boolean;
+      /** Minimum gap for this call, when a source wants to be gentler. */
+      minIntervalMs?: number;
+    } = {},
   ): Promise<Response> {
     if (this.offline) throw new OfflineError(url);
 
-    const { official = false, ...requestInit } = init;
+    const { official = false, ignoreRobotsTxt = false, minIntervalMs, ...requestInit } = init;
     const target = new URL(url);
 
-    if (this.options.respectRobotsTxt && !official) {
+    if (this.options.respectRobotsTxt && !official && !ignoreRobotsTxt) {
       const allowed = await this.checkRobots(target);
       if (!allowed) throw new RobotsDisallowedError(url);
     }
 
-    return this.serialize(target.host, () => this.attempt(url, requestInit));
+    return this.serialize(target.host, () => this.attempt(url, requestInit), minIntervalMs);
   }
 
   async json<T>(url: string, init: RequestInit & { official?: boolean } = {}): Promise<T> {
@@ -147,7 +156,8 @@ export class HttpClient {
   }
 
   /** Runs `fn` after the per-host interval has elapsed, one host at a time. */
-  private serialize<T>(host: string, fn: () => Promise<T>): Promise<T> {
+  private serialize<T>(host: string, fn: () => Promise<T>, minIntervalMs?: number): Promise<T> {
+    const gap = Math.max(minIntervalMs ?? 0, this.options.minRequestIntervalMs);
     const previous = this.chain.get(host) ?? Promise.resolve();
     const next = previous.then(async () => {
       const waitUntil = this.nextAllowedAt.get(host) ?? 0;
@@ -156,7 +166,7 @@ export class HttpClient {
       try {
         return await fn();
       } finally {
-        this.nextAllowedAt.set(host, Date.now() + this.options.minRequestIntervalMs);
+        this.nextAllowedAt.set(host, Date.now() + gap);
       }
     });
     // Keep the chain alive after a rejection so one failure does not poison

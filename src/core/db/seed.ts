@@ -74,8 +74,19 @@ export function seed(db: Db, config: SignalConfig, logger?: Logger): SeedResult 
         displayName: s.displayName,
         pollIntervalSeconds: s.pollIntervalSeconds,
         enabled: s.enabled,
+        ignoreRobotsTxt: s.ignoreRobotsTxt,
+        robotsExemptionReason: s.robotsExemptionReason ?? null,
         updatedAt: Date.now(),
       };
+
+      if (s.ignoreRobotsTxt) {
+        // Loud on every seed, by design. An exemption that stops being
+        // remarked upon is one nobody reconsiders.
+        logger?.warn('source carries a robots.txt exemption', {
+          source: s.displayName,
+          reason: s.robotsExemptionReason,
+        });
+      }
 
       if (existing) {
         // lastPolledAt is runtime state, not config. Leave it alone.

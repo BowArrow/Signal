@@ -7,6 +7,8 @@ import { HttpClient } from './lib/http.js';
 import { systemClock, type Clock } from './lib/clock.js';
 import { RedditClient, RedditPoller } from './ingest/reddit.js';
 import { RedditSearchPoller } from './ingest/reddit-search.js';
+import { RedditScrapeClient } from './ingest/reddit-scrape.js';
+import { RedditPublicPoller, RedditPublicSearchPoller } from './ingest/reddit-public.js';
 import { HackerNewsPoller } from './ingest/hackernews.js';
 import { RssPoller } from './ingest/rss.js';
 import type { Poller } from './ingest/types.js';
@@ -31,6 +33,8 @@ export interface App {
   readonly http: HttpClient;
   readonly clock: Clock;
   readonly pollers: Poller[];
+  /** Present whether or not it is in use, so jobs can reach it. */
+  readonly redditScraper: RedditScrapeClient;
   readonly llm: LlmClient;
   readonly rulesFetchers: Map<string, RulesFetcher>;
   readonly capabilities: Capability[];
@@ -79,14 +83,28 @@ export function createApp(options: CreateAppOptions = {}): App {
         )
       : null;
 
-  const pollers: Poller[] = [
-    new RedditPoller(redditClient, logger.child({ mod: 'reddit' })),
-    new RedditSearchPoller(redditClient, logger.child({ mod: 'discover' })),
+  // Reddit's Data API is gated behind a discretionary approval and every
+  // unauthenticated JSON endpoint returns 403. Where credentials exist the
+  // API client is used; otherwise the public HTML path takes over, and only
+  // for sources carrying a named robots exemption.
+  const scrapeClient = new RedditScrapeClient(http, logger.child({ mod: 'reddit-public' }));
+
+  const pollers: Poller[] = redditClient
+    ? [
+        new RedditPoller(redditClient, logger.child({ mod: 'reddit' })),
+        new RedditSearchPoller(redditClient, logger.child({ mod: 'discover' })),
+      ]
+    : [
+        new RedditPublicPoller(scrapeClient, logger.child({ mod: 'reddit-public' })),
+        new RedditPublicSearchPoller(scrapeClient, logger.child({ mod: 'discover' })),
+      ];
+
+  pollers.push(
     new HackerNewsPoller(http, logger.child({ mod: 'hn' }), {
       maxAgeHours: config.scoring.maxThreadAgeHours,
     }),
     new RssPoller(http, logger.child({ mod: 'rss' })),
-  ];
+  );
 
   const llm = new AnthropicClient(
     env.ANTHROPIC_API_KEY,
@@ -108,6 +126,7 @@ export function createApp(options: CreateAppOptions = {}): App {
     http,
     clock,
     pollers,
+    redditScraper: scrapeClient,
     llm,
     rulesFetchers,
     capabilities: capabilities(env),

@@ -4,7 +4,12 @@ import type { DbHandle } from '../../src/core/db/client.js';
 import { products, sources } from '../../src/core/db/schema.js';
 import { seed } from '../../src/core/db/seed.js';
 import type { SignalConfig } from '../../src/core/config/schema.js';
-import baseConfig from '../../signal.config.js';
+import { validateConfig } from '../../src/core/config/load.js';
+import rawConfig from '../../signal.config.js';
+
+// Validated once, so the tests work against the same defaults-applied shape
+// the application does rather than the looser authoring shape.
+const baseConfig = validateConfig(rawConfig);
 import { silentLogger } from '../../src/core/lib/logger.js';
 import { testDb } from '../helpers/db.js';
 

@@ -195,13 +195,20 @@ function statusReason(one: ScoredOne, threshold: number): string {
 function selectPending(db: Db, scoring: ResolvedScoring, options: ScoreOptions): Opportunity[] {
   const limit = options.limit ?? 50;
 
+  // A scraped text post lands title-only until its body is hydrated. Scoring
+  // it now would judge a thread on its headline, which is exactly the mistake
+  // the contribution axis exists to avoid.
   const base = db.select().from(opportunities);
   const rows = options.all
-    ? base.where(inArray(opportunities.status, SCORABLE)).limit(limit).all()
+    ? base
+        .where(and(inArray(opportunities.status, SCORABLE), eq(opportunities.needsBody, false)))
+        .limit(limit)
+        .all()
     : base
         .where(
           and(
             inArray(opportunities.status, SCORABLE),
+            eq(opportunities.needsBody, false),
             or(
               isNull(opportunities.scoredAt),
               // A weight change makes every cached total stale. Rescoring is

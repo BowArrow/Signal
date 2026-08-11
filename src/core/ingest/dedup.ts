@@ -38,6 +38,11 @@ export function persistItems(
   source: Source,
   items: readonly NormalizedItem[],
   clock: Clock = systemClock,
+  /**
+   * External ids whose body still has to be fetched separately. Scraped Reddit
+   * text posts arrive title-only; see hydrate.ts.
+   */
+  needsBody: ReadonlySet<string> = new Set(),
 ): PersistOutcome {
   const outcome = {
     inserted: 0,
@@ -98,6 +103,7 @@ export function persistItems(
             discoveredAt: now,
             commentCount: item.commentCount,
             platformScore: item.platformScore,
+            needsBody: needsBody.has(item.externalId),
             status: 'new',
             raw: item.raw,
             createdAt: now,

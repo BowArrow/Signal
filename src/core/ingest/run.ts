@@ -5,6 +5,8 @@ import type { Clock } from '../lib/clock.js';
 import { systemClock } from '../lib/clock.js';
 import type { Logger } from '../lib/logger.js';
 import { persistItems } from './dedup.js';
+import { enqueue } from '../jobs/queue.js';
+import { JOB_HYDRATE_BODY } from './hydrate.js';
 import type { NormalizedItem, Poller } from './types.js';
 
 export interface SourceIngestReport {
@@ -127,6 +129,26 @@ export async function runIngest(
       continue;
     }
 
+    // A poller that reads pages rather than an API only runs for a source
+    // carrying a named robots exemption. Checked here as well as in the
+    // HttpClient, so a misconfigured source fails with an explanation rather
+    // than a RobotsDisallowedError from three layers down.
+    if (poller.requiresRobotsExemption?.() && !source.ignoreRobotsTxt) {
+      reports.push({
+        ...base,
+        status: 'skipped',
+        detail:
+          'this poller reads public pages rather than an API, so the source needs ' +
+          'ignoreRobotsTxt with a stated reason in signal.config.ts',
+        fetched: 0,
+        inserted: 0,
+        updated: 0,
+        unchanged: 0,
+        dropped: 0,
+      });
+      continue;
+    }
+
     const readiness = poller.available();
     if (!readiness.ready) {
       reports.push({
@@ -145,7 +167,34 @@ export async function runIngest(
     try {
       const result = await poller.poll(source);
       const { fresh, stale } = partitionByAge(result.items, clock.now(), options.maxItemAgeHours);
-      const persisted = persistItems(db, source, fresh, clock);
+
+      // Scraped Reddit text posts arrive without a body — the listing page
+      // does not carry one. Mark them, then queue a fetch each.
+      const pending = (result as { pendingBodies?: { externalId: string; permalink: string }[] })
+        .pendingBodies;
+      const needsBody = new Set((pending ?? []).map((p) => p.externalId));
+
+      const persisted = persistItems(db, source, fresh, clock, needsBody);
+
+      if (pending?.length) {
+        const byExternalId = new Map(
+          fresh.map((item, index) => [item.externalId, persisted.ids[index]]),
+        );
+        let queued = 0;
+        for (const entry of pending) {
+          const opportunityId = byExternalId.get(entry.externalId);
+          if (!opportunityId) continue;
+          const created = enqueue(
+            db,
+            JOB_HYDRATE_BODY,
+            { opportunityId, permalink: entry.permalink, externalId: entry.externalId },
+            { dedupeKey: `${JOB_HYDRATE_BODY}:${opportunityId}` },
+            clock,
+          );
+          if (created) queued += 1;
+        }
+        if (queued) logger.debug('queued body fetches', { source: source.displayName, queued });
+      }
 
       db.update(sources)
         .set({ lastPolledAt: clock.now(), lastPollError: null, updatedAt: clock.now() })

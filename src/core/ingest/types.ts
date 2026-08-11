@@ -50,4 +50,9 @@ export interface Poller {
    * rather than failing the whole ingest cycle.
    */
   available(): { ready: boolean; reason?: string };
+  /**
+   * True for pollers that read public pages rather than a documented API.
+   * Those only run against a source carrying a named robots exemption.
+   */
+  requiresRobotsExemption?(): boolean;
 }

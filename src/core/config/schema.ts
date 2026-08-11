@@ -68,8 +68,27 @@ export const sourceConfigSchema = z
     displayName: z.string().min(1),
     pollIntervalSeconds: z.number().int().min(60),
     enabled: z.boolean().default(true),
+    /**
+     * Fetch this source even where robots.txt disallows it.
+     *
+     * There is deliberately no global switch for this — `http.respectRobotsTxt`
+     * is still typed as the literal true. The exemption has to be named per
+     * source, it is logged at boot, and `signal status` lists every source
+     * carrying it. The point is that turning it on is a visible, deliberate
+     * act rather than a config flag someone flips and forgets.
+     *
+     * Requires `robotsExemptionReason`, so the record says why.
+     */
+    ignoreRobotsTxt: z.boolean().default(false),
+    robotsExemptionReason: z.string().min(10).optional(),
   })
-  .strict();
+  .strict()
+  .refine((s) => !s.ignoreRobotsTxt || s.robotsExemptionReason != null, {
+    message:
+      'a source with ignoreRobotsTxt must also carry robotsExemptionReason — ' +
+      'if the exemption is worth taking it is worth writing down why',
+    path: ['robotsExemptionReason'],
+  });
 
 export const productConfigSchema = z
   .object({
@@ -163,7 +182,16 @@ export const signalConfigSchema = z
     }
   });
 
+/** The validated, defaults-applied shape everything downstream consumes. */
 export type SignalConfig = z.infer<typeof signalConfigSchema>;
+
+/**
+ * What signal.config.ts is written against: the same shape, but with
+ * defaulted fields optional. Authoring against the output type would force
+ * every source to spell out `ignoreRobotsTxt: false`, which is noise that
+ * makes the handful of real exemptions harder to spot.
+ */
+export type SignalConfigInput = z.input<typeof signalConfigSchema>;
 export type ProductConfig = z.infer<typeof productConfigSchema>;
 export type SourceConfig = z.infer<typeof sourceConfigSchema>;
 export type ScoringWeights = z.infer<typeof scoringWeightsSchema>;

@@ -1,11 +1,20 @@
-import type { SignalConfig } from './src/core/config/schema.js';
+import type { SignalConfigInput } from './src/core/config/schema.js';
 
 /**
  * The one config file. Validated with Zod at boot; the process exits on a
  * violation. Secrets do not live here — they live in .env. This file is
  * committed, so treat everything in it as public.
  */
-const config: SignalConfig = {
+/**
+ * Why Reddit is read from public pages rather than its API.
+ *
+ * Stated once, referenced by every Reddit source, and printed at every
+ * seed. An exemption nobody is reminded of is one nobody reconsiders.
+ */
+const REDDIT_EXEMPTION =
+  'Reddit gated its Data API behind discretionary approval and 403s every unauthenticated JSON endpoint. Casey chose to read public HTML instead, knowingly and against the ToS guardrail in his own original spec. Paced at 4s between requests.';
+
+const config: SignalConfigInput = {
   // A single file, easy to back up. Swap to a postgres:// URL and the Drizzle
   // layer changes dialect without a schema rewrite.
   databaseUrl: 'file:./data/signal.db',
@@ -81,20 +90,20 @@ const config: SignalConfig = {
   sources: [
     // Poll intervals are deliberately unequal. A fast-moving sub where a good
     // answer has to land early is worth checking often; a slow one is not.
-    { kind: 'reddit', identifier: 'LocalLLaMA', displayName: 'r/LocalLLaMA', pollIntervalSeconds: 900, enabled: true },
-    { kind: 'reddit', identifier: 'ollama', displayName: 'r/ollama', pollIntervalSeconds: 1800, enabled: true },
-    { kind: 'reddit', identifier: 'privacy', displayName: 'r/privacy', pollIntervalSeconds: 1800, enabled: true },
-    { kind: 'reddit', identifier: 'selfhosted', displayName: 'r/selfhosted', pollIntervalSeconds: 1800, enabled: true },
-    { kind: 'reddit', identifier: 'generative', displayName: 'r/generative', pollIntervalSeconds: 3600, enabled: true },
-    { kind: 'reddit', identifier: 'SideProject', displayName: 'r/SideProject', pollIntervalSeconds: 21600, enabled: true },
+    { kind: 'reddit', identifier: 'LocalLLaMA', displayName: 'r/LocalLLaMA', pollIntervalSeconds: 900, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit', identifier: 'ollama', displayName: 'r/ollama', pollIntervalSeconds: 1800, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit', identifier: 'privacy', displayName: 'r/privacy', pollIntervalSeconds: 1800, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit', identifier: 'selfhosted', displayName: 'r/selfhosted', pollIntervalSeconds: 1800, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit', identifier: 'generative', displayName: 'r/generative', pollIntervalSeconds: 3600, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit', identifier: 'SideProject', displayName: 'r/SideProject', pollIntervalSeconds: 21600, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
     // Discovery. These search all of Reddit rather than one subreddit, so they
     // turn up threads in communities that are not listed above — which is the
     // point. Anything they find is held at rules_unknown until that
     // community's rules have been fetched and read.
-    { kind: 'reddit_search', identifier: '"local llm" self:yes', displayName: 'Discover · local llm', pollIntervalSeconds: 1800, enabled: true },
-    { kind: 'reddit_search', identifier: 'ollama help self:yes', displayName: 'Discover · ollama help', pollIntervalSeconds: 1800, enabled: true },
-    { kind: 'reddit_search', identifier: '"offline ai" OR "runs offline" self:yes', displayName: 'Discover · offline ai', pollIntervalSeconds: 3600, enabled: true },
-    { kind: 'reddit_search', identifier: '"blocks chatgpt" OR "cant use chatgpt at work" self:yes', displayName: 'Discover · blocked at work', pollIntervalSeconds: 3600, enabled: true },
+    { kind: 'reddit_search', identifier: '"local llm" self:yes', displayName: 'Discover · local llm', pollIntervalSeconds: 1800, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit_search', identifier: 'ollama help self:yes', displayName: 'Discover · ollama help', pollIntervalSeconds: 1800, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit_search', identifier: '"offline ai" OR "runs offline" self:yes', displayName: 'Discover · offline ai', pollIntervalSeconds: 3600, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit_search', identifier: '"blocks chatgpt" OR "cant use chatgpt at work" self:yes', displayName: 'Discover · blocked at work', pollIntervalSeconds: 3600, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
 
     // Read-only via the Algolia search API. There is no publish path for HN
     // and there will not be one.

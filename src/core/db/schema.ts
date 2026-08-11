@@ -85,6 +85,17 @@ export const sources = sqliteTable(
     pollIntervalSeconds: integer('poll_interval_seconds').notNull(),
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
     /**
+     * Whether this source may be fetched where robots.txt disallows it.
+     *
+     * Stored rather than read from config at call time so the exemption is
+     * visible in the database, listed by `signal status`, and enforceable at
+     * the point of the request. There is no global override — see
+     * sourceConfigSchema.
+     */
+    ignoreRobotsTxt: integer('ignore_robots_txt', { mode: 'boolean' }).notNull().default(false),
+    /** Why the exemption was taken. Required whenever the flag is set. */
+    robotsExemptionReason: text('robots_exemption_reason'),
+    /**
      * True when Signal proposed this source itself rather than reading it from
      * signal.config.ts. Discovered sources arrive disabled: finding a promising
      * community is a suggestion, not a decision.
@@ -257,6 +268,15 @@ export const opportunities = sqliteTable(
     commentCount: integer('comment_count'),
     /** The platform's own score: Reddit upvotes, HN points. */
     platformScore: integer('platform_score'),
+    /**
+     * True when the body has not been fetched yet.
+     *
+     * Old Reddit's listing pages carry titles but lazy-load post bodies, so a
+     * scraped text post arrives without one. Scoring skips these rather than
+     * judging a thread on its title alone — a hydration job fills them in
+     * shortly after ingest.
+     */
+    needsBody: integer('needs_body', { mode: 'boolean' }).notNull().default(false),
 
     // Score axes stored raw and separately so weights stay tunable. The total
     // is a cached convenience — recompute it whenever weights change.

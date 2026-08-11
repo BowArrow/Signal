@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import type { App } from '../app.js';
 import { sources } from '../db/schema.js';
 import { runIngest } from '../ingest/run.js';
+import { hydrateBody, isHydratePayload, JOB_HYDRATE_BODY } from '../ingest/hydrate.js';
 import { drain, enqueue, type JobHandler } from './queue.js';
 
 export const JOB_INGEST_SOURCE = 'ingest.source';
@@ -35,6 +36,13 @@ export function buildHandlers(app: App): Record<string, JobHandler> {
         updated: detail?.updated ?? 0,
         dropped: detail?.dropped ?? 0,
       });
+    },
+
+    [JOB_HYDRATE_BODY]: async (payload) => {
+      if (!isHydratePayload(payload)) {
+        throw new Error(`${JOB_HYDRATE_BODY} payload is malformed`);
+      }
+      await hydrateBody(app.db, app.redditScraper, payload, app.logger, app.clock);
     },
   };
 }
