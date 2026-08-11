@@ -76,6 +76,7 @@ export function seed(db: Db, config: SignalConfig, logger?: Logger): SeedResult 
         enabled: s.enabled,
         ignoreRobotsTxt: s.ignoreRobotsTxt,
         robotsExemptionReason: s.robotsExemptionReason ?? null,
+        maxItemAgeHours: s.maxItemAgeHours ?? null,
         updatedAt: Date.now(),
       };
 

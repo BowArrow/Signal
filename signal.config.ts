@@ -115,6 +115,27 @@ const config: SignalConfigInput = {
     { kind: 'hn', identifier: 'ollama', displayName: 'Hacker News · ollama', pollIntervalSeconds: 600, enabled: true },
     { kind: 'hn', identifier: '"gaussian splatting"', displayName: 'Hacker News · splats', pollIntervalSeconds: 3600, enabled: true },
     { kind: 'hn', identifier: '"audio reactive"', displayName: 'Hacker News · audio reactive', pollIntervalSeconds: 3600, enabled: true },
+
+    // Open, documented APIs with no approval gate. Added deliberately after
+    // Reddit's turned out to be one — a system whose critical path depends on
+    // one company's discretion is a system with a single point of failure.
+    //
+    // Stack Exchange: `site:query`. Each site is its own community.
+    { kind: 'stackexchange', identifier: 'superuser:ollama', displayName: 'Super User · ollama', pollIntervalSeconds: 3600, enabled: true, maxItemAgeHours: 2160 },
+    { kind: 'stackexchange', identifier: 'superuser:local llm', displayName: 'Super User · local llm', pollIntervalSeconds: 3600, enabled: true, maxItemAgeHours: 2160 },
+    { kind: 'stackexchange', identifier: 'askubuntu:ollama', displayName: 'Ask Ubuntu · ollama', pollIntervalSeconds: 7200, enabled: true, maxItemAgeHours: 2160 },
+    { kind: 'stackexchange', identifier: 'unix:llama.cpp', displayName: 'Unix & Linux · llama.cpp', pollIntervalSeconds: 7200, enabled: true, maxItemAgeHours: 2160 },
+
+    // Discourse: the identifier is the forum, optionally #category=<slug>.
+    { kind: 'discourse', identifier: 'https://discuss.huggingface.co', displayName: 'HuggingFace forums', pollIntervalSeconds: 3600, enabled: true, maxItemAgeHours: 336 },
+
+    // GitHub: the identifier is a search query. Each repo is its own community,
+    // because maintainers differ wildly on tolerating a third party turning up.
+    { kind: 'github', identifier: 'is:issue is:open "run offline" llm', displayName: 'GitHub · offline llm', pollIntervalSeconds: 3600, enabled: true, maxItemAgeHours: 720 },
+    { kind: 'github', identifier: 'repo:ollama/ollama is:issue is:open desktop OR gui', displayName: 'GitHub · ollama ui', pollIntervalSeconds: 3600, enabled: true, maxItemAgeHours: 720 },
+
+    // Lobsters: `newest`, or a tag.
+    { kind: 'lobsters', identifier: 'ai', displayName: 'Lobsters · ai', pollIntervalSeconds: 7200, enabled: true, maxItemAgeHours: 168 },
   ],
 
   llm: {

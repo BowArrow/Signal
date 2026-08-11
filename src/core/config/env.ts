@@ -30,6 +30,12 @@ export const envSchema = z
     REDDIT_USERNAME: z.string().min(1).optional(),
     REDDIT_PASSWORD: z.string().min(1).optional(),
 
+    // — Optional source credentials —
+    /** Raises the Stack Exchange quota from 300/day to 10,000. Not required. */
+    STACKEXCHANGE_KEY: z.string().min(1).optional(),
+    /** Raises GitHub search from 10 to 30 requests a minute. Not required. */
+    GITHUB_TOKEN: z.string().min(1).optional(),
+
     // — Stripe (Phase 4) —
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),

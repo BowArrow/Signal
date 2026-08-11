@@ -57,7 +57,18 @@ export const publishLimitsSchema = z
   })
   .strict();
 
-export const sourceKindSchema = z.enum(['reddit', 'reddit_search', 'hn', 'rss', 'discord', 'x']);
+export const sourceKindSchema = z.enum([
+  'reddit',
+  'reddit_search',
+  'hn',
+  'rss',
+  'stackexchange',
+  'discourse',
+  'github',
+  'lobsters',
+  'discord',
+  'x',
+]);
 export type SourceKind = z.infer<typeof sourceKindSchema>;
 
 export const sourceConfigSchema = z
@@ -81,6 +92,15 @@ export const sourceConfigSchema = z
      */
     ignoreRobotsTxt: z.boolean().default(false),
     robotsExemptionReason: z.string().min(10).optional(),
+    /**
+     * Overrides scoring.maxThreadAgeHours for this source.
+     *
+     * Platforms have very different half-lives. A three-day-old Reddit thread
+     * is a graveyard, but a Stack Exchange question with no accepted answer is
+     * worth answering months later and stays useful to everyone who finds it
+     * afterwards. One global cutoff silently discards the second kind.
+     */
+    maxItemAgeHours: z.number().int().positive().optional(),
   })
   .strict()
   .refine((s) => !s.ignoreRobotsTxt || s.robotsExemptionReason != null, {

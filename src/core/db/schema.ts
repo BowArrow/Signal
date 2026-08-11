@@ -66,6 +66,17 @@ export const SOURCE_KINDS = [
   'reddit_search',
   'hn',
   'rss',
+  /**
+   * Stack Exchange. Dense with the exact "what fits in 16GB / why is this
+   * swapping" questions a benchmark answer is built for, and its API is open
+   * and documented with no approval gate.
+   */
+  'stackexchange',
+  /** Any Discourse forum. One poller covers all of them; the identifier is the host. */
+  'discourse',
+  /** GitHub issues and discussions, via the search API. */
+  'github',
+  'lobsters',
   'discord',
   'x',
 ] as const;
@@ -95,6 +106,8 @@ export const sources = sqliteTable(
     ignoreRobotsTxt: integer('ignore_robots_txt', { mode: 'boolean' }).notNull().default(false),
     /** Why the exemption was taken. Required whenever the flag is set. */
     robotsExemptionReason: text('robots_exemption_reason'),
+    /** Overrides scoring.maxThreadAgeHours. Platforms have different half-lives. */
+    maxItemAgeHours: integer('max_item_age_hours'),
     /**
      * True when Signal proposed this source itself rather than reading it from
      * signal.config.ts. Discovered sources arrive disabled: finding a promising

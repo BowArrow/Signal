@@ -11,6 +11,10 @@ import { RedditScrapeClient } from './ingest/reddit-scrape.js';
 import { RedditPublicPoller, RedditPublicSearchPoller } from './ingest/reddit-public.js';
 import { HackerNewsPoller } from './ingest/hackernews.js';
 import { RssPoller } from './ingest/rss.js';
+import { StackExchangePoller } from './ingest/stackexchange.js';
+import { DiscoursePoller } from './ingest/discourse.js';
+import { GitHubPoller } from './ingest/github.js';
+import { LobstersPoller } from './ingest/lobsters.js';
 import type { Poller } from './ingest/types.js';
 import { AnthropicClient, type LlmClient } from './llm/client.js';
 import { OpenAiCompatibleClient } from './llm/openai-compatible.js';
@@ -107,6 +111,15 @@ export function createApp(options: CreateAppOptions = {}): App {
       maxAgeHours: config.scoring.maxThreadAgeHours,
     }),
     new RssPoller(http, logger.child({ mod: 'rss' })),
+    // Open, documented APIs with no approval gate — deliberately, after
+    // Reddit's turned out to be one.
+    new StackExchangePoller(http, logger.child({ mod: 'stackexchange' }), {
+      maxAgeHours: config.scoring.maxThreadAgeHours,
+      ...(env.STACKEXCHANGE_KEY ? { apiKey: env.STACKEXCHANGE_KEY } : {}),
+    }),
+    new DiscoursePoller(http, logger.child({ mod: 'discourse' })),
+    new GitHubPoller(http, logger.child({ mod: 'github' }), { token: env.GITHUB_TOKEN }),
+    new LobstersPoller(http, logger.child({ mod: 'lobsters' })),
   );
 
   // One provider, chosen in config. Every call is recorded either way, which

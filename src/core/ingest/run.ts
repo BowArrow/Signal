@@ -166,11 +166,15 @@ export async function runIngest(
 
     try {
       const result = await poller.poll(source);
-      const { fresh, stale } = partitionByAge(result.items, clock.now(), options.maxItemAgeHours);
+      // A per-source window wins over the global one: see sourceConfigSchema.
+      const ageWindow = source.maxItemAgeHours ?? options.maxItemAgeHours;
+      const { fresh, stale } = partitionByAge(result.items, clock.now(), ageWindow);
 
       // Scraped Reddit text posts arrive without a body — the listing page
       // does not carry one. Mark them, then queue a fetch each.
-      const pending = (result as { pendingBodies?: { externalId: string; permalink: string }[] })
+      const pending = (result as {
+        pendingBodies?: { externalId: string; permalink: string; platform?: 'reddit' | 'discourse' }[];
+      })
         .pendingBodies;
       const needsBody = new Set((pending ?? []).map((p) => p.externalId));
 
@@ -187,7 +191,12 @@ export async function runIngest(
           const created = enqueue(
             db,
             JOB_HYDRATE_BODY,
-            { opportunityId, permalink: entry.permalink, externalId: entry.externalId },
+            {
+              opportunityId,
+              permalink: entry.permalink,
+              externalId: entry.externalId,
+              platform: entry.platform ?? 'reddit',
+            },
             { dedupeKey: `${JOB_HYDRATE_BODY}:${opportunityId}` },
             clock,
           );

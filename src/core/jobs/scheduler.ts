@@ -42,7 +42,13 @@ export function buildHandlers(app: App): Record<string, JobHandler> {
       if (!isHydratePayload(payload)) {
         throw new Error(`${JOB_HYDRATE_BODY} payload is malformed`);
       }
-      await hydrateBody(app.db, app.redditScraper, payload, app.logger, app.clock);
+      await hydrateBody(
+        app.db,
+        { reddit: app.redditScraper, http: app.http },
+        payload,
+        app.logger,
+        app.clock,
+      );
     },
   };
 }

@@ -127,6 +127,90 @@ export function isSelfPost(child: RedditListingChild): boolean {
   return (child as { __isSelfPost?: boolean }).__isSelfPost === true;
 }
 
+/** Per-result container on a search page. Nothing like the listing's markup. */
+const SEARCH_SPLIT = /(?=<div class="[^"]*search-result search-result-link)/;
+
+/**
+ * Parses a search results page.
+ *
+ * Old Reddit renders search with entirely different markup from a subreddit
+ * listing — `search-result-link` containers rather than `thing` divs, and none
+ * of the `data-*` metadata. Reusing the listing parser here silently returned
+ * nothing, which is the exact failure mode scraping is prone to and the reason
+ * both parsers are pinned to captured fixtures.
+ *
+ * One thing search does better: the body is right there in the results, so
+ * nothing needs hydrating afterwards.
+ */
+export function parseSearchResults(html: string): RedditListingChild[] {
+  const blocks = html.split(SEARCH_SPLIT).filter((b) => /data-fullname="t3_/.test(b));
+  const children: RedditListingChild[] = [];
+
+  for (const block of blocks) {
+    const fullname = attr(block, 'data-fullname');
+    if (!fullname) continue;
+
+    const titleMatch = /<a[^>]*class="search-title[^"]*"[^>]*>([\s\S]*?)<\/a>/.exec(block);
+    const title = titleMatch ? textOf(titleMatch[1] ?? '') : '';
+    if (!title) continue;
+
+    // The subreddit link is the only place search states which community this
+    // came from, and that is what the whole rules gate keys on.
+    const subreddit = /class="search-subreddit-link[^"]*"[^>]*>\s*r\/([A-Za-z0-9_]+)/.exec(block)?.[1];
+
+    const permalink = /<a href="(\/r\/[^"]+\/comments\/[^"]+)"/.exec(block)?.[1];
+    const author = /<a[^>]*class="author[^"]*"[^>]*>([^<]+)<\/a>/.exec(block)?.[1]?.trim();
+    const iso = /<time[^>]*datetime="([^"]+)"/.exec(block)?.[1];
+    const comments = /class="search-comments[^"]*"[^>]*>\s*([\d,]+)\s*comment/.exec(block)?.[1];
+
+    const bodyMatch = /<div class="search-result-body">([\s\S]*?)<\/div>\s*<\/div>/.exec(block);
+    const body = bodyMatch ? htmlToPlainText(bodyMatch[1] ?? '') : '';
+
+    const posted = iso ? Date.parse(iso) : Number.NaN;
+
+    children.push({
+      kind: 't3',
+      data: {
+        name: fullname,
+        id: fullname.replace(/^t3_/, ''),
+        ...(permalink ? { permalink } : {}),
+        ...(author && author !== '[deleted]' ? { author } : {}),
+        ...(subreddit ? { subreddit } : {}),
+        title,
+        selftext: body,
+        ...(Number.isFinite(posted) ? { created_utc: posted / 1000 } : {}),
+        ...(comments ? { num_comments: Number(comments.replace(/,/g, '')) } : {}),
+        stickied: false,
+        over_18: false,
+        locked: false,
+      },
+    } as RedditListingChild);
+  }
+
+  return children;
+}
+
+/** Shared by the search body and the post body: markup in, readable text out. */
+function htmlToPlainText(html: string): string {
+  const stripped = html
+    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+    .replace(/<\/\s*(p|li|blockquote|h[1-6])\s*>/gi, '\n\n')
+    .replace(/<\s*li[^>]*>/gi, '- ')
+    .replace(
+      /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi,
+      (_m, href: string, label: string) => {
+        const text = label.replace(/<[^>]+>/g, '').trim();
+        return !text || text === href ? href : `${text} (${href})`;
+      },
+    )
+    .replace(/<[^>]+>/g, '');
+
+  return decodeEntities(stripped)
+    .replace(/[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 /**
  * Pulls the selftext out of a rendered post page.
  *
@@ -248,7 +332,8 @@ export class RedditScrapeClient {
       limit: String(limit),
       include_over_18: 'off',
     });
-    const children = parseListing(html);
+    // Search markup is nothing like a listing's — see parseSearchResults.
+    const children = parseSearchResults(html);
     this.logger.debug('scraped search', { query, posts: children.length });
     return children;
   }

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7a1a3d95-37b4-417c-80ad-21aa81ae463c",
+  "id": "7b3147e2-1e1e-4e7d-9816-1cf92af9a268",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "clicks": {
@@ -1912,6 +1912,13 @@
         "robots_exemption_reason": {
           "name": "robots_exemption_reason",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "max_item_age_hours": {
+          "name": "max_item_age_hours",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

@@ -272,6 +272,7 @@ CREATE TABLE `sources` (
 	`enabled` integer DEFAULT true NOT NULL,
 	`ignore_robots_txt` integer DEFAULT false NOT NULL,
 	`robots_exemption_reason` text,
+	`max_item_age_hours` integer,
 	`discovered` integer DEFAULT false NOT NULL,
 	`discovered_via` text,
 	`last_polled_at` integer,

@@ -1,0 +1,172 @@
+<!doctype html><html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head><title>reddit.com: search results - &quot;local llm&quot;</title><meta name="keywords" content=" reddit, reddit.com, vote, comment, submit " /><meta name="description" content="Reddit gives you the best of the in
+<div class=" search-result search-result-link has-thumbnail has-linkflair " data-fullname="t3_1vlpudh"><a href="/r/LLMDevs/comments/1vlpudh/a_deep_dive_into_mtp_and_accuracy_with_muse/" class="may-blank thumbnail self"></a><div><header class="search-result-header"><a href="https://old.reddit.com/r/LLMDevs/comments/1vlpudh/a_deep_dive_into_mtp_and_accuracy_with_muse/" class="search-title may-blank" >A deep dive into MTP and accuracy, with Muse Glimmer!</a><span class="flairrichtext flaircolordark linkflairlabel " title="Discussion" style="background-color: #00a6a5; border-color: #00a6a5;"><span>Discussion</span></span></header><div class="search-result-meta"><a href="https://old.reddit.com/r/LLMDevs/comments/1vlpudh/a_deep_dive_into_mtp_and_accuracy_with_muse/" class="search-comments may-blank" >0 comments</a>&#32;<span class="search-time">submitted&#32;<time title="Tue Aug 11 18:33:15 2026 UTC" datetime="2026-08-11T18:33:15+00:00">5 minutes ago</time></span>&#32;<span class="search-author">by&#32;<a href="https://old.reddit.com/user/KitchenAmoeba4438" class="author may-blank id-t2_2bymz0jyuy" >KitchenAmoeba4438</a><span class="userattrs"></span></span>&#32;<span>to&#32;<a href="https://old.reddit.com/r/LLMDevs/" class="search-subreddit-link may-blank" >r/LLMDevs</a></span></div><div class="search-expando collapsed"><div class="search-result-body"><div class="md"><p>I&#39;ve always been skeptical of MTP, and wanted to do a deep dive with accuracy. There&#39;s no such thing as a free lunch in this area, and I wanted to do a deep dive to have a better understanding of what the weaknesses and strengths were of MTP.</p>
+
+<p>It is worth having when it works. 1.65x to 2.54x across the eleven, and no accuracy cost I could measure, only a cost to increased ram for these models.</p>
+
+<p>How much you get back depends on how much your card is waiting on memory rather than arithmetic. Heavier quant, bigger gain: E4B went 2.09x at Q4 and 2.32x at Q8. My two mixture-of-experts models gained least of the eleven, which fits, since they read the least per token.</p>
+
+<p>Then Muse Glimmer...well, it didn&#39;t do so well. Its DFlash drafter made the same 7900 XTX 9% slower, keeping 24.55% of its guesses where Gemma and Qwen keep about four in five, and acceptance fell as the run went on instead of settling. Meta reports 3.1x for that pair on a 5090, and there are open llama.cpp issues for DFlash on AMD and under Vulkan, so I am blaming the backend rather than the model. I would not have predicted it from the model.</p>
+
+<p>Per-pair table, intervals and raw outputs: <a href="https://rakuensoftware.com/blog/local-llm-speculative-decoding">https://rakuensoftware.com/blog/local-llm-speculative-decoding</a></p>
+
+<p>Glimmer&#39;s extraction accuracy landed in the model comparison at the same time: <a href="https://rakuensoftware.com/blog/local-llm-fact-extraction-head-to-head">https://rakuensoftware.com/blog/local-llm-fact-extraction-head-to-head</a></p>
+</div>
+</div></div><div class="search-expando-button collapsed"><span class="search-expando-button-label-collapsed">more</span><span class="search-expando-button-label-expanded">less</span></div></div></div>
+<div class=" search-result search-result-link has-thumbnail has-linkflair " data-fullname="t3_1vlpen9"><a href="/r/LocalLLaMA/comments/1vlpen9/heterogeneous_gpu_benchmarks_beforeafter_adding/" class="may-blank thumbnail self"></a><div><header class="search-result-header"><a href="https://old.reddit.com/r/LocalLLaMA/comments/1vlpen9/heterogeneous_gpu_benchmarks_beforeafter_adding/" class="search-title may-blank" >Heterogeneous GPU benchmarks (before/after adding second GPU)</a><span class="flairrichtext flaircolordark linkflairlabel " title="Question | Help" style="background-color: #5a74cc; border-color: #5a74cc;"><span>Question | Help</span></span></header><div class="search-result-meta"><a href="https://old.reddit.com/r/LocalLLaMA/comments/1vlpen9/heterogeneous_gpu_benchmarks_beforeafter_adding/" class="search-comments may-blank" >8 comments</a>&#32;<span class="search-time">submitted&#32;<time title="Tue Aug 11 18:17:36 2026 UTC" datetime="2026-08-11T18:17:36+00:00">21 minutes ago</time></span>&#32;<span class="search-author">by&#32;<a href="https://old.reddit.com/user/ChurnedSorbet409" class="author may-blank id-t2_qp85e39b" >ChurnedSorbet409</a><span class="userattrs"></span></span>&#32;<span>to&#32;<a href="https://old.reddit.com/r/LocalLLaMA/" class="search-subreddit-link may-blank" >r/LocalLLaMA</a></span></div><div class="search-expando collapsed"><div class="search-result-body"><div class="md"><p>I originally posted this in <a href="/r/LocalLLM">r/LocalLLM</a> but didn&#39;t really get much of a response.  </p>
+
+<p>I know there&#39;s already an overabundance of these mixed gpu posts. I’ve actually read through most of them and checked out some YT benchmark vids.</p>
+
+<p>But I don&#39;t think they provide the kind of benchmarks I am looking for. Almost all of them seem to test LLM models that already fit within the VRAM of the primary card or they&#39;re testing an MoE model where it works pretty well with offloading to cpu already, or the benchmarks are run a dual homogeneous gpu setup (like 2x RTX 3090s). None of these give me a good idea of how much speedup adding another card might bring to a setup like mine.</p>
+
+<p>I’m trying to see if anyone has benchmarks for a heterogeneous gpu setup, specifically with a before benchmark where the user tried to load a model that ended up getting offloaded to system RAM.</p>
+
+<p>My current setup &amp; baseline:</p>
+
+<p>GPU: RTX 4080 (16GB)</p>
+
+<p>Model: Qwen 3.6 27B Q4</p>
+
+<p>Result: I’m seeing about 2–3 tokens/sec TG/S because it’s spilling over into my system RAM, don&#39;t really remember PP/S but it was acceptable in my opinion, it was the token generation speeds that were unusable.</p>
+
+<p>The question I&#39;m looking to have answered:</p>
+
+<p>Would it be worth buying some cheap old Pascal cards (like a GTX 1070/1080) or used P100/P40s or 5700XT/2060 (these are the only cheap cards I can find on the used market) to pair with my 4080?</p>
+
+<p>I am aware that the bottleneck will be the slower card&#39;s memory bandwidth but I&#39;d like to see the numbers to get a better idea. Like if I&#39;m going from 2-3 T/S to 6 T/S it probably wouldn&#39;t be worth picking up used old cards not to mention the cards are out of support already.</p>
+
+<p>TLDR: what’s the TPS improvement in adding some random old GPU compared to having it all it in my primary gpu + spilling to system ram?</p>
+</div>
+</div></div><div class="search-expando-button collapsed"><span class="search-expando-button-label-collapsed">more</span><span class="search-expando-button-label-expanded">less</span></div></div></div>
+<div class=" search-result search-result-link has-thumbnail no-linkflair " data-fullname="t3_1vlp2uw"><a href="/r/pcpartsales/comments/1vlp2uw/usacah_dual_rtx_4070_ti_super_aillm_workstation/" class="may-blank thumbnail self"></a><div><header class="search-result-header"><a href="https://old.reddit.com/r/pcpartsales/comments/1vlp2uw/usacah_dual_rtx_4070_ti_super_aillm_workstation/" class="search-title may-blank" >[USA-CA][H] Dual RTX 4070 Ti SUPER AI/LLM Workstation, Ryzen 9 7950X3D, ProArt X670E, DDR5, NVMe [W] PayPal, Local Cash</a></header><div class="search-result-meta"><a href="https://old.reddit.com/r/pcpartsales/comments/1vlp2uw/usacah_dual_rtx_4070_ti_super_aillm_workstation/" class="search-comments may-blank" >1 comment</a>&#32;<span class="search-time">submitted&#32;<time title="Tue Aug 11 18:06:18 2026 UTC" datetime="2026-08-11T18:06:18+00:00">32 minutes ago</time></span>&#32;<span class="search-author">by&#32;<a href="https://old.reddit.com/user/BrolySenju" class="author may-blank id-t2_d7jkqtv0q" >BrolySenju</a><span class="userattrs"></span></span>&#32;<span>to&#32;<a href="https://old.reddit.com/r/pcpartsales/" class="search-subreddit-link may-blank" >r/pcpartsales</a></span></div><div class="search-expando collapsed"><div class="search-result-body"><div class="md"><p>Timestamps: <a href="https://photos.icloud.com/shared/album/01f2zFGCtqcOjAmjjGksjp1yg">https://photos.icloud.com/shared/album/01f2zFGCtqcOjAmjjGksjp1yg</a></p>
+
+<p>Video timestamp: <a href="https://photos.icloud.com/shared/album/01akavivpD-vbrRpMcVx0TBJw">https://photos.icloud.com/shared/album/01akavivpD-vbrRpMcVx0TBJw</a></p>
+
+<p>Local: Vandenberg SFB / Santa Maria / Central Coast, California</p>
+
+<p>Please comment before sending a PM</p>
+
+<p>I am selling my personal dual-GPU CUDA / local LLM / AI / creator<br/>
+workstation as I transition my primary system to Apple Silicon.</p>
+
+<p>This machine was used for local AI, LLM experimentation, CUDA-capable<br/>
+workloads, creative production, technical work, and general workstation<br/>
+use. It was not used as a gaming machine.</p>
+
+<p>The 3DMark results in the timestamp album were run only to validate the<br/>
+hardware for sale.</p>
+
+<p>The complete system is currently assembled and operational. Complete<br/>
+local sale is preferred, but part-out prices are included below.</p>
+
+<h1>==================================================</h1>
+
+<h1>COMPLETE WORKSTATION</h1>
+
+<p>CPU:<br/>
+AMD Ryzen 9 7950X3D<br/>
+16 cores / 32 threads</p>
+
+<p>GPU #1:<br/>
+ZOTAC GAMING GeForce RTX 4070 Ti SUPER Trinity Black Edition<br/>
+16GB GDDR6X<br/>
+2610 MHz boost shown in GPU-Z</p>
+
+<p>GPU #2:<br/>
+ZOTAC GAMING GeForce RTX 4070 Ti SUPER Trinity OC<br/>
+16GB GDDR6X<br/>
+2625 MHz boost shown in GPU-Z</p>
+
+<p>Motherboard:<br/>
+ASUS ProArt X670E-CREATOR WIFI<br/>
+BIOS 3702</p>
+
+<p>Installed Memory:<br/>
+Crucial Pro 32GB<br/>
+2x16GB DDR5<br/>
+Kit model: CP2K16G64C38U5B<br/>
+Module part number: CP16G64C38U5B.M8D3<br/>
+Rated DDR5-6400 CL38<br/>
+Currently configured at 5200 MT/s in this system</p>
+
+<p>Power Supply:<br/>
+ASUS ROG Loki 1200W<br/>
+80 Plus Titanium<br/>
+Fully modular SFX-L<br/>
+ATX 3.1</p>
+
+<p>CPU Cooler:<br/>
+ID-COOLING FROZN A720 BLACK</p>
+
+<p>Case:<br/>
+Mechanic Master C34</p>
+
+<p>Included Storage:<br/>
+FIKWOT FX991 1TB NVMe<br/>
+Western Digital SN580E 2TB NVMe</p>
+
+<p>Total included storage: 3TB</p>
+
+<p>The separate Samsung 2TB and SPCC 4TB drives are not included.</p>
+
+<p>Monitor, keyboard, mouse, and other peripherals are not included.</p>
+
+<p>COMPLETE SYSTEM PRICE:</p>
+
+<p>$2,950 LOCAL</p>
+
+<p>$3,250 SHIPPED CONUS</p>
+
+<p>Whole-system shipping would be a multi-box shipment. Both GPUs would be<br/>
+removed from the motherboard and packed separately. Shipment would<br/>
+include tracking, insurance, and signature confirmation.</p>
+
+<h1>==================================================</h1>
+
+<h1>IMPORTANT MOTHERBOARD DISCLOSURE</h1>
+
+<p>The ASUS ProArt X670E-CREATOR WIFI has a known bent AM5 socket pin.</p>
+
+<p>
+<div class=" search-result search-result-link has-thumbnail no-linkflair " data-fullname="t3_1vlp22t"><a href="/r/vibecoding/comments/1vlp22t/vibe_coded_the_fantasy_gazette/" class="may-blank thumbnail self"></a><div><header class="search-result-header"><a href="https://old.reddit.com/r/vibecoding/comments/1vlp22t/vibe_coded_the_fantasy_gazette/" class="search-title may-blank" >Vibe coded The Fantasy Gazette</a></header><div class="search-result-meta"><a href="https://old.reddit.com/r/vibecoding/comments/1vlp22t/vibe_coded_the_fantasy_gazette/" class="search-comments may-blank" >1 comment</a>&#32;<span class="search-time">submitted&#32;<time title="Tue Aug 11 18:05:32 2026 UTC" datetime="2026-08-11T18:05:32+00:00">33 minutes ago</time></span>&#32;<span class="search-author">by&#32;<a href="https://old.reddit.com/user/SignAffectionate6360" class="author may-blank id-t2_vnn9jyjg" >SignAffectionate6360</a><span class="userattrs"></span></span>&#32;<span>to&#32;<a href="https://old.reddit.com/r/vibecoding/" class="search-subreddit-link may-blank" >r/vibecoding</a></span></div><div class="search-expando collapsed"><div class="search-result-body"><div class="md"><p>Got a home AI server (NVIDIA GB10, 128GB unified memory) two months ago and wanted a project to actually use it for. I play Fantasy Premier League with some old class mates. The winner gets a cup, the loser has to give a full option BBQ for all the friends. There is always a lot of drama because losing also means getting called out the whole year. With this project I wanted to add some more drama. So now every gameweek my server pulls the real league data and a small pipeline of LLM agents writes it up like a 19th century broadsheet — league table shakeups, who benched a captain&#39;s haul, biggest risers/fallers, that kind of thing.</p>
+
+<p>Pipeline is a few stages: story planning → writing → a deterministic fact-checker that catches hallucinated stats before they ship → a judge pass that can send it back for a rewrite if something&#39;s off. All self-hosted, running on the home server. </p>
+
+<p>It has been a great ride learning to work with local LLM&#39;s. It´s purely vibecoded. I decided to open it up to anyone and made a website for it. Keeping it for free since it&#39;s a fun project, mostly so I can show my wife I&#39;m doing useful things with it.</p>
+
+<p><a href="http://www.fantasygazette.be">www.fantasygazette.be</a> if anyone wants to see a sample or add their league.</p>
+</div>
+</div></div><div class="search-expando-button collapsed"><span class="search-expando-button-label-collapsed">more</span><span class="search-expando-button-label-expanded">less</span></div></div></div>
+<div class=" search-result search-result-link has-thumbnail has-linkflair " data-fullname="t3_1vlowp1"><a href="/r/selfhosted/comments/1vlowp1/intel_arc_pro_b50_for_llamacpp_did_i_mess_up/" class="may-blank thumbnail self"></a><div><header class="search-result-header"><a href="https://old.reddit.com/r/selfhosted/comments/1vlowp1/intel_arc_pro_b50_for_llamacpp_did_i_mess_up/" class="search-title may-blank" >Intel Arc Pro B50 for llama.cpp — Did I mess up?</a><span class="flairrichtext flaircolordark linkflairlabel " title="Need Help" style="background-color: transparent; border-color: transparent;"><span>Need Help</span></span></header><div class="search-result-meta"><a href="https://old.reddit.com/r/selfhosted/comments/1vlowp1/intel_arc_pro_b50_for_llamacpp_did_i_mess_up/" class="search-comments may-blank" >8 comments</a>&#32;<span class="search-time">submitted&#32;<time title="Tue Aug 11 18:00:32 2026 UTC" datetime="2026-08-11T18:00:32+00:00">38 minutes ago</time></span>&#32;<span class="search-author">by&#32;<a href="https://old.reddit.com/user/Reaper-Of-Roses" class="author may-blank id-t2_dnm61yve" >Reaper-Of-Roses</a><span class="userattrs"></span></span>&#32;<span>to&#32;<a href="https://old.reddit.com/r/selfhosted/" class="search-subreddit-link may-blank" >r/selfhosted</a></span></div><div class="search-expando collapsed"><div class="search-result-body"><div class="md"><p>Hey guys,</p>
+
+<p>I have a Minisforum MS-A2 and want to start running my own local LLM, specifically llama.cpp. I needed a low profile card, and I noticed people found the Intel Arc Pro B50 to be a good fit.</p>
+
+<p>Now that I have the card, I’m realizing that compiling llama.cpp with SYCL is a headache. I’m planning to do so within an LXC container with Ubuntu.</p>
+
+<p>It seems like there are a lot more stories of struggle than success.</p>
+
+<p>Would it be more worth it to quit while I’m not in too deep and get an AMD or NVIDIA card instead?</p>
+
+<p>Thanks</p>
+
+<p>-RoR</p>
+</div>
+</div></div><div class="search-expando-button collapsed"><span class="search-expando-button-label-collapsed">more</span><span class="search-expando-button-label-expanded">less</span></div></div></div>
+<div class=" search-result search-result-link has-thumbnail has-linkflair " data-fullname="t3_1vlos6n"><a href="/r/zen_browser/comments/1vlos6n/zen_tab_sorting_automated_tab_grouping_better_tab/" class="may-blank thumbnail "><img src="//preview.redd.it/wek466boasih1.png?width=140&amp;height=140&amp;crop=1:1,smart&amp;auto=webp&amp;s=d7a36ff171bbce24bb7c4cbe8d82d564478fa55b" width='70' height='70' alt=""></a><div><header class="search-result-header"><a href="https://old.reddit.com/r/zen_browser/comments/1vlos6n/zen_tab_sorting_automated_tab_grouping_better_tab/" class="search-title may-blank" >Zen Tab Sorting - Automated Tab Grouping + Better Tab Group Display</a><span class="flairrichtext flaircolorlight linkflairlabel " title=":heart: Some Love" style="background-color: #9e618f; border-color: #9e618f;"><span class="flairemoji" title=":heart:" style="background-image: url(https://emoji.redditmedia.com/78zl5oqjyo3e1_t5_b900q1/heart)"></span><span> Some Love</span></span></header><div class="search-result-meta"><a href="https://old.reddit.com/r/zen_browser/comments/1vlos6n/zen_tab_sorting_automated_tab_grouping_better_tab/" class="search-comments may-blank" >2 comments</a>&#32;<span class="search-time">submitted&#32;<time title="Tue Aug 11 17:56:07 2026 UTC" datetime="2026-08-11T17:56:07+00:00">43 minutes ago</time></span>&#32;<span class="search-author">by&#32;<a href="https://old.reddit.com/user/Loop_Rook" class="author may-blank id-t2_2jzokgt01t" >Loop_Rook</a><span class="userattrs"></span></span>&#32;<span>to&#32;<a href="https://old.reddit.com/r/zen_browser/" class="search-subreddit-link may-blank" >r/zen_browser</a></span></div><div class="search-expando collapsed"><div class="search-result-body"><div class="md"><p>One feature I missed from Edge was the tab grouping feature.</p>
+
+<p>I forked Open Tab Sorting (A fork of Zen Tab Wand) which has the ability to use the built in firefox LLM, your own local LLM, or another LLM such as Gemini, Claude, etc.</p>
+
+<p>I liked the appearance of Advanced Tab Groups, but it does not seem to function.</p>
+
+<p>So I combined the two and made a zen mod called <a href="https://github.com/LoopRook/Zen-Tab-Sorting">Zen Tab Sorting</a>. Choose your LLM or your own sorting rules, choose to give your tab groups an icon or not.</p>
+
+<p>You can install it manually through the Sine Store mod. I have applied to get it put into the store and am looking at getting it into Zen Mods.</p>
+
+<p>Questions, comments, concerns? lmk.</p>
+
+<p>Edit: While mentioned in the readme, posting here as well. </p>
+
+<p>Everyone installing this mod manually should first check this <code>Enable installing JS from unofficial sources. (unsafe, use at your own risk)</code> option in Sine settings.</p>
+
+<p>Thanks <a href="/u/gamer_undefeated">u/gamer_undefeated</a></p>
+</div>
+</div></div><div class="search-expando-button collapsed"><span class="search-expando-button-label-collapsed">more</span><span class="search-expando-button-label-expanded">less</span></div><div class="search-result-footer"><span class="search-result-icon search-result-icon-external"></span><a href="https://i.redd.it/wek466boasih1.png" class="search-link may-blank" >https://i.redd.it/wek466boasih1.png</a></div></div></div>
