@@ -71,6 +71,13 @@ export const sourceKindSchema = z.enum([
 ]);
 export type SourceKind = z.infer<typeof sourceKindSchema>;
 
+/**
+ * Search platforms whose query field is relevance-scored free text rather than
+ * a boolean expression. Verified the expensive way on each: an `OR` matches
+ * the word "or" and quietly floods the queue with unrelated communities.
+ */
+const BOOLEAN_UNAWARE_SEARCH = new Set(['hn', 'stackexchange', 'reddit_search']);
+
 export const sourceConfigSchema = z
   .object({
     kind: sourceKindSchema,
@@ -108,6 +115,14 @@ export const sourceConfigSchema = z
       'a source with ignoreRobotsTxt must also carry robotsExemptionReason — ' +
       'if the exemption is worth taking it is worth writing down why',
     path: ['robotsExemptionReason'],
+  })
+  .refine((s) => !(BOOLEAN_UNAWARE_SEARCH.has(s.kind) && / OR /.test(s.identifier)), {
+    message:
+      'this platform scores search terms by relevance rather than evaluating booleans, ' +
+      'so "a OR b" matches documents containing the word "or" and returns noise. ' +
+      'Use one quoted phrase per source instead. ' +
+      '(Learned the hard way on Hacker News, Stack Exchange and Reddit in turn.)',
+    path: ['identifier'],
   });
 
 export const productConfigSchema = z

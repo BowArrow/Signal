@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build)",
+      "Bash(pnpm vitest:*)",
+      "Bash(pnpm db:generate)",
+      "Bash(pnpm db:migrate)",
+      "Bash(pnpm db:seed)",
+      "Bash(pnpm signal:*)",
+      "Bash(node scripts/inspect.mjs:*)",
+      "Bash(node scripts/rebuild-native.mjs:*)",
+      "PowerShell(pnpm typecheck)",
+      "PowerShell(pnpm lint)",
+      "PowerShell(pnpm test)",
+      "PowerShell(pnpm build)",
+      "PowerShell(pnpm db:generate)",
+      "PowerShell(pnpm db:migrate)",
+      "PowerShell(pnpm db:seed)",
+      "PowerShell(pnpm signal:*)",
+      "PowerShell(node scripts/inspect.mjs:*)",
+      "PowerShell(node scripts/rebuild-native.mjs:*)"
+    ]
+  }
+}

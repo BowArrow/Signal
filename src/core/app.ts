@@ -25,6 +25,12 @@ import {
   RedditScrapeRulesFetcher,
   type RulesFetcher,
 } from './rules/fetch.js';
+import {
+  DiscourseRulesFetcher,
+  GitHubRulesFetcher,
+  LobstersRulesFetcher,
+  StackExchangeRulesFetcher,
+} from './rules/platform-fetchers.js';
 
 /**
  * One place that builds the whole engine from config. The CLI and the Electron
@@ -146,6 +152,10 @@ export function createApp(options: CreateAppOptions = {}): App {
         : new RedditScrapeRulesFetcher(scrapeClient),
     ],
     ['hn', new HackerNewsRulesFetcher()],
+    ['stackexchange', new StackExchangeRulesFetcher(http)],
+    ['discourse', new DiscourseRulesFetcher(http)],
+    ['github', new GitHubRulesFetcher(http, env.GITHUB_TOKEN)],
+    ['lobsters', new LobstersRulesFetcher(http)],
   ]);
 
   return {

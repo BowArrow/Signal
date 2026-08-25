@@ -2,7 +2,11 @@ import { type Command } from 'commander';
 import { asc, eq, sql } from 'drizzle-orm';
 import { createApp } from '../../core/app.js';
 import { communities, communityRules, opportunities } from '../../core/db/schema.js';
-import { blockCommunity, findCommunity, unblockCommunity } from '../../core/communities/registry.js';
+import {
+  blockCommunity,
+  findCommunityAnywhere,
+  unblockCommunity,
+} from '../../core/communities/registry.js';
 import { getRule, isStale, markReviewed, refreshRules } from '../../core/rules/registry.js';
 import { bold, cyan, dim, green, heading, red, relativeTime, table, yellow } from '../format.js';
 
@@ -93,7 +97,7 @@ export function registerRulesCommands(program: Command): void {
     .requiredOption('-r, --reason <reason>', 'why')
     .action((name: string, opts: { reason: string }) => {
       const app = createApp();
-      const community = findCommunity(app.db, 'reddit', name.replace(/^r\//, ''));
+      const community = findCommunityAnywhere(app.db, name);
       if (!community) {
         console.error(`${red('✗')} no community called "${name}"`);
         app.close();
@@ -110,7 +114,7 @@ export function registerRulesCommands(program: Command): void {
     .description('undo a block')
     .action((name: string) => {
       const app = createApp();
-      const community = findCommunity(app.db, 'reddit', name.replace(/^r\//, ''));
+      const community = findCommunityAnywhere(app.db, name);
       if (!community) {
         console.error(`${red('✗')} no community called "${name}"`);
         app.close();
@@ -132,75 +136,135 @@ export function registerRulesCommands(program: Command): void {
     .option('-c, --community <name>', 'just this one')
     .option('--all', 'every community that has no record or a stale one')
     .option('--force', 'refetch even records that are current')
-    .action(async (opts: { community?: string; all?: boolean; force?: boolean }) => {
-      const app = createApp();
+    .option(
+      '-m, --min-opportunities <count>',
+      'skip communities Signal has seen fewer items from',
+      '2',
+    )
+    .option('--include-thin', 'fetch even for one-off sightings from search')
+    .action(
+      async (opts: {
+        community?: string;
+        all?: boolean;
+        force?: boolean;
+        minOpportunities: string;
+        includeThin?: boolean;
+      }) => {
+        const app = createApp();
 
-      const all = app.db.select().from(communities).all();
-      const targets = opts.community
-        ? all.filter(
-            (c) =>
-              c.name === opts.community?.replace(/^r\//, '').toLowerCase() ||
-              c.displayName.toLowerCase() === opts.community?.toLowerCase(),
-          )
-        : all.filter((c) => {
-            if (c.blockedAt) return false;
-            const rule = getRule(app.db, c.id);
-            if (!rule) return true;
-            return opts.force === true || isStale(rule, app.clock);
-          });
-
-      if (targets.length === 0) {
-        console.log(dim('\n  nothing to fetch — every community has a current rules record\n'));
-        app.close();
-        return;
-      }
-
-      console.log(heading(`Fetching rules for ${targets.length} communities`));
-
-      for (const community of targets) {
-        const fetcher = app.rulesFetchers.get(community.platform);
-        if (!fetcher) {
-          console.log(`  ${dim('○')} ${community.displayName}  ${dim('no fetcher for this platform')}`);
-          continue;
-        }
-
-        const outcome = await refreshRules(
-          app.db,
-          community,
-          fetcher,
-          app.llm,
-          app.config.llm.models['interpret-rules'],
-          app.logger,
-          app.clock,
+        const counts = new Map(
+          app.db
+            .select({ id: communities.id, n: sql<number>`count(${opportunities.id})` })
+            .from(communities)
+            .leftJoin(opportunities, eq(opportunities.communityId, communities.id))
+            .groupBy(communities.id)
+            .all()
+            .map((r) => [r.id, Number(r.n)]),
         );
 
-        if (outcome.status === 'written' && outcome.interpretation) {
-          const i = outcome.interpretation;
-          console.log(
-            `  ${green('●')} ${cyan(community.displayName)}  ${policyColor(i.selfPromo, false)}  ` +
-              dim(`confidence ${i.confidence.toFixed(2)}, ${i.evidence.length} quotes, unverified`),
-          );
-        } else {
-          console.log(
-            `  ${outcome.status === 'error' ? red('✗') : dim('○')} ${community.displayName}  ${dim(outcome.detail ?? '')}`,
-          );
-        }
-      }
+        const minOpportunities = Number.parseInt(opts.minOpportunities, 10) || 2;
+        const all = app.db.select().from(communities).all();
+        let thin = 0;
 
-      console.log(
-        `\n  ${dim('Every record is written unverified. Read the evidence before trusting it:')}\n` +
-          `  ${dim('pnpm signal rules show <community>')}\n`,
-      );
-      app.close();
-    });
+        const targets = opts.community
+          ? all.filter(
+              (c) =>
+                c.name === opts.community?.replace(/^r\//, '').toLowerCase() ||
+                c.displayName.toLowerCase() === opts.community?.toLowerCase(),
+            )
+          : all.filter((c) => {
+              if (c.blockedAt) return false;
+
+              // Discovery meets a lot of places once and never again. Fetching
+              // rules for every one of them means minutes of requests to
+              // communities that will never produce a draft — r/HunterXHunter
+              // matched a keyword; it is not somewhere to post. A monitored
+              // community is always worth it, whatever its count.
+              if (!opts.includeThin && !c.monitored && (counts.get(c.id) ?? 0) < minOpportunities) {
+                thin += 1;
+                return false;
+              }
+
+              const rule = getRule(app.db, c.id);
+              if (!rule) return true;
+              return opts.force === true || isStale(rule, app.clock);
+            });
+
+        if (targets.length === 0) {
+          // "Nothing due" and "you named something that does not exist" are
+          // very different problems, and reporting the first for the second
+          // sends you looking in the wrong place.
+          if (opts.community) {
+            console.log(
+              `\n  ${red('✗')} no community called "${opts.community}".` +
+                dim('\n  Signal only knows a community once it has ingested something from it.') +
+                dim('\n  pnpm signal communities\n'),
+            );
+            process.exitCode = 1;
+          } else {
+            console.log(
+              dim(
+                thin > 0
+                  ? `\n  nothing to fetch — ${thin} communities skipped as one-off sightings\n`
+                  : '\n  nothing to fetch — every community has a current rules record\n',
+              ),
+            );
+          }
+          app.close();
+          return;
+        }
+
+        console.log(
+          heading(`Fetching rules for ${targets.length} communities`) +
+            (thin > 0
+              ? `${dim(`  skipping ${thin} seen fewer than ${minOpportunities} times — --include-thin to fetch anyway`)}\n`
+              : ''),
+        );
+
+        for (const community of targets) {
+          const fetcher = app.rulesFetchers.get(community.platform);
+          if (!fetcher) {
+            console.log(`  ${dim('○')} ${community.displayName}  ${dim('no fetcher for this platform')}`);
+            continue;
+          }
+
+          const outcome = await refreshRules(
+            app.db,
+            community,
+            fetcher,
+            app.llm,
+            app.config.llm.models['interpret-rules'],
+            app.logger,
+            app.clock,
+          );
+
+          if (outcome.status === 'written' && outcome.interpretation) {
+            const i = outcome.interpretation;
+            console.log(
+              `  ${green('●')} ${cyan(community.displayName)}  ${policyColor(i.selfPromo, false)}  ` +
+                dim(`confidence ${i.confidence.toFixed(2)}, ${i.evidence.length} quotes, unverified`),
+            );
+          } else {
+            console.log(
+              `  ${outcome.status === 'error' ? red('✗') : dim('○')} ${community.displayName}  ${dim(outcome.detail ?? '')}`,
+            );
+          }
+        }
+
+        console.log(
+          `\n  ${dim('Every record is written unverified. Read the evidence before trusting it:')}\n` +
+            `  ${dim('pnpm signal rules show <community>')}\n`,
+        );
+        app.close();
+      },
+    );
 
   rules
     .command('show <community>')
     .description('the verbatim rules and the reading of them, side by side')
     .action((name: string) => {
       const app = createApp();
-      const community = findCommunity(app.db, 'reddit', name.replace(/^r\//, ''))
-        ?? findCommunity(app.db, 'hn', name);
+      const community = findCommunityAnywhere(app.db, name);
       if (!community) {
         console.error(`${red('✗')} no community called "${name}"`);
         app.close();
@@ -254,8 +318,7 @@ export function registerRulesCommands(program: Command): void {
     .option('-n, --notes <notes>', 'override the notes')
     .action((name: string, opts: { selfPromo?: string; notes?: string }) => {
       const app = createApp();
-      const community =
-        findCommunity(app.db, 'reddit', name.replace(/^r\//, '')) ?? findCommunity(app.db, 'hn', name);
+      const community = findCommunityAnywhere(app.db, name);
       if (!community) {
         console.error(`${red('✗')} no community called "${name}"`);
         app.close();

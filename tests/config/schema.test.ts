@@ -102,6 +102,47 @@ describe('signal.config.ts', () => {
     ).toThrow();
   });
 
+  it.each(['hn', 'stackexchange', 'reddit_search'])(
+    'rejects a boolean OR in a %s search query',
+    (kind) => {
+      // Made this mistake on all three platforms in turn. Each time it looked
+      // like the source was simply finding nothing, or — worse on Reddit —
+      // quietly matched the word "or" and filled the queue with r/palindromes.
+      expect(() =>
+        validateConfig(
+          withConfig((d) => {
+            (d['sources'] as unknown as unknown[]).push({
+              kind,
+              identifier: '"local llm" OR ollama',
+              displayName: 'noisy',
+              pollIntervalSeconds: 3600,
+              enabled: true,
+              ...(kind === 'reddit_search'
+                ? { ignoreRobotsTxt: true, robotsExemptionReason: 'a stated reason goes here' }
+                : {}),
+            });
+          }),
+        ),
+      ).toThrow(/booleans/);
+    },
+  );
+
+  it('allows OR on a platform whose search actually supports it', () => {
+    expect(() =>
+      validateConfig(
+        withConfig((d) => {
+          (d['sources'] as unknown as unknown[]).push({
+            kind: 'github',
+            identifier: 'is:issue is:open offline OR airgapped',
+            displayName: 'github or',
+            pollIntervalSeconds: 3600,
+            enabled: true,
+          });
+        }),
+      ),
+    ).not.toThrow();
+  });
+
   it('has no off switch for robots.txt', () => {
     expect(() =>
       validateConfig(

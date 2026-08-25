@@ -77,7 +77,8 @@ describe('stack exchange', () => {
   });
 
   it('keeps a question with no body', () => {
-    const result = normalizeQuestion({ ...question, body: undefined }, 'superuser');
+    const { body: _omitted, ...withoutBody } = question;
+    const result = normalizeQuestion(withoutBody, 'superuser');
     if ('skip' in result) throw new Error('unreachable');
     expect(result.body).toBe('');
   });
@@ -140,7 +141,8 @@ describe('discourse', () => {
   it('leaves the body empty when the forum publishes no excerpt', () => {
     // The poller queues a hydration fetch for exactly this case rather than
     // letting the topic be scored on its title.
-    const result = normalizeTopic({ ...topic, excerpt: undefined }, 'https://x.test', authors);
+    const { excerpt: _omitted, ...withoutExcerpt } = topic;
+    const result = normalizeTopic(withoutExcerpt, 'https://x.test', authors);
     if ('skip' in result) throw new Error('unreachable');
     expect(result.body).toBe('');
   });
@@ -194,7 +196,8 @@ describe('github', () => {
   });
 
   it('skips an issue whose repository cannot be determined', () => {
-    expect(normalizeIssue({ ...issue, repository_url: undefined })).toHaveProperty('skip');
+    const { repository_url: _omitted, ...withoutRepo } = issue;
+    expect(normalizeIssue(withoutRepo)).toHaveProperty('skip');
   });
 });
 
@@ -227,7 +230,8 @@ describe('lobsters', () => {
   });
 
   it('skips a story with no short_id', () => {
-    expect(normalizeStory({ ...story, short_id: undefined })).toHaveProperty('skip');
+    const { short_id: _omitted, ...withoutId } = story;
+    expect(normalizeStory(withoutId)).toHaveProperty('skip');
   });
 });
 

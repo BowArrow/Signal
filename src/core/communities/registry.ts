@@ -56,6 +56,12 @@ export function upsertCommunity(
   db: Db,
   ref: CommunityRef,
   clock: Clock = systemClock,
+  /**
+   * True when a source points at this community directly, rather than merely
+   * turning it up in a search. Only ever upgrades: meeting r/LocalLLaMA once
+   * in a search result must not un-monitor it.
+   */
+  monitored = false,
 ): Community {
   const name = ref.name.trim().toLowerCase();
   const existing = db
@@ -64,7 +70,16 @@ export function upsertCommunity(
     .where(and(eq(communities.platform, ref.platform), eq(communities.name, name)))
     .get();
 
-  if (existing) return existing;
+  if (existing) {
+    if (monitored && !existing.monitored) {
+      db.update(communities)
+        .set({ monitored: true, updatedAt: clock.now() })
+        .where(eq(communities.id, existing.id))
+        .run();
+      return { ...existing, monitored: true };
+    }
+    return existing;
+  }
 
   const row: Community = {
     id: newId(),
@@ -74,7 +89,7 @@ export function upsertCommunity(
     url: ref.url ?? communityUrl(ref.platform, ref.name.trim()),
     description: null,
     subscribers: null,
-    monitored: false,
+    monitored,
     firstSeenAt: clock.now(),
     blockedAt: null,
     blockedReason: null,
@@ -83,6 +98,23 @@ export function upsertCommunity(
   };
   db.insert(communities).values(row).run();
   return row;
+}
+
+/**
+ * Finds a community by whatever the user typed, across every platform.
+ *
+ * The CLI used to try reddit then hn, which quietly failed for a Stack
+ * Exchange site or a GitHub repo. Accepts `r/LocalLLaMA`, `LocalLLaMA`,
+ * `superuser`, `ollama/ollama`, or a display name.
+ */
+export function findCommunityAnywhere(db: Db, query: string): Community | undefined {
+  const needle = query.trim().replace(/^r\//, '').toLowerCase();
+  const rows = db.select().from(communities).all();
+  return (
+    rows.find((c) => c.name === needle) ??
+    rows.find((c) => c.displayName.toLowerCase() === query.trim().toLowerCase()) ??
+    rows.find((c) => c.displayName.toLowerCase().replace(/^r\//, '') === needle)
+  );
 }
 
 export function findCommunity(

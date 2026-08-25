@@ -25,6 +25,20 @@ export interface PersistOutcome {
 const TERMINAL_STATUSES = new Set(['approved', 'published', 'rejected']);
 
 /**
+ * Source kinds that point at exactly one community.
+ *
+ * The rest are searches spanning many, so a community they turn up is a
+ * sighting rather than somewhere Signal has chosen to watch. The distinction
+ * decides whose rules are worth fetching: a subreddit on the poll list, yes;
+ * one r/HunterXHunter thread that matched a keyword once, no.
+ */
+const DIRECT_COMMUNITY_KINDS = new Set(['reddit', 'hn', 'stackexchange', 'discourse', 'lobsters']);
+
+export function isDirectCommunitySource(source: Pick<Source, 'kind'>): boolean {
+  return DIRECT_COMMUNITY_KINDS.has(source.kind);
+}
+
+/**
  * Writes normalized items into the opportunities table, deduplicating on
  * (source_id, external_id).
  *
@@ -72,7 +86,12 @@ export function persistItems(
       const cached = communityIds.get(key);
       if (cached) return cached;
 
-      const community = upsertCommunity(tx as unknown as Db, item.community, clock);
+      const community = upsertCommunity(
+        tx as unknown as Db,
+        item.community,
+        clock,
+        isDirectCommunitySource(source),
+      );
       if (community.firstSeenAt === now) outcome.newCommunities.push(community.displayName);
       communityIds.set(key, community.id);
       return community.id;

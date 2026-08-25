@@ -100,10 +100,16 @@ const config: SignalConfigInput = {
     // turn up threads in communities that are not listed above — which is the
     // point. Anything they find is held at rules_unknown until that
     // community's rules have been fetched and read.
+    //
+    // One quoted phrase per source, and no OR. Reddit's search scores loosely
+    // rather than evaluating booleans, so `"a" OR "b"` matched almost
+    // anything and dragged in r/MahjongArena, r/Mcat and r/palindromes. Every
+    // search platform here has now made the same mistake look different.
     { kind: 'reddit_search', identifier: '"local llm" self:yes', displayName: 'Discover · local llm', pollIntervalSeconds: 1800, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
-    { kind: 'reddit_search', identifier: 'ollama help self:yes', displayName: 'Discover · ollama help', pollIntervalSeconds: 1800, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
-    { kind: 'reddit_search', identifier: '"offline ai" OR "runs offline" self:yes', displayName: 'Discover · offline ai', pollIntervalSeconds: 3600, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
-    { kind: 'reddit_search', identifier: '"blocks chatgpt" OR "cant use chatgpt at work" self:yes', displayName: 'Discover · blocked at work', pollIntervalSeconds: 3600, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit_search', identifier: '"runs locally" llm self:yes', displayName: 'Discover · runs locally', pollIntervalSeconds: 1800, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit_search', identifier: '"offline ai" self:yes', displayName: 'Discover · offline ai', pollIntervalSeconds: 3600, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit_search', identifier: '"blocks chatgpt" self:yes', displayName: 'Discover · blocked at work', pollIntervalSeconds: 3600, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
+    { kind: 'reddit_search', identifier: '"privacy focused" assistant self:yes', displayName: 'Discover · privacy assistant', pollIntervalSeconds: 3600, enabled: true, ignoreRobotsTxt: true, robotsExemptionReason: REDDIT_EXEMPTION },
 
     // Read-only via the Algolia search API. There is no publish path for HN
     // and there will not be one.
