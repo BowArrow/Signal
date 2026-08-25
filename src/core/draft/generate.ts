@@ -72,6 +72,10 @@ function describeProduct(product: Product | null): string {
     product.priceCents > 0
       ? `price: $${(product.priceCents / 100).toFixed(0)} one-time`
       : 'price: not published',
+    // The link is swapped for a tracked redirect at publish time, which is the
+    // only way a reply can ever be credited with a sale. Without it in the
+    // prompt there is nothing to swap and attribution is dead on arrival.
+    `link: ${product.utmBase}`,
     `claims you may make (and no others): ${product.proofPoints.join('; ') || 'none recorded'}`,
   ].join('\n');
 }
@@ -94,9 +98,10 @@ export function productInstruction(rule: CommunityRule | null, product: Product 
   return (
     'If, and only if, the product is genuinely relevant to what this person asked, mention it in ' +
     'a single sentence at the very end. It must include a plain disclosure that you build it — ' +
-    'the words "disclosure: my product" or "i build this" are both fine. If mentioning it would ' +
-    'be a stretch, omit it entirely, set mentionsProduct to false, and say why in omitReason. ' +
-    'Omitting is a good outcome and is often the right call.'
+    'the words "disclosure: my product" or "i build this" are both fine. Include the link exactly ' +
+    'as given above, plainly, not as a markdown link with clever anchor text. If mentioning it ' +
+    'would be a stretch, omit it entirely, set mentionsProduct to false, and say why in ' +
+    'omitReason. Omitting is a good outcome and is often the right call.'
   );
 }
 
