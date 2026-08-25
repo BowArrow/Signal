@@ -24,7 +24,11 @@
       "PowerShell(pnpm db:seed)",
       "PowerShell(pnpm signal:*)",
       "PowerShell(node scripts/inspect.mjs:*)",
-      "PowerShell(node scripts/rebuild-native.mjs:*)"
+      "PowerShell(node scripts/rebuild-native.mjs:*)",
+      "Bash(node scripts/inspect.mjs rules)",
+      "Bash(node \"C:/Users/cshor/AppData/Local/Temp/claude/c--Users-cshor-Documents-WebProjects-Signal/8ae9e674-997f-40e3-a378-cdc6c89d8b1a/scratchpad/probe-sideproject.mjs\")",
+      "Bash(node \"C:/Users/cshor/AppData/Local/Temp/claude/c--Users-cshor-Documents-WebProjects-Signal/8ae9e674-997f-40e3-a378-cdc6c89d8b1a/scratchpad/probe-sidebar.mjs\")",
+      "Bash(node \"C:/Users/cshor/AppData/Local/Temp/claude/c--Users-cshor-Documents-WebProjects-Signal/8ae9e674-997f-40e3-a378-cdc6c89d8b1a/scratchpad/probe-sidebar2.mjs\")"
     ]
   }
 }

@@ -299,12 +299,28 @@ export function registerRulesCommands(program: Command): void {
         console.log(`\n  ${yellow('no evidence quoted')} — treat the reading above with suspicion`);
       }
 
+      const rawRules = rule.rawRules ?? [];
       console.log(`\n  ${bold('rules as the community published them')}  ${dim(rule.sourceUrl ?? '')}`);
-      for (const raw of rule.rawRules ?? []) {
+      if (rawRules.length === 0) {
+        console.log(`    ${dim('this community publishes no numbered rules')}`);
+      }
+      for (const raw of rawRules) {
         console.log(`\n    ${cyan(raw.shortName)}`);
         for (const line of (raw.description || '').split('\n')) {
           if (line.trim()) console.log(`      ${dim(line.trim())}`);
         }
+      }
+
+      // Plenty of communities keep their real posting norms in prose rather
+      // than in numbered rules. Omitting it made a correct record look empty,
+      // which is a good way to stop trusting a guardrail that is working.
+      if (rule.rawSidebar) {
+        console.log(`\n  ${bold('sidebar / description')}`);
+        for (const line of rule.rawSidebar.split('\n')) {
+          if (line.trim()) console.log(`    ${dim(line.trim())}`);
+        }
+      } else if (rawRules.length === 0) {
+        console.log(`\n  ${yellow('and no sidebar text either')} — nothing here could be read`);
       }
 
       console.log(`\n  ${dim(`confirm with: pnpm signal rules review ${name}`)}\n`);
