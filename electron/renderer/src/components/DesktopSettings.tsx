@@ -1,0 +1,24 @@
+import { useEffect, useState } from 'react';
+import type { DesktopAction, DesktopSettings as Preferences, DesktopView } from '../../../../src/shared/desktop.js';
+import '../styles/desktop.css';
+
+export function DesktopSettings({ onToast }: { onToast: (message: string, kind?: 'ok' | 'warn') => void }) {
+  const [view, setView] = useState<DesktopView | null>(null); const [value, setValue] = useState<Preferences | null>(null); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+  useEffect(() => { let active = true; const refresh = () => { void window.signal.desktop().then(next => { if (active) { setView(next); setValue(old => old ?? next.settings); setError(''); } }).catch(() => { if (active) setError('Could not load background operation settings.'); }); }; refresh(); const timer = setInterval(refresh, 4000); return () => { active = false; clearInterval(timer); }; }, []);
+  const act = async (action: DesktopAction) => { setBusy(true); try { const next = await window.signal.desktopAction(action); setView(next); if (action.type === 'settings') setValue(next.settings); onToast('Background operation updated'); } catch (e) { onToast(String(e), 'warn'); } finally { setBusy(false); } };
+  if (!view || !value) return <section className="card marketing-request"><h2>Background operation</h2><p role="status">{error || 'Loading background settings...'}</p></section>;
+  return <section className="card marketing-request desktop-settings"><h2>Background operation</h2>{error && <p role="alert">{error}</p>}<p>{view.runningBusinesses} businesses running. {view.settings.keepRunningOnClose && view.trayAvailable ? 'Closing the window keeps Signal working in the system tray.' : 'Closing the window quits Signal on Windows and Linux.'} Quit stops this session; saved running operations resume when Signal opens again.</p>
+    <form onSubmit={e => { e.preventDefault(); void act({ type: 'settings', value }); }}>
+      <label className="marketing-check"><input aria-label="Keep Signal running in background" type="checkbox" disabled={!view.trayAvailable} checked={value.keepRunningOnClose} onChange={e => setValue({ ...value, keepRunningOnClose: e.target.checked })} />Keep Signal running when I close the window</label>
+      {!view.trayAvailable && <p>The system tray is unavailable. Keep this window open for operations to continue.</p>}
+      <label className="marketing-check"><input aria-label="Start Signal at login" type="checkbox" disabled={!view.loginSupported} checked={value.startAtLogin} onChange={e => setValue({ ...value, startAtLogin: e.target.checked })} />Start Signal when I sign in to this computer</label>
+      <p className="growth-muted">{view.loginSupported ? `OS startup: ${view.loginEnabled ? 'enabled' : 'not enabled'}. Startup opens in the tray when background operation is enabled.` : 'Login startup is available in the packaged default-profile app on Windows and macOS. Validation profiles never change OS startup.'}</p>
+      <label className="marketing-check"><input aria-label="Prevent sleep during operations" type="checkbox" checked={value.preventSleep} onChange={e => setValue({ ...value, preventSleep: e.target.checked })} />Prevent idle sleep while operations run; allow the screen to turn off</label>
+      <label className="marketing-check"><input aria-label="Recover local agent runtime" type="checkbox" checked={value.recoverRuntime} onChange={e => setValue({ ...value, recoverRuntime: e.target.checked })} />Recover the local model runtime for active operations</label>
+      <p className="growth-muted">Recovery uses installed models and the saved local endpoint. It does not download a model or switch to GPT. Operations still need power, network access and valid account connections.</p>
+      <button className="btn" disabled={busy} type="submit">Save background settings</button>
+    </form>
+    <p role="status">Runtime: {view.runtime.status}. {view.runtime.detail}</p>{view.runtime.nextCheckAt && <p className="growth-muted">Next check after {new Date(view.runtime.nextCheckAt).toLocaleTimeString()}</p>}<p>{view.preventingSleep ? 'Idle sleep prevention is active.' : 'Signal is not preventing idle sleep.'}</p>
+    <div className="growth-actions"><button className="btn" disabled={busy || view.offline} onClick={() => void act({ type: 'retry-runtime' })}>Check recovery now</button><button className="btn" disabled={busy || !view.settings.keepRunningOnClose || !view.trayAvailable} onClick={() => void act({ type: 'hide' })}>Hide to system tray</button><button className="btn" disabled={busy || view.runningBusinesses === 0} onClick={() => void act({ type: 'pause-all' })}>Pause all operations</button><button className="btn" disabled={busy} onClick={() => void act({ type: 'quit' })}>Quit Signal</button></div>
+  </section>;
+}

@@ -1,0 +1,22 @@
+.connections-page .connection-account, .connections-page .connection-setup { overflow-wrap: anywhere; }
+.connection-setup { border: 1px solid var(--color-accent, #a395e0); scroll-margin-top: 20px; }
+.connection-preview-row { padding: 12px 0; border-bottom: 1px solid var(--color-border, #353849); }
+.connection-management { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--color-border, #353849); }
+.connection-management label { display: grid; gap: 8px; }
+.connection-method { font-weight: 600; }
+.connection-owner-setup, .connection-advanced { padding: 16px; margin: 12px 0; border: 1px solid var(--color-border, #353849); border-radius: 8px; }
+.connection-owner-setup .btn { margin: 4px 8px 4px 0; }
+.connection-advanced-toggle { display: block; margin: 16px 0; }
+.connections-page code { overflow-wrap: anywhere; user-select: text; }
+.connections-page .growth-section-title { flex-wrap: wrap; gap: 10px; }
+.connections-page input, .connections-page select { max-width: 100%; }
+.connections-page .marketing-check { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; }
+.connections-page .marketing-check input[type=checkbox] { width: auto; flex: 0 0 auto; margin-top: 3px; }
+.connection-checklist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 24px; }
+.connection-checklist-item { appearance: none; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px; border: 1px solid var(--color-border, #353849); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.connection-checklist-item span { font-size: 12px; }
+.connection-checklist-item[aria-pressed="true"], .connection-checklist-item:focus-visible { outline: 2px solid var(--color-accent, #a395e0); outline-offset: 2px; }
+.connection-workflow { padding: 10px 0; border-block: 1px solid var(--color-border, #353849); font-size: 13px; line-height: 1.5; }
+#connection-catalog { scroll-margin-top: 20px; }
+@media (max-width: 800px) { .connection-checklist { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .connection-checklist { grid-template-columns: 1fr; } }

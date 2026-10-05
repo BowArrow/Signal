@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Keep validation bounded on the desktop shared with local agents and apps.
+    maxWorkers: 2,
     include: ['tests/**/*.test.ts'],
     coverage: {
       provider: 'v8',

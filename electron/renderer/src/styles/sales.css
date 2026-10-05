@@ -1,0 +1,24 @@
+.sales-page { max-width: 1280px; }
+.sales-page .sales-check { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; margin-top: 16px; }
+.sales-check input { width: auto; flex-shrink: 0; margin-top: 3px; }
+.sales-body { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.65; max-height: 400px; overflow: auto; }
+.sales-section-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sales-source, .sales-message { overflow-wrap: anywhere; }
+.sales-message blockquote { border-left: 2px solid var(--color-accent); padding-left: 14px; margin-left: 0; }
+.sales-page select, .sales-page input { max-width: 100%; }
+.sales-sender { display: grid; gap: 12px; margin-block: 16px; }
+.sales-sender label { display: grid; gap: 8px; }
+.sales-sender .btn { justify-self: start; }
+.sales-handoff { overflow-wrap: anywhere; }
+.sales-handoff .operation-policy { margin-top: 16px; }
+.sales-handoff textarea { width: 100%; resize: vertical; }
+.lead-import { margin-block: 20px; overflow-wrap: anywhere; }
+.lead-import > label { display: grid; gap: 8px; margin-block: 14px; }
+.lead-import textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+.lead-import input[type=file] { max-width: 100%; }
+.lead-import-preview { margin-top: 16px; }
+.lead-import-row { border-top: 1px solid var(--border); padding-block: 12px; }
+.lead-import-row p { margin-block: 6px; white-space: pre-wrap; }
+.lead-pitch { border-top: 1px solid var(--color-divider); margin-top: 18px; padding-top: 14px; }
+.lead-pitch > label { display: grid; gap: 8px; margin-block: 12px; }
+.sales-page .lead-pitch .prospect-draft { background: transparent; border: 0; box-shadow: none; padding: 18px 0 0; margin-bottom: 0; }

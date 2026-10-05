@@ -132,6 +132,7 @@ export const productConfigSchema = z
     positioning: z.string().min(1),
     targetBuyer: z.string().min(1),
     priceCents: z.number().int().min(0),
+    salesSenderEmail: z.string().email().max(254).optional(),
     currency: z.string().length(3),
     proofPoints: z.array(z.string()),
     /** Where a tracked link ultimately lands. UTM params are appended here. */

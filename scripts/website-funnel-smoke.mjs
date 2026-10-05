@@ -1,0 +1,10 @@
+import { spawn } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const env = { ...process.env, SIGNAL_WEBSITE_TEST_PROFILE: mkdtempSync(join(tmpdir(), 'signal-website-test-')), SIGNAL_WEBSITE_TEST_LIVE: process.argv.includes('--live') ? '1' : '0' }; delete env.ELECTRON_RUN_AS_NODE;
+const child = spawn(require('electron'), ['scripts/website-funnel-smoke.cjs', '--disable-gpu'], { env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+child.stdout.pipe(process.stdout); child.stderr.pipe(process.stderr);
+child.on('exit', code => { process.exitCode = code ?? 1; });

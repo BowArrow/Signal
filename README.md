@@ -1,5 +1,194 @@
 # Signal
 
+**Signal 0.30 adds shared Gmail business addresses.** Select a verified sender
+for each business in Sales. Inbox routing, replies and outreach use that address;
+ambiguous recipients stay in Gmail for manual review. See [Gmail aliases](docs/gmail-aliases.md).
+
+**Signal 0.29 simplifies account connections.** Configured OAuth providers open
+browser sign-in directly from Connect. Developer fields live under Advanced
+setup; one Google Desktop credential import enables the Google services together.
+The build can supply public/native app registrations, while providers still
+awaiting registration are labelled explicitly. Gmail can list verified sender
+aliases; Signal 0.30 adds sender selection and shared-inbox business routing.
+See [connection setup and provider readiness](docs/easy-connections.md).
+
+**Signal 0.28 ties editorial decisions to the actual copy.** The checker covers
+every title, description and body passage, selects current source evidence, and
+cannot substitute invented claim text for the submitted wording. Short social
+writers leave verified links to Signal, and follow-up retries retain the buyer
+workflow. See [copy review and model evaluation](docs/copy-review.md). Semantic
+judgment remains model-dependent; this is not a guarantee of autonomous quality.
+New marketing profiles select `qwen3.5:9b`; saved model choices are retained.
+
+**Signal 0.27 uses visitor interest to guide early experiments.** Before there is
+enough purchase evidence, Run can select a follow-up from repeated, attributable
+GA4 engagement. Purchase evidence takes priority, exploration continues, and the
+editorial reviewer checks that the follow-up adds a distinct supported action.
+See [campaign selection](docs/campaign-learning.md). Live results remain unverified.
+
+**Signal 0.26 adds local branded campaign cards.** Operations can turn reviewed
+copy into a Lemonade or CineGen graphic and publish it with a Bluesky caption.
+This layout option needs no ComfyUI or vision model. Saved illustration workflows
+remain available. See [automatic campaign images](docs/automatic-campaign-images.md).
+
+**Signal 0.25 carries editorial corrections between runs.** The writer can avoid
+repeating rejected claims and temporarily defer research findings that repeatedly
+produced unsupported copy. Feedback is business-scoped, expires after a week and
+is ignored when product evidence changes. Independent review still applies. See
+[campaign feedback](docs/campaign-feedback.md).
+
+**Signal 0.24 adds X text/link publishing** with publishing-permission checks,
+weighted character validation and saved receipts. Uncertain posts cannot be
+resent after restart. Campaign generation now checks structural requirements
+before editorial inference and constrains citations to the inspected product
+source. See [X publishing](docs/x-publishing.md). Live X delivery and dependable
+campaign quality remain unverified; this is not a completed autonomous-growth app.
+
+**Signal 0.23 adds LinkedIn member publishing.** Operations can write reviewed,
+tracked text/link posts through a connection granted publishing access. Durable
+send records prevent resending after an uncertain response. Campaign revisions
+also retain the original product evidence and change repeatedly unsupported angles.
+See [LinkedIn publishing](docs/linkedin-publishing.md). Live LinkedIn delivery and
+the latest model-quality check remain unverified.
+
+**Signal 0.22 adds CPU-only local agents.** Settings can request CPU execution for
+Ollama writing, research, sales and image review. Unsupported endpoints hold instead
+of ignoring the setting. ComfyUI keeps its own device configuration. See
+[local CPU execution](docs/local-cpu-runtime.md).
+
+**Signal 0.21 adds website prospect ingestion alongside Mailchimp.** Sales can read
+verified, explicitly opted-in requests from the prepared Lemonade/CineGen signup
+flow, preserve opt-outs and recheck consent before email delivery. The desktop
+installer and local validation are complete; the website changes and production
+email-link setup have not been deployed. See [website requests](docs/website-prospects.md).
+
+**Signal 0.20 adds unanswered outreach sequences.** Opted-in prospects can receive
+up to two follow-ups in the original Gmail or Outlook conversation, with fresh
+research, shared daily limits, stop controls and duplicate-send protection.
+Replies, opt-outs and known purchases stop the sequence. See
+[proactive outreach](docs/proactive-outreach.md). Provider simulations and packaged
+desktop checks pass; live mailbox compatibility remains unverified.
+
+Optional [public buyer research](docs/public-discovery.md) supplies product-scoped
+Hacker News and Stack Exchange findings to campaign generation. Public API reads
+work, but the final local-model relevance check remains pending after a Windows
+crash. This does not import contacts or send community replies.
+
+**Signal 0.19 lets Run operate Sales, prospect ingestion or reporting without a
+publishing account.** Operations shows the configured activities and missing
+connections, checks only the operation's required models, and supports cancelling
+startup. See [Run readiness](docs/run-readiness.md).
+
+Run also supports automatic Mailchimp prospect ingestion. It reads your
+selected business audience, imports eligible subscribers, applies opt-outs and
+checks current consent before linked email delivery. See
+[automatic prospect sources](docs/prospect-sources.md).
+
+Signal also supports previewed CSV prospect imports with consent records,
+deduplication, opt-out handling and Stripe customer matching. See
+[prospect imports](docs/prospect-import.md).
+
+Run can research, prepare,
+review and send one initial Gmail or Outlook message to an opted-in pipeline
+lead, with a separate outreach policy and daily limit. Replies enter Sales;
+known purchases and opt-outs stop new attempts. See
+[proactive outreach](docs/proactive-outreach.md) for setup and current limits.
+
+**Signal 0.15 connected purchases to the next action.** Read-only Stripe scans can
+match existing leads by email and stop automatic sales follow-ups after a purchase.
+Operations records its campaign-selection evidence, builds on repeated attributed
+payments when enough observations exist, and preserves exploration cycles. These
+are bounded decisions, not proof of marketing effectiveness. See
+[revenue matching](docs/revenue-sync.md) and [campaign learning](docs/campaign-learning.md).
+
+**Signal 0.14 connected local image production to Operations.** Choose a saved
+ComfyUI image workflow for Bluesky campaigns. Run researches and reviews copy,
+renders an illustration, reviews its pixels, revises unsuitable compositions,
+and delivers the approved image with the post. Settings supports a separate
+local image-review model. ComfyUI starts without opening a browser. See
+[image setup, tested models and limitations](docs/automatic-campaign-images.md).
+
+**Signal 0.13 adds owner handoffs.** Sales now collects conversations that need
+your decision, with reminders and recorded outcomes. Approve one exact response
+for Run, reconcile an uncertain send, or take over the conversation and stop its
+follow-ups. See [the handoff workflow](docs/sales-handoffs.md).
+
+**Signal 0.12 adds Outlook sales replies and follow-ups.** Microsoft inboxes can
+use the same research, editorial review and scoped reply policies as Gmail.
+Signal records an immutable draft ID before sending and confirms the matching
+Sent Items copy. See [Outlook permissions and delivery recovery](docs/outlook-replies.md).
+
+**Signal 0.11 adds GA4 campaign measurement.** Link Google Analytics in Connections
+and choose a property in Analytics. Running operations refresh a hostname-scoped
+30-day campaign report hourly. Marketing agents receive its results, freshness
+and reporting limitations, separately from Stripe payment evidence. See
+[analytics setup and limits](docs/campaign-analytics.md).
+
+**Signal 0.10 adds background operation and runtime recovery.** Settings now
+controls closing to the system tray, optional login startup and idle-sleep
+prevention. Active local operations recover their installed Ollama runtime;
+generation waits when the required models are unavailable. Tray controls reopen,
+pause or quit Signal. See [background setup and validation](docs/background-operation.md).
+
+**Signal 0.9 adds sales follow-up sequences.** Configure up to three follow-ups
+after a confirmed Gmail answer. Each step researches and reviews a fresh reply,
+checks the conversation again, and shares the business's sending limit. Customer
+replies, opt-outs and pipeline changes stop the sequence. Timing and progress
+appear in Sales. See [sequence setup and limits](docs/sales-sequences.md).
+
+**Signal 0.8 adds automatic Gmail replies.** Enable monitoring, triage and a
+business-specific reply policy, then Run Operations. The agent researches current
+product facts, drafts and reviews answers to new buying inquiries, and sends
+eligible replies under daily limits. Each attempted send is recorded before the
+request; uncertain sends are reconciled without resending. See
+[Gmail reply setup and limits](docs/sales-replies.md).
+
+**Signal 0.7 adds the Sales inbox.** Monitor Gmail or Outlook, triage incoming
+conversations with the configured local/GPT model, match buying inquiries to the
+lead pipeline, and stop follow-ups on replies or opt-outs. See
+[Sales setup and execution boundaries](docs/sales-inbox.md). Outlook sending is
+available from 0.12; broader lifecycle outreach remains in progress.
+
+**Signal 0.6 adds Revenue.** Scope a connected Stripe account to each business's
+products, synchronize captured payments and reported refunds, and feed verified
+campaign identifiers into the agent's commercial evidence. Snapshots distinguish
+test/live mode and currencies; they never become spendable cash automatically.
+See [revenue setup, coverage and deployment boundaries](docs/revenue-sync.md).
+
+**Signal 0.5 adds Operations.** Select a business and publishing destinations,
+save an operating policy, and Run the agent through current-site research,
+editorial review, durable delivery and publication receipts. Website articles
+and Bluesky text posts are the first delivery adapters. See the
+[operating guide and full autonomy completion audit](docs/autonomous-operation.md).
+Proactive sales outreach, remaining channel delivery, media orchestration and
+automatic revenue reconciliation are still in progress.
+
+**Signal 0.4 adds account connections.** Link business inboxes, social/video
+profiles, email delivery, websites, checkout, analytics, CRM/community tools,
+and advertising accounts per business. See the [account map, setup steps, and
+automation boundaries](docs/account-connections.md). Credentials use OS-encrypted
+storage; setup checks account reads and does not activate outbound campaigns.
+
+**Signal 0.3 adds the growth and creative workspaces.** Use the existing Lemonade
+and CineGen profiles to brief campaigns, generate materials, review copy, track
+customer conversations, and record sales. Settings supports Signal-managed
+Ollama or GPT with an encrypted API key. Creative studio connects local ComfyUI
+image/video workflows. See the [setup and validation notes](docs/signal-0.3.md)
+and the [cited research report](docs/marketing-research/Signal-Growth-Research.pdf).
+
+**Growth lab is implemented.** Research, campaign-writing,
+opportunity and analysis agents support Traction's Bullseye workflow: all 19
+channels, a shortlist of three affordable experiments, measured acquisition
+cost and audience fit, and one evidence-supported core channel. The desktop
+includes the Bullseye board, experiment results, growth digest and local runtime
+controls. See [Growth lab setup and scope](docs/growth-lab.md).
+
+Run `pnpm dev` and open **Settings** to start the local runtime or configure GPT.
+Then open **Growth workspace**. Scheduled agents run while the desktop
+app or `pnpm signal worker` is open. Campaign publication and automatic payment
+ingestion remain external integrations; generated assets are reviewable drafts,
+and recorded experiment measurements drive the results views.
+
 A marketing operations system for one person.
 
 Signal watches places where my products are a genuine answer to a real
@@ -12,10 +201,11 @@ enforced in code, not documentation.
 
 ---
 
-## Current state — end of Phase 2
+## Community pipeline background
 
-Threads are found, scored, and drafted into a review queue. Nothing publishes:
-there is no publish path in the codebase yet.
+Threads are found, scored, and drafted into a review queue. The review UI and
+manual publication workflow are implemented. The phase notes below describe the
+original community pipeline roadmap; Growth lab's current scope is documented above.
 
 | | |
 | --- | --- |

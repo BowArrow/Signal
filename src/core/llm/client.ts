@@ -9,6 +9,8 @@ import type { Logger } from '../lib/logger.js';
 export interface CompletionRequest {
   readonly model: string;
   readonly prompt: string;
+  /** Validated local image bytes; never remote URLs or filesystem paths. */
+  readonly images?: readonly { mime: 'image/jpeg' | 'image/png'; base64: string }[];
   readonly maxTokens: number;
   /** Seeds the assistant turn. Used to force JSON without a code fence. */
   readonly prefill?: string;
@@ -21,6 +23,10 @@ export interface CompletionRequest {
    * these contracts.
    */
   readonly expectsJson?: boolean;
+  /** Optional structured output contract supported by local runtimes. */
+  readonly jsonSchema?: Record<string, unknown>;
+  /** Compatible runtimes can disable thinking for tightly bounded reporting tasks. */
+  readonly reasoningEffort?: 'none';
 }
 
 export interface CompletionResult {
@@ -61,6 +67,7 @@ export class AnthropicClient implements LlmClient {
   }
 
   async complete(request: CompletionRequest): Promise<CompletionResult> {
+    if (request.images?.length) throw new Error('Use the local or GPT agent runtime for image review.');
     const readiness = this.available();
     if (!this.client || !readiness.ready) {
       throw new LlmUnavailableError(readiness.reason ?? 'no LLM client');

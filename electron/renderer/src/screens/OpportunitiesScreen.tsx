@@ -37,8 +37,9 @@ export function OpportunitiesScreen({
     <div className="page">
       <h1 className="page-title">Opportunities</h1>
       <p className="page-lede">
-        Everything ingestion has found. Scoring lands in Phase 2, so nothing here has a total yet
-        and nothing has been drafted. No message has left this machine.
+        Everything ingestion has found, across every source. A total appears once it has been
+        scored; below the threshold it expires and never reaches the queue, and a community with
+        no rules record is held regardless of score.
       </p>
 
       <div className="toolbar">

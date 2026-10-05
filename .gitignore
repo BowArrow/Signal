@@ -8,10 +8,25 @@ release/
 .env
 .env.local
 .env.*.local
-data/*.db
-data/*.db-shm
-data/*.db-wal
+config/connection-apps.json
+config/connection-apps.json.tmp
+# Local databases, browser profiles, model downloads, and validation artifacts
+/data/
+
+# Generated campaign media, exports, and reports
+/output/
+
+# Python bytecode and local tooling caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Machine-specific assistant settings
+.claude/settings.local.json
+
 .DS_Store
+Thumbs.db
 coverage/
 .turbo/
 .firebase/

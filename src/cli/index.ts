@@ -10,9 +10,13 @@ import { queueStats } from '../core/jobs/queue.js';
 import { registerRulesCommands } from './commands/rules.js';
 import { registerPipelineCommands } from './commands/pipeline.js';
 import { registerLlmCommands } from './commands/llm.js';
+import { registerGrowthCommands } from './commands/growth.js';
+import { registerBlogCommands } from './commands/blog.js';
+import { GrowthEngine } from '../core/growth/engine.js';
 import { bold, cyan, dim, green, heading, magenta, red, relativeTime, table, yellow } from './format.js';
 
 const program = new Command();
+registerBlogCommands(program);
 
 program
   .name('signal')
@@ -233,23 +237,28 @@ program
   .action(async (opts: { once?: boolean }) => {
     const app = createApp();
     const scheduler = createScheduler(app);
+    const growth = new GrowthEngine(app);
 
     if (opts.once) {
       await scheduler.tickOnce();
+      growth.schedule();
+      await growth.runNext();
       app.close();
       return;
     }
 
     scheduler.start();
-    const shutdown = (): void => {
+    growth.start();
+    const shutdown = async (): Promise<void> => {
       scheduler.stop();
-      app.close();
+      await growth.stop();
       process.exit(0);
     };
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
   });
 
+registerGrowthCommands(program);
 registerRulesCommands(program);
 registerPipelineCommands(program);
 registerLlmCommands(program);

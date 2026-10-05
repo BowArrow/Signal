@@ -50,19 +50,24 @@ const config: SignalConfigInput = {
     {
       key: 'lemonade',
       name: 'Lemonade',
+      salesSenderEmail: 'sales@aionx.aionapp.org',
       positioning:
-        'Privacy-first local AI desktop assistant. Ollama-powered, zero telemetry, ' +
-        'runs fully offline. No account, no cloud round-trip, works with the network off.',
+        'Private local AI desktop assistant for Windows 11 and Linux. Works with local files, ' +
+        'screen captures and document creation. Installs and manages Ollama and models. ' +
+        'Local inference works offline after setup; approved web/mail tools and licensing use the network.',
       targetBuyer:
-        'People who already run local models, are privacy-motivated, or are blocked ' +
-        'from cloud AI by employer policy.',
+        'Small-business owners, solo professionals and individual customers on Windows 11 or Linux ' +
+        'who repeatedly read, compare or draft documents and want local AI processing. Start with ' +
+        'one person and one useful document task; validate the need and hardware fit. Do not imply ' +
+        'a shared team license, hosted service or enterprise deployment. Confirm workplace permission.',
       priceCents: 4900,
       currency: 'USD',
       proofPoints: [
-        'One-time $49, no subscription',
-        'Zero telemetry — no socket opens that you did not ask for',
-        'Works with the network interface down',
-        'Sits on top of an existing Ollama install rather than bundling its own runtime',
+        'Public website checked 2026-09-13: $49 perpetual license and a 14-day no-card trial',
+        'Public website states no behavioral telemetry or cloud inference upload; downloads, licensing and optional approved network tools still use the network',
+        'Public website states local inference works offline once models are downloaded',
+        'Lemonade installs and manages Ollama and models; an existing Ollama install is not required',
+        'Public website describes local file answers, screen capture, and PDF, Word, PowerPoint and Excel creation; demonstrate actual behavior before making comparative performance claims',
       ],
       // Tracked links are built from this, so a wrong value breaks attribution
       // silently rather than loudly.
@@ -72,15 +77,17 @@ const config: SignalConfigInput = {
     {
       key: 'cinegen',
       name: 'CineGen',
+      salesSenderEmail: 'sales@outreach.cinegenaimedia.com',
       positioning:
-        'AI video production platform. 3D Gaussian splat rendering with audio-reactive ' +
-        'effects, aimed at people producing music videos and visualizers.',
-      targetBuyer: 'Music video and visualizer creators, indie artists.',
+        'Browser-based AI video production workspace: storyboarding, character creation, ' +
+        'video generation, timeline editing and collaborative review. The 3D scene creator is in beta.',
+      targetBuyer: 'Independent video creators, small studios and teams making shorts, explainers and promotional videos.',
       priceCents: 0,
       currency: 'USD',
       proofPoints: [
-        '3D Gaussian splat rendering',
-        'Audio-reactive parameter drives',
+        'Multi-track browser timeline with keyframes and export',
+        'AI storyboarding and reusable characters',
+        'Shareable collaborative review links',
       ],
       utmBase: 'https://cinegenaimedia.com',
       links: {},

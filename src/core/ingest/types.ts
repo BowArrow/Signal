@@ -44,7 +44,7 @@ export interface PollResult {
 export interface Poller {
   readonly kind: Source['kind'];
   /** Throws on a hard failure; the caller records it on the source row. */
-  poll(source: Source): Promise<PollResult>;
+  poll(source: Source, signal?: AbortSignal): Promise<PollResult>;
   /**
    * False when the poller lacks credentials. The runner skips it and says so,
    * rather than failing the whole ingest cycle.

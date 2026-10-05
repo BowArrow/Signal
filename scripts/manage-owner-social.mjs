@@ -1,0 +1,17 @@
+import { spawn } from 'node:child_process';
+import { mkdtempSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { build } = createRequire(require.resolve('vite'))('esbuild');
+const mode = process.argv[2];
+if (!['--inspect-sales-funding', '--inspect-bluesky-requests', '--refresh-analytics', '--share', '--authorize-x', '--inspect-prospects', '--configure-intake', '--inspect-revenue', '--configure-revenue', '--inspect-facebook', '--inspect-operation', '--prepare-operation', '--configure-research', '--use-cpu-agents', '--prepare-ad-drafts', '--prepare-ltd-campaigns', '--map-custom-topup'].includes(mode)) throw new Error('Choose a supported owner setup mode.');
+const output = resolve('data/manage-owner-social.cjs');
+await build({ entryPoints: ['scripts/manage-owner-social.ts'], outfile: output, bundle: true, platform: 'node', format: 'cjs', packages: 'external', define: { 'import.meta.url': JSON.stringify(pathToFileURL(resolve('out/main/manage-owner-social.cjs')).href) }, logLevel: 'silent' });
+const env = { ...process.env, SIGNAL_OFFLINE: '0', SIGNAL_OWNER_HELPER_PROFILE: mkdtempSync(join(tmpdir(), 'signal-owner-')), SIGNAL_OWNER_HELPER_MODE: mode };
+delete env.ELECTRON_RUN_AS_NODE;
+const child = spawn(require('electron'), [output, '--disable-gpu'], { env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+child.stdout.pipe(process.stdout); child.stderr.pipe(process.stderr);
+child.on('exit', code => { unlinkSync(output); process.exitCode = code ?? 1; });

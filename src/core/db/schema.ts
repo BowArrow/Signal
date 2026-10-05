@@ -1,4 +1,7 @@
+import type { CampaignBrief, StudioAssetView, StudioCopy, StudioLead, StudioOutcome } from '../../shared/studio.js';
 import { sql } from 'drizzle-orm';
+import type { EngineeringInput } from '../../shared/marketing.js';
+import type { ChannelIdea, ChannelKey, ExperimentResult, GrowthGoal, GrowthTaskKind } from '../../shared/growth.js';
 import {
   index,
   integer,
@@ -650,6 +653,61 @@ export const llmCalls = sqliteTable(
 
 export type LlmCall = typeof llmCalls.$inferSelect;
 
+export const marketingMemory = sqliteTable('marketing_memory', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  title: text('title').notNull(), body: text('body').notNull(), kind: text('kind').notNull(),
+  source: text('source').notNull(), confidence: real('confidence').notNull(),
+  status: text('status').notNull().default('active'), supersedesId: text('supersedes_id'),
+  createdAt: createdAt(),
+}, t => [index('marketing_memory_product').on(t.productId, t.status)]);
+export const marketingEdges = sqliteTable('marketing_edges', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  fromId: text('from_id').notNull().references(() => marketingMemory.id),
+  toId: text('to_id').notNull().references(() => marketingMemory.id), relation: text('relation').notNull(),
+}, t => [uniqueIndex('marketing_edge_unique').on(t.fromId, t.toId, t.relation)]);
+export const marketingMessages = sqliteTable('marketing_messages', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  role: text('role').notNull(), body: text('body').notNull(), taskId: text('task_id'), createdAt: createdAt(),
+});
+export const engineeringRequests = sqliteTable('engineering_requests', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  fingerprint: text('fingerprint').notNull(), status: text('status').notNull().default('proposed'),
+  value: text('value', { mode: 'json' }).$type<EngineeringInput>().notNull(), createdAt: createdAt(),
+}, t => [uniqueIndex('engineering_request_unique').on(t.productId, t.fingerprint)]);
+export const marketingDrafts = sqliteTable('marketing_drafts', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  status: text('status').notNull().default('draft'),
+  value: text('value', { mode: 'json' }).$type<{ title: string; body: string; kind: 'reply' | 'article' | 'email' | 'social' | 'demo'; targetUrl: string; evidence: string[] }>().notNull(),
+  publishedUrl: text('published_url'), createdAt: createdAt(),
+});
+export const marketingCash = sqliteTable('marketing_cash', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  kind: text('kind').notNull(), amountCents: integer('amount_cents').notNull(),
+  reference: text('reference').notNull(), note: text('note').notNull(), createdAt: createdAt(),
+}, t => [uniqueIndex('marketing_cash_reference').on(t.productId, t.reference)]);
+export const marketingCommitments = sqliteTable('marketing_commitments', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  amountCents: integer('amount_cents').notNull(), reference: text('reference').notNull(),
+  note: text('note').notNull(), status: text('status').notNull().default('reserved'),
+}, t => [uniqueIndex('marketing_commitment_reference').on(t.productId, t.reference)]);
+export const marketingToolCalls = sqliteTable('marketing_tool_calls', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  taskId: text('task_id').notNull(), name: text('name').notNull(), status: text('status').notNull(),
+  result: text('result').notNull(), createdAt: createdAt(),
+});
+export const marketingWorkflows = sqliteTable('marketing_workflows', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id), name: text('name').notNull(),
+  workflow: text('workflow', { mode: 'json' }).$type<Record<string, unknown>>().notNull(),
+});
+export const marketingMedia = sqliteTable('marketing_media', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  workflowId: text('workflow_id').notNull().references(() => marketingWorkflows.id),
+  promptId: text('prompt_id'), status: text('status').notNull(), prompt: text('prompt').notNull(),
+  baseUrl: text('base_url').notNull(), workflowHash: text('workflow_hash').notNull(), error: text('error'),
+  outputs: text('outputs', { mode: 'json' }).$type<{ filename: string; subfolder: string; type: string; nodeId: string }[]>().notNull().default([]),
+  createdAt: createdAt(),
+});
+
 // ───────────────────────────────────────────────────────── settings ──
 
 /**
@@ -662,6 +720,62 @@ export const settings = sqliteTable('settings', {
   value: text('value', { mode: 'json' }).$type<unknown>().notNull(),
   updatedAt: updatedAt(),
 });
+
+export const studioCampaigns = sqliteTable('studio_campaigns', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  brief: text('brief', { mode: 'json' }).$type<CampaignBrief>().notNull(),
+  trackedUrl: text('tracked_url').notNull(), createdAt: createdAt(),
+});
+export const studioAssets = sqliteTable('studio_assets', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  campaignId: text('campaign_id').notNull().references(() => studioCampaigns.id),
+  kind: text('kind').$type<StudioAssetView['kind']>().notNull(),
+  copy: text('copy', { mode: 'json' }).$type<StudioCopy>().notNull(),
+  status: text('status').notNull().default('draft'),
+  warnings: text('warnings', { mode: 'json' }).$type<string[]>().notNull().default([]),
+  dueAt: integer('due_at'), destination: text('destination').notNull().default(''),
+  publishedUrl: text('published_url'), publicationNote: text('publication_note'), createdAt: createdAt(),
+}, t => [uniqueIndex('studio_asset_campaign_kind').on(t.campaignId, t.kind)]);
+export const studioLeads = sqliteTable('studio_leads', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  value: text('value', { mode: 'json' }).$type<StudioLead>().notNull(), createdAt: createdAt(),
+});
+export const studioOutcomes = sqliteTable('studio_outcomes', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id), reference: text('reference').notNull(),
+  value: text('value', { mode: 'json' }).$type<StudioOutcome>().notNull(), createdAt: createdAt(),
+}, t => [uniqueIndex('studio_outcome_reference').on(t.productId, t.reference)]);
+
+export const growthPlans = sqliteTable('growth_plans', {
+  productId: text('product_id').primaryKey().references(() => products.id),
+  goal: text('goal', { mode: 'json' }).$type<GrowthGoal>().notNull(),
+  lastScheduledAt: integer('last_scheduled_at'),
+  updatedAt: updatedAt(),
+});
+export const growthChannels = sqliteTable('growth_channels', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  key: text('key').$type<ChannelKey>().notNull(),
+  ring: text('ring').$type<'outer' | 'middle' | 'inner'>().notNull().default('outer'),
+  idea: text('idea', { mode: 'json' }).$type<ChannelIdea>(),
+  updatedAt: updatedAt(),
+}, t => [uniqueIndex('growth_channel_product_key').on(t.productId, t.key)]);
+export const growthExperiments = sqliteTable('growth_experiments', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  channelId: text('channel_id').notNull().references(() => growthChannels.id),
+  title: text('title').notNull(),
+  status: text('status').$type<'planned' | 'running' | 'completed'>().notNull().default('planned'),
+  goal: text('goal', { mode: 'json' }).$type<GrowthGoal>().notNull(),
+  result: text('result', { mode: 'json' }).$type<ExperimentResult>(),
+  trackedUrl: text('tracked_url').notNull(), startedAt: integer('started_at'), endsAt: integer('ends_at'),
+  createdAt: createdAt(), updatedAt: updatedAt(),
+});
+export const growthTasks = sqliteTable('growth_tasks', {
+  id: id(), productId: text('product_id').notNull().references(() => products.id),
+  kind: text('kind').$type<GrowthTaskKind>().notNull(), targetId: text('target_id').notNull(),
+  status: text('status').$type<'queued' | 'running' | 'done' | 'failed' | 'cancelled'>().notNull().default('queued'),
+  output: text('output', { mode: 'json' }).$type<Record<string, unknown>>(),
+  error: text('error'), model: text('model'), promptVersion: text('prompt_version'),
+  lease: text('lease'), createdAt: createdAt(), updatedAt: updatedAt(),
+}, t => [index('growth_tasks_status').on(t.status, t.createdAt)]);
 
 // ────────────────────────────────────────────────────────── exports ──
 

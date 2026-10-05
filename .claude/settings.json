@@ -29,7 +29,9 @@
       "Bash(node \"C:/Users/cshor/AppData/Local/Temp/claude/c--Users-cshor-Documents-WebProjects-Signal/8ae9e674-997f-40e3-a378-cdc6c89d8b1a/scratchpad/probe-sideproject.mjs\")",
       "Bash(node \"C:/Users/cshor/AppData/Local/Temp/claude/c--Users-cshor-Documents-WebProjects-Signal/8ae9e674-997f-40e3-a378-cdc6c89d8b1a/scratchpad/probe-sidebar.mjs\")",
       "Bash(node \"C:/Users/cshor/AppData/Local/Temp/claude/c--Users-cshor-Documents-WebProjects-Signal/8ae9e674-997f-40e3-a378-cdc6c89d8b1a/scratchpad/probe-sidebar2.mjs\")",
-      "Bash(node --input-type=module -e ' *)"
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(pnpm build *)",
+      "PowerShell(Get-Process -Name electron -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq 'Signal' } | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2; [Environment]::SetEnvironmentVariable\\('ELECTRON_RUN_AS_NODE',$null,'Process'\\); $exe = \\(Resolve-Path \"node_modules\\\\electron\\\\dist\\\\electron.exe\"\\).Path; Start-Process -FilePath $exe -ArgumentList \".\" -WorkingDirectory \\(Get-Location\\).Path -RedirectStandardOutput \"$env:TEMP\\\\sig-out.log\" -RedirectStandardError \"$env:TEMP\\\\sig-err.log\" | Out-Null; Start-Sleep -Seconds 16; Get-Content \"$env:TEMP\\\\sig-err.log\" -ErrorAction SilentlyContinue | Select-Object -First 10; $d=\"C:\\\\Users\\\\cshor\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-cshor-Documents-WebProjects-Signal\\\\8ae9e674-997f-40e3-a378-cdc6c89d8b1a\\\\scratchpad\"; & \"$d\\\\shot.ps1\" -Out \"$d\\\\dash-guardrails.png\")"
     ]
   }
 }

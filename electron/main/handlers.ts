@@ -1,4 +1,4 @@
-import { shell, type IpcMain } from 'electron';
+import { app, shell, type IpcMain } from 'electron';
 import { desc, eq, sql } from 'drizzle-orm';
 import type { App as SignalApp } from '../../src/core/app.js';
 import {
@@ -12,6 +12,7 @@ import { resolveDatabasePath, selectNativeBinding } from '../../src/core/db/clie
 import { runIngest } from '../../src/core/ingest/run.js';
 import { queueStats } from '../../src/core/jobs/queue.js';
 import { IPC, type IngestSummary, type OpportunityView, type SystemStatus } from '../../src/shared/ipc.js';
+import { externalBrowserUrl } from '../../src/shared/bluesky-url.js';
 
 /**
  * Every channel is read-or-configure. There is deliberately no publish channel
@@ -37,7 +38,7 @@ export function registerHandlers(ipc: IpcMain, signal: SignalApp): void {
       .all();
 
     return {
-      version: '0.1.0',
+      version: app.getVersion(),
       capabilities: signal.capabilities.map((c) => ({
         name: c.name,
         available: c.available,
@@ -143,10 +144,6 @@ export function registerHandlers(ipc: IpcMain, signal: SignalApp): void {
     if (typeof url !== 'string') throw new Error('openExternal expects a string');
     // Only ever hand the OS an http(s) URL. A file: or javascript: URL arriving
     // from the renderer would be a real problem.
-    const parsed = new URL(url);
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-      throw new Error(`refusing to open a ${parsed.protocol} url`);
-    }
-    await shell.openExternal(url);
+    await shell.openExternal(externalBrowserUrl(url));
   });
 }

@@ -1,6 +1,7 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
-import { cpSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { parseConnectionApps } from './src/core/connections/app-config.js';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 
@@ -29,6 +30,23 @@ function copyRuntimeAssets(): Plugin {
     writeBundle() {
       copy('./src/core/db/migrations', './out/main/migrations');
       copy('./src/prompts', './out/main/prompts');
+      copy('./build/icon.png', './out/main/brand/icon.png');
+      copy('./build/tray.png', './out/main/brand/tray.png');
+      copy('./src/core/video/blockout.py', './out/main/video/blockout.py');
+      copy('./src/core/video/limited_runtime.py', './out/main/video/limited_runtime.py');
+      copy('./src/core/video/ltx_runtime.py', './out/main/video/ltx_runtime.py');
+      copy('./src/core/video/ltx_upscaler.py', './out/main/video/ltx_upscaler.py');
+      copy('./src/core/video/narrate.py', './out/main/video/narrate.py');
+      copy('./docs/marketing-research/Signal-Growth-Research.pdf', './out/main/marketing-report.pdf');
+      const appsPath = fileURLToPath(new URL('./config/connection-apps.json', import.meta.url));
+      let apps = {};
+      if (existsSync(appsPath)) {
+        try { apps = parseConnectionApps(JSON.parse(readFileSync(appsPath, 'utf8'))); }
+        catch { throw new Error('Invalid config/connection-apps.json. Only native/public registrations can be bundled.'); }
+      }
+      mkdirSync(fileURLToPath(new URL('./out/main', import.meta.url)), { recursive: true });
+      // Always overwrite, including an empty configuration, to prevent stale clients.
+      writeFileSync(fileURLToPath(new URL('./out/main/connection-apps.json', import.meta.url)), JSON.stringify(apps));
     },
   };
 }

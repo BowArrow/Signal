@@ -1,0 +1,149 @@
+/* Shared desktop UI rules. Imported after screen styles so new screens inherit
+   one control vocabulary instead of building their own form and spacing system. */
+:root {
+  color-scheme: dark;
+  --ui-gap: 16px;
+  --ui-panel: 22px;
+  --ui-control-height: 40px;
+  --color-border: var(--color-divider);
+  --border: var(--color-divider);
+}
+
+.shell { font-size: 14px; line-height: 1.6; }
+.main { background: var(--color-bg); }
+.shell [hidden] { display: none !important; }
+.shell .sidebar { gap: 16px; padding: 8px 12px 16px; }
+.nav-list { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 2px 4px; gap: 18px; scrollbar-width: thin; }
+.nav-group-label { margin: 0 8px 6px; color: var(--color-neutral-500); font-size: 11px; line-height: 18px; font-weight: 500; letter-spacing: 0; }
+.nav-item { min-height: 36px; font-size: 13px; line-height: 20px; margin: 2px 0; }
+.nav-item[aria-current='page'] { color: var(--color-accent-200); background: var(--color-accent-900); box-shadow: inset 2px 0 var(--color-accent-400); }
+.nav-tools-toggle > i:last-child { margin-left: auto; }
+.sidebar-footer { padding: 14px 8px 0; gap: 4px; flex: none; }
+.sidebar-footer p { margin: 0; color: var(--color-neutral-300); font-size: 12px; }
+.sidebar-footer > span { font-size: 11px; line-height: 1.6; color: var(--color-neutral-500); }
+.brand-version { color: var(--color-neutral-500); letter-spacing: 0; text-transform: none; }
+.titlebar { font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--color-neutral-400); padding-right: 150px; }
+.titlebar-crumb { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.main-scroll { scrollbar-gutter: stable; scroll-padding-block: 20px; }
+.skip-link { position: fixed; top: 8px; left: 250px; z-index: 100; padding: 8px 16px; background: var(--color-accent-300); color: var(--color-bg); border-radius: var(--radius-md); transform: translateY(-160%); }
+.skip-link:focus { transform: translateY(0); color: var(--color-bg); }
+
+.shell .page { max-width: 1440px; padding: 28px clamp(20px, 3vw, 40px) 64px; margin-inline: auto; }
+.page h1, .page .page-title { font-size: 26px; line-height: 1.25; font-weight: 600; letter-spacing: -.025em; margin-bottom: 8px; }
+.page h2 { font-size: 19px; line-height: 1.4; font-weight: 500; letter-spacing: -.015em; margin-bottom: 12px; text-wrap: pretty; }
+.page h3 { font-size: 15px; line-height: 1.5; font-weight: 600; margin-bottom: 8px; }
+.page h4 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+.page p { max-width: 85ch; line-height: 1.65; margin-bottom: 12px; }
+.page .page-lede { color: var(--color-neutral-400); font-size: 14px; margin: 0 0 24px; max-width: 72ch; }
+.page .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px 32px; margin-bottom: 24px; flex-wrap: wrap; }
+.page-head > div { flex: 1 1 300px; min-width: 0; }
+.page-head > label { flex: 0 1 260px; min-width: min(220px, 100%); }
+.page .page-head .page-lede { margin-bottom: 0; }
+.page .page-head select { margin-bottom: 0; }
+.page :is(article, section, form, fieldset, label) { min-width: 0; }
+.page :is(p, h2, h3, li, dd, summary) { overflow-wrap: anywhere; }
+.page :is(p, blockquote, td, dd) { user-select: text; }
+.page .card { border: 1px solid var(--color-divider); border-radius: var(--radius-lg); box-shadow: none; }
+.page :is(.marketing-request, .operation-policy, .operation-explanation, .operation-status, .operation-delivery) { padding: var(--ui-panel); margin-block: 0 16px; }
+.page .card > :last-child { margin-bottom: 0; }
+.page .card .card { border-radius: var(--radius-md); }
+
+/* Text fields and selection controls must never share width or padding rules. */
+.page :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]), select, textarea) {
+  display: block; width: 100%; max-width: 100%; min-height: var(--ui-control-height);
+  margin: 6px 0 16px; padding: 9px 12px; border: 1px solid var(--color-neutral-700);
+  border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text);
+  font: inherit; line-height: 1.5; box-sizing: border-box;
+}
+.page textarea { resize: vertical; min-height: 100px; }
+.page input::placeholder, .page textarea::placeholder { color: var(--color-neutral-500); opacity: 1; }
+.page :is(input[type=checkbox], input[type=radio]) {
+  display: inline-block; width: 16px; height: 16px; min-height: 16px; padding: 0;
+  flex: 0 0 16px; margin: 3px 0 0; accent-color: var(--color-accent-400); vertical-align: top;
+}
+.page label { color: var(--color-neutral-300); font-size: 13px; line-height: 1.6; }
+.page label:has(> :is(input[type=checkbox], input[type=radio])) {
+  display: flex; flex-direction: row; align-items: flex-start; gap: 10px; padding-block: 4px; cursor: pointer;
+}
+.page label > :is(input[type=checkbox], input[type=radio]) { width: 16px; margin: 3px 0 0; }
+.page label > span { min-width: 0; }
+.page fieldset { border: 1px solid var(--color-divider); border-radius: var(--radius-md); padding: 16px; margin: 20px 0; }
+.page legend { padding-inline: 6px; color: var(--color-neutral-300); font-size: 13px; font-weight: 500; }
+.page :is(input, select, textarea):disabled { opacity: .6; cursor: not-allowed; }
+.page :is(input, select, textarea):focus-visible { border-color: var(--color-accent-400); outline: 2px solid var(--color-accent-400); outline-offset: 2px; }
+
+.shell .btn { min-height: 36px; max-width: 100%; padding: 7px 13px; font-size: 13px; line-height: 20px; white-space: normal; text-align: center; border: 1px solid var(--color-divider); border-radius: var(--radius-md); color: var(--color-neutral-200); background: transparent; }
+.shell .btn:hover:not(:disabled) { background: var(--color-neutral-800); border-color: var(--color-neutral-600); }
+.shell .btn-primary { color: var(--color-bg); background: var(--color-accent-400); border-color: var(--color-accent-400); font-weight: 600; }
+.shell .btn-primary:hover:not(:disabled) { background: var(--color-accent-300); border-color: var(--color-accent-300); }
+.shell .btn:disabled { opacity: .5; cursor: not-allowed; }
+.shell :is(button, a, summary) { touch-action: manipulation; }
+.shell :is(button, a, summary):focus-visible { outline: 2px solid var(--color-accent-400); outline-offset: 3px; }
+.page :is(.growth-actions, .operation-actions, .studio-inline-form) { gap: 10px; }
+.page :is(.growth-actions, .operation-actions) { flex-wrap: wrap; }
+.page details { border-radius: var(--radius-md); }
+.page summary { padding-block: 10px; min-height: 40px; cursor: pointer; color: var(--color-neutral-200); }
+.page details[open] > summary { margin-bottom: 8px; }
+.page summary:hover { color: var(--color-accent-300); }
+.page [role=alert] { padding: 12px 16px; border-left: 3px solid var(--color-block); background: color-mix(in srgb, var(--color-block) 8%, var(--color-bg)); border-radius: var(--radius-sm); }
+.page .marketing-summary { gap: 12px; margin: 20px 0 24px; }
+.marketing-summary > div { padding: 16px 18px; border-radius: var(--radius-md); background: transparent; }
+.marketing-summary strong { font-size: 23px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.4; text-transform: none; }
+.marketing-summary span { color: var(--color-neutral-400); }
+.page :is(.studio-tabs, .growth-tabs), .section-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--color-divider); padding-bottom: 8px; margin: 20px 0 24px; }
+.page :is(.studio-tabs, .growth-tabs) button, .section-tabs button { border: 1px solid transparent; background: transparent; color: var(--color-neutral-400); border-radius: var(--radius-md); padding: 8px 12px; min-height: 38px; font: inherit; font-size: 13px; cursor: pointer; }
+.page :is(.studio-tabs, .growth-tabs) :is(.btn-primary, [aria-pressed=true], [aria-selected=true]), .section-tabs [aria-selected=true] { background: var(--color-accent-900); color: var(--color-accent-200); border-color: var(--color-accent-800); font-weight: 500; }
+.section-tabs button:hover { color: var(--color-text); background: var(--color-surface); }
+.section-count { display: inline-block; min-width: 20px; padding-inline: 5px; margin-left: 7px; border-radius: var(--radius-sm); background: var(--color-bg); color: var(--color-neutral-300); font-size: 11px; font-variant-numeric: tabular-nums; }
+.operation-status { border-left: 3px solid var(--color-accent-400) !important; }
+.operation-status h2 { margin-bottom: 6px; }
+.operation-status p { color: var(--color-neutral-400); margin: 0; }
+.operation-status .btn { min-width: 132px; }
+.operation-panel { outline-offset: 4px; }
+.operation-panel-intro { color: var(--color-neutral-400); }
+.page .operation-progress-grid { gap: 12px; }
+.operation-progress-grid > div { border: 0; border-left: 2px solid var(--color-divider); border-radius: 0; }
+.operation-progress-grid dt { color: var(--color-neutral-400); }
+.operation-progress-grid dd { font-variant-numeric: tabular-nums; }
+.connection-checklist-item { border-radius: var(--radius-md); background: transparent; }
+.connection-checklist-item:hover { background: var(--color-surface); }
+.connection-checklist-item[aria-pressed=true] { background: var(--color-accent-900); }
+.connection-checklist-item span { color: var(--color-neutral-400); }
+.connection-setup-guide { margin-block: 24px; border-block: 1px solid var(--color-divider); padding-block: 4px; }
+.connection-linked-heading { margin-bottom: 16px; }
+.connection-linked-heading h2 { margin-bottom: 0; }
+.operation-start-blockers { padding: 12px 16px; margin-bottom: 20px; border-left: 3px solid var(--color-warn); background: var(--color-surface); border-radius: var(--radius-sm); }
+.operation-start-blockers ul { margin-block: 8px; }
+.page :is(.studio-table-wrap, .analytics-table-wrap) { max-width: 100%; overflow-x: auto; }
+.page :is(th, td) { font-size: 13px; font-variant-numeric: tabular-nums; }
+.page th { color: var(--color-neutral-400); font-weight: 500; }
+.toast { max-width: min(560px, calc(100vw - 40px)); overflow-wrap: anywhere; }
+
+@media (max-width: 860px) {
+  .shell .sidebar { padding-inline: 6px; }
+  .nav-list { padding-inline: 2px; gap: 10px; }
+  .nav-group + .nav-group { padding-top: 8px; border-top: 1px solid var(--color-divider); }
+  .nav-item { justify-content: center; min-height: 40px; padding: 8px; }
+  .nav-item i { font-size: 19px; }
+  .shell .sidebar-footer { display: none; }
+  .brand { justify-content: center; padding-inline: 0; }
+  .skip-link { left: 70px; }
+  .shell .page { padding: 22px 20px 48px; }
+}
+@media (max-width: 600px) {
+  :root { --ui-panel: 16px; }
+  .shell .page { padding-inline: 14px; }
+  .page .page-head > label { flex-basis: 100%; }
+  .page h1, .page .page-title { font-size: 24px; }
+  .page .marketing-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .marketing-summary > div { padding: 12px; }
+  .marketing-summary strong { font-size: 20px; overflow-wrap: anywhere; }
+  .section-tabs { gap: 2px; }
+  .section-tabs button { padding-inline: 8px; }
+  .page :is(.two-col, .grid-cards) { grid-template-columns: minmax(0, 1fr); }
+  .page .studio-inline-form label { min-width: 0; flex-basis: 100%; }
+  .operation-delivery-head { flex-wrap: wrap; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+}

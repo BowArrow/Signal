@@ -1,0 +1,10 @@
+import { spawn } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const env = { ...process.env, SIGNAL_RECEIPT_PROFILE: mkdtempSync(join(tmpdir(), 'signal-receipt-')) }; delete env.ELECTRON_RUN_AS_NODE;
+if (process.argv.includes('--reconcile')) env.SIGNAL_RECONCILE_RECEIPTS = '1';
+const child = spawn(require('electron'), [resolve('scripts/check-outreach-receipts.cjs'), '--disable-gpu'], { env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+child.stdout.pipe(process.stdout); child.stderr.pipe(process.stderr); child.on('exit', code => { process.exitCode = code ?? 1; });

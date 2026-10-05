@@ -68,7 +68,7 @@ export class RedditPublicPoller implements Poller {
     private readonly options: { limit?: number } = {},
   ) {}
 
-  available(): { ready: boolean } {
+  available(): { ready: boolean; reason?: string } {
     return this.client.available();
   }
 
@@ -91,7 +91,7 @@ export class RedditPublicSearchPoller implements Poller {
     private readonly options: { limit?: number } = {},
   ) {}
 
-  available(): { ready: boolean } {
+  available(): { ready: boolean; reason?: string } {
     return this.client.available();
   }
 

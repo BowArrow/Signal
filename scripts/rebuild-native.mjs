@@ -43,7 +43,7 @@ function electronVersion() {
 
 function run(cmd, args) {
   console.log(`  $ ${cmd} ${args.join(' ')}`);
-  execFileSync(cmd, args, { cwd: root, stdio: 'inherit', shell: process.platform === 'win32' });
+  execFileSync(cmd, args, { cwd: root, stdio: 'inherit', windowsHide: true, shell: process.platform === 'win32' });
 }
 
 function sha(path) {

@@ -268,24 +268,82 @@ export class RedditBlockedError extends Error {
  * ingestion throughput is worth risking it.
  */
 export class RedditScrapeClient {
+  /** Consecutive refusals. Reset by any success. */
+  private consecutiveBlocks = 0;
+  /** While set, every request is refused locally without touching Reddit. */
+  private pausedUntil = 0;
+
   constructor(
     private readonly http: HttpClient,
     private readonly logger: Logger,
+    private readonly clock: { now(): number } = Date,
+    /** Overridable so tests are not held at the real twelve-second pace. */
+    private readonly minIntervalMs: number = RedditScrapeClient.MIN_INTERVAL_MS,
   ) {}
 
-  available(): { ready: boolean } {
+  /**
+   * How long to stand down after repeated refusals, escalating.
+   *
+   * A 429 means Reddit has asked us to stop. Retrying through it is how a
+   * scraper turns into a blocked IP and a suspended account — the exact asset
+   * this whole system exists to build. Backing off hard is not politeness, it
+   * is self-interest.
+   */
+  private static readonly BLOCKS_BEFORE_PAUSE = 3;
+  private static readonly PAUSE_STEPS_MS = [15 * 60_000, 60 * 60_000, 6 * 60 * 60_000];
+
+  available(): { ready: boolean; reason?: string } {
+    const remaining = this.pausedUntil - this.clock.now();
+    if (remaining > 0) {
+      return {
+        ready: false,
+        reason: `Reddit refused repeatedly; standing down for another ${Math.ceil(remaining / 60_000)} minutes`,
+      };
+    }
     // No credentials involved. That is the entire point.
     return { ready: true };
   }
 
+  /** Test seam and manual override, for when you know the block has lifted. */
+  resume(): void {
+    this.pausedUntil = 0;
+    this.consecutiveBlocks = 0;
+  }
+
+  private recordBlock(): void {
+    this.consecutiveBlocks += 1;
+    if (this.consecutiveBlocks < RedditScrapeClient.BLOCKS_BEFORE_PAUSE) return;
+
+    const step = Math.min(
+      RedditScrapeClient.PAUSE_STEPS_MS.length - 1,
+      this.consecutiveBlocks - RedditScrapeClient.BLOCKS_BEFORE_PAUSE,
+    );
+    const pause = RedditScrapeClient.PAUSE_STEPS_MS[step] ?? 15 * 60_000;
+    this.pausedUntil = this.clock.now() + pause;
+    this.logger.warn('pausing all Reddit page requests', {
+      consecutiveBlocks: this.consecutiveBlocks,
+      minutes: Math.round(pause / 60_000),
+    });
+  }
+
   /**
-   * Four seconds between requests, well beyond the client default. This path
-   * has no rate limit published for it and no account to attribute load to,
-   * so the only responsible setting is a slow one.
+   * Twelve seconds between requests.
+   *
+   * Started at four, which drew 429s once a hydration backlog began draining
+   * back to back — sustained, that is nine hundred requests an hour. This path
+   * has no published rate limit and no account to attribute load to, so the
+   * only responsible setting is one that looks like a person reading.
    */
-  static readonly MIN_INTERVAL_MS = 4000;
+  static readonly MIN_INTERVAL_MS = 12_000;
 
   private async page(path: string, params: Record<string, string> = {}): Promise<string> {
+    const readiness = this.available();
+    if (!readiness.ready) {
+      // Refuse locally. Sending the request anyway would be the behaviour that
+      // earned the block in the first place.
+      throw new RedditBlockedError(429);
+    }
+
     const url = new URL(path, OLD_REDDIT);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
 
@@ -294,14 +352,18 @@ export class RedditScrapeClient {
         // Only reachable from a source carrying a named robots exemption;
         // HttpClient refuses otherwise.
         ignoreRobotsTxt: true,
-        minIntervalMs: RedditScrapeClient.MIN_INTERVAL_MS,
+        minIntervalMs: this.minIntervalMs,
         headers: {
           'user-agent': BROWSER_UA,
           accept: 'text/html,application/xhtml+xml',
           'accept-language': 'en-US,en;q=0.9',
         },
       });
-      return await res.text();
+      const html = await res.text();
+      // Any success clears the streak; a single refusal in a long healthy run
+      // is noise, three in a row is a message.
+      this.consecutiveBlocks = 0;
+      return html;
     } catch (err) {
       // A 403 arrives as an HttpError from the retry loop. Translate it, so
       // the caller can tell "Reddit is refusing us" from "the parse failed" —
@@ -310,7 +372,9 @@ export class RedditScrapeClient {
         this.logger.warn('reddit refused a public page request', {
           status: err.status,
           path,
+          consecutive: this.consecutiveBlocks + 1,
         });
+        this.recordBlock();
         throw new RedditBlockedError(err.status);
       }
       throw err;

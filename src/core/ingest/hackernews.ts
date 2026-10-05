@@ -3,6 +3,7 @@ import type { Logger } from '../lib/logger.js';
 import type { Source } from '../db/schema.js';
 import { normalizeHnHit, type AlgoliaHit } from './normalize.js';
 import type { Poller, PollResult } from './types.js';
+import { publicSearchJson } from './public-search.js';
 
 /**
  * Hacker News via the Algolia search API — public, documented, no key.
@@ -39,25 +40,29 @@ export class HackerNewsPoller implements Poller {
     return { ready: true };
   }
 
-  async poll(source: Source): Promise<PollResult> {
+  async poll(source: Source, signal?: AbortSignal): Promise<PollResult> {
     const url = new URL(SEARCH_URL);
-    url.searchParams.set('query', source.identifier);
+    const research = source.discoveredVia === 'operations-research';
+    url.searchParams.set('query', research ? JSON.stringify(source.identifier.replace(/"/g, '').trim()) : source.identifier);
+    if (research) url.searchParams.set('advancedSyntax', 'true');
     url.searchParams.set('tags', '(story,comment)');
-    url.searchParams.set('hitsPerPage', String(this.options.hitsPerPage ?? 50));
+    url.searchParams.set('hitsPerPage', String(this.options.hitsPerPage ?? (research ? 100 : 50)));
 
     // Push the age cutoff into the query. The runner enforces it again, but
     // filtering server-side means we are not paging through years of archive
     // to find the last day of activity.
     const filters: string[] = [];
     if (this.options.minPoints != null) filters.push(`points>=${this.options.minPoints}`);
-    if (this.options.maxAgeHours != null) {
-      const cutoff = Math.floor((Date.now() - this.options.maxAgeHours * 3_600_000) / 1000);
+    const maxAgeHours = source.maxItemAgeHours ?? this.options.maxAgeHours;
+    if (maxAgeHours != null) {
+      const cutoff = Math.floor((Date.now() - maxAgeHours * 3_600_000) / 1000);
       filters.push(`created_at_i>${cutoff}`);
     }
     if (filters.length) url.searchParams.set('numericFilters', filters.join(','));
 
-    const res = await this.http.json<AlgoliaResponse>(url.toString(), { official: true });
-    const hits = res.hits ?? [];
+    const res = await publicSearchJson(this.http, url.toString(), signal) as AlgoliaResponse;
+    if (!Array.isArray(res.hits)) throw new Error('Unexpected Hacker News search response');
+    const hits = res.hits.slice(0, 100);
 
     const items: PollResult['items'] = [];
     const skipped: PollResult['skipped'] = [];

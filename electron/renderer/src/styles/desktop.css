@@ -1,0 +1,2 @@
+.desktop-settings .marketing-check { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; margin: 14px 0; }
+.desktop-settings .marketing-check input { width: auto; flex: none; margin-top: 3px; }

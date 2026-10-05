@@ -1,0 +1,8 @@
+.revenue-page { max-width: 1280px; }
+.revenue-table-wrap { overflow-x: auto; max-width: 100%; }
+.revenue-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.revenue-table th, .revenue-table td { text-align: left; padding: 12px; border-bottom: 1px solid var(--color-divider); }
+.revenue-table td { overflow-wrap: anywhere; min-width: 90px; }
+.revenue-table small { display: block; color: var(--color-neutral-400); }
+.revenue-page .operation-status > div { min-width: 0; overflow-wrap: anywhere; }
+.sales-funding .marketing-summary { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 16px 0; gap: 12px; }

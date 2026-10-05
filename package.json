@@ -1,8 +1,8 @@
 {
   "name": "signal",
-  "version": "0.1.0",
+  "version": "0.53.0",
   "private": true,
-  "description": "Marketing operations system for a solo founder. Finds threads worth answering, drafts a reply, queues it for human approval, tracks what converted.",
+  "description": "Agent-powered growth workspace with campaign production, local creative tools, customer pipelines, and measured outcomes.",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -23,6 +23,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "growth:smoke": "tsx scripts/growth-local-smoke.ts",
+    "growth:ui": "node scripts/growth-ui-smoke.mjs",
     "rebuild:native": "node scripts/rebuild-native.mjs",
     "postinstall": "node scripts/rebuild-native.mjs"
   },
@@ -37,11 +39,18 @@
     "fast-xml-parser": "^5.2.3",
     "nanoid": "^5.1.5",
     "node-cron": "^3.0.3",
+    "twitter-text": "3.1.0",
+    "undici": "6.29.0",
     "zod": "^3.25.51"
   },
   "build": {
     "appId": "com.aionx.signal",
     "productName": "Signal",
+    "files": [
+      "out/**/*",
+      "!out/validation/**/*",
+      "package.json"
+    ],
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -50,13 +59,22 @@
       {
         "from": "native/better_sqlite3-electron.node",
         "to": "native/better_sqlite3-electron.node"
+      },
+      {
+        "from": "node_modules/7zip-bin/win/x64/7za.exe",
+        "to": "tools/7za.exe"
+      },
+      {
+        "from": "node_modules/7zip-bin/LICENSE.txt",
+        "to": "tools/7zip-bin-LICENSE.txt"
       }
     ],
     "asarUnpack": [
       "**/*.node"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
     "mac": {
       "target": "dmg",
@@ -64,7 +82,12 @@
     },
     "linux": {
       "target": "AppImage",
-      "category": "Utility"
+      "category": "Utility",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     }
   },
   "pnpm": {
@@ -76,6 +99,7 @@
     ]
   },
   "devDependencies": {
+    "7zip-bin": "5.2.0",
     "@electron/rebuild": "^4.2.0",
     "@eslint/js": "^9.28.0",
     "@types/better-sqlite3": "^7.6.13",
@@ -83,6 +107,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
+    "@types/twitter-text": "^3.1.10",
     "@vitejs/plugin-react": "^4.5.0",
     "@vitest/coverage-v8": "^3.1.4",
     "drizzle-kit": "^0.31.1",

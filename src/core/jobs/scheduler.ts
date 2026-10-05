@@ -3,7 +3,12 @@ import { eq } from 'drizzle-orm';
 import type { App } from '../app.js';
 import { sources } from '../db/schema.js';
 import { runIngest } from '../ingest/run.js';
-import { hydrateBody, isHydratePayload, JOB_HYDRATE_BODY } from '../ingest/hydrate.js';
+import {
+  hydrateBody,
+  isHydratePayload,
+  JOB_HYDRATE_BODY,
+  pendingBodies,
+} from '../ingest/hydrate.js';
 import { drain, enqueue, type JobHandler } from './queue.js';
 
 export const JOB_INGEST_SOURCE = 'ingest.source';
@@ -92,6 +97,22 @@ export function createScheduler(app: App): Scheduler {
           { sourceId: source.id },
           // The dedupe key means a slow poll cannot pile up behind itself.
           { dedupeKey: `${JOB_INGEST_SOURCE}:${source.id}` },
+          app.clock,
+        );
+      }
+
+      // Re-queue anything still waiting on a body. A hydration job can die
+      // after exhausting its retries — most likely because Reddit was refusing
+      // us for longer than the backoff covered — and without this the
+      // opportunity would sit un-hydrated forever, invisible to scoring. The
+      // dedupe key stops this from piling up duplicates.
+      for (const pending of pendingBodies(app.db, 50)) {
+        const permalink = new URL(pending.url).pathname;
+        enqueue(
+          app.db,
+          JOB_HYDRATE_BODY,
+          { opportunityId: pending.id, permalink, externalId: pending.id, platform: 'reddit' },
+          { dedupeKey: `${JOB_HYDRATE_BODY}:${pending.id}` },
           app.clock,
         );
       }

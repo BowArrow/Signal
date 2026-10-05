@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { extractJson, type LlmClient } from '../llm/client.js';
 import { loadPrompt, loadVoice } from '../prompts/loader.js';
+import { NATURAL_VOICE, requireNaturalReply } from '../marketing/voice.js';
 import type { Community, CommunityRule, Opportunity, Product } from '../db/schema.js';
 import type { Logger } from '../lib/logger.js';
 
@@ -157,7 +158,7 @@ export async function generateReply(
 
   const result = await llm.complete({
     model,
-    prompt: rendered,
+    prompt: NATURAL_VOICE + '\n\n' + rendered,
     maxTokens,
     prefill: '{',
     task: 'draft',
@@ -175,6 +176,7 @@ export async function generateReply(
     );
   }
 
+  requireNaturalReply(parsed.data.body);
   return {
     reply: parsed.data,
     promptVersion: prompt.version,

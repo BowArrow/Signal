@@ -1,0 +1,17 @@
+import { spawn } from 'node:child_process';
+import { mkdtempSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { build } = createRequire(require.resolve('vite'))('esbuild');
+const output = resolve('out/main/connect-owner-search.cjs');
+await build({ entryPoints: ['scripts/connect-owner-search.ts'], outfile: output, bundle: true, platform: 'node', format: 'cjs', packages: 'external', define: { 'import.meta.url': JSON.stringify(pathToFileURL(output).href) }, logLevel: 'silent' });
+const env = { ...process.env, SIGNAL_OFFLINE: '0', SIGNAL_SEARCH_HELPER_PROFILE: mkdtempSync(join(tmpdir(), 'signal-search-')) }; delete env.ELECTRON_RUN_AS_NODE;
+if (process.argv.includes('--setup-sites')) env.SIGNAL_SEARCH_SETUP_SITES = '1';
+if (process.argv.includes('--inspect-index')) env.SIGNAL_SEARCH_INSPECT_INDEX = '1';
+if (process.argv.includes('--audit')) env.SIGNAL_SEARCH_AUDIT = '1';
+const child = spawn(require('electron'), [output, '--disable-gpu'], { env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+child.stdout.pipe(process.stdout); child.stderr.pipe(process.stderr);
+child.on('exit', code => { unlinkSync(output); process.exitCode = code ?? 1; });

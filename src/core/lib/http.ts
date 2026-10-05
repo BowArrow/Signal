@@ -133,6 +133,7 @@ export class HttpClient {
     } = {},
   ): Promise<Response> {
     if (this.offline) throw new OfflineError(url);
+    init.signal?.throwIfAborted();
 
     const { official = false, ignoreRobotsTxt = false, minIntervalMs, ...requestInit } = init;
     const target = new URL(url);
@@ -179,10 +180,11 @@ export class HttpClient {
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= this.options.maxRetries; attempt += 1) {
+      init.signal?.throwIfAborted();
       if (attempt > 0) {
         const backoff = Math.min(30_000, 500 * 2 ** (attempt - 1));
         this.logger.debug('retrying request', { url, attempt, backoff });
-        await sleep(backoff);
+        await sleep(backoff, undefined, init.signal ? { signal: init.signal } : {});
       }
 
       const controller = new AbortController();
@@ -192,13 +194,13 @@ export class HttpClient {
         headers.set('user-agent', this.options.userAgent);
         if (!headers.has('accept')) headers.set('accept', 'application/json, text/plain, */*');
 
-        const res = await this.fetchFn(url, { ...init, headers, signal: controller.signal });
+        const res = await this.fetchFn(url, { ...init, headers, signal: init.signal ? AbortSignal.any([init.signal, controller.signal]) : controller.signal });
 
         if (res.status === 429 || res.status >= 500) {
           const retryAfter = Number(res.headers.get('retry-after'));
           if (Number.isFinite(retryAfter) && retryAfter > 0) {
             this.logger.warn('rate limited, honoring retry-after', { url, retryAfter });
-            await sleep(Math.min(retryAfter * 1000, 60_000));
+            await sleep(Math.min(retryAfter * 1000, 60_000), undefined, init.signal ? { signal: init.signal } : {});
           }
           lastError = new HttpError(`${res.status} ${res.statusText}`, res.status, url);
           continue;
@@ -211,6 +213,7 @@ export class HttpClient {
 
         return res;
       } catch (err) {
+        init.signal?.throwIfAborted();
         if (err instanceof HttpError && err.status < 500 && err.status !== 429) throw err;
         lastError = err;
       } finally {

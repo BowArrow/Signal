@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', 'out/**', 'dist/**', 'coverage/**', 'design-ref/**', 'edge/**/lib/**'],
+    ignores: ['node_modules/**', 'out/**', 'dist/**', 'coverage/**', 'design-ref/**', 'edge/**/lib/**', 'data/growth-validation/**', 'data/operation-images-validation/runner/**', 'data/prospects-production-validation/chrome-*/**', 'data/video-blockout-smoke.cjs', 'electron.vite.config.*.mjs'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

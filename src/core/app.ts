@@ -1,4 +1,20 @@
 import { loadConfig, type LoadedConfig } from './config/load.js';
+import type { ConnectionService } from './connections/service.js';
+import type { OperationsService } from './operations/service.js';
+import type { OperationImages } from './operations/images.js';
+import type { RevenueService } from './revenue/service.js';
+import type { AnalyticsService } from './analytics/service.js';
+import type { SeoService } from './seo/service.js';
+import type { VideoService } from './video/service.js';
+import type { VideoCampaignService } from './video/campaigns.js';
+import type { VideoPublishingService } from './video/publishing.js';
+import type { SalesService } from './sales/service.js';
+import type { SalesHandoffs } from './sales/handoffs.js';
+import type { SalesReplyService } from './sales/reply-service.js';
+import type { OutreachService } from './sales/outreach-service.js';
+import type { ProspectResearchService } from './sales/prospect-research.js';
+import type { ProspectService } from './sales/prospects.js';
+import type { RuntimeSupervisor } from './runtime/continuity.js';
 import { capabilities, type Capability } from './config/env.js';
 import { openDatabase, type DbHandle } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
@@ -18,6 +34,7 @@ import { LobstersPoller } from './ingest/lobsters.js';
 import type { Poller } from './ingest/types.js';
 import { AnthropicClient, type LlmClient } from './llm/client.js';
 import { OpenAiCompatibleClient } from './llm/openai-compatible.js';
+import { runtimeSettings } from './runtime/settings.js';
 import { RecordingLlmClient } from './llm/recording.js';
 import {
   HackerNewsRulesFetcher,
@@ -38,6 +55,26 @@ import {
  * chance of the two diverging.
  */
 export interface App {
+  video?: VideoService;
+  videoCampaigns?: VideoCampaignService;
+  videoPublishing?: VideoPublishingService;
+  ensureCreativeRuntime?: (signal: AbortSignal) => Promise<void>;
+  cancelCreativeRender?: (base: string, promptId: string) => Promise<boolean>;
+  ensureVideoRuntime?: (base: string, signal: AbortSignal, model?: 'h3' | 'ltx25') => Promise<void>;
+  operationImages?: OperationImages;
+  runtimeSupervisor?: RuntimeSupervisor;
+  salesReplies?: SalesReplyService;
+  outreach?: OutreachService;
+  prospectResearch?: ProspectResearchService;
+  prospects?: ProspectService;
+  sales?: SalesService;
+  salesHandoffs?: SalesHandoffs;
+  revenue?: RevenueService;
+  analytics?: AnalyticsService;
+  seo?: SeoService;
+  operations?: OperationsService;
+  connections?: ConnectionService;
+  readonly getSecret?: (name: string) => string | undefined;
   readonly config: LoadedConfig['config'];
   readonly env: LoadedConfig['env'];
   readonly db: DbHandle['db'];
@@ -55,6 +92,7 @@ export interface App {
 }
 
 export interface CreateAppOptions {
+  readonly getSecret?: (name: string) => string | undefined;
   /** Overrides signal.config.ts and SIGNAL_DATABASE_URL. Tests use this. */
   readonly databaseUrl?: string;
   readonly migrate?: boolean;
@@ -137,6 +175,7 @@ export function createApp(options: CreateAppOptions = {}): App {
       ? new OpenAiCompatibleClient(config.llm.baseUrl ?? '', logger.child({ mod: 'llm' }), {
           apiKey: env.LLM_API_KEY,
           timeoutMs: config.llm.requestTimeoutMs,
+          localDevice: () => runtimeSettings({ db: dbHandle.db }).localDevice,
           offline,
         })
       : new AnthropicClient(env.ANTHROPIC_API_KEY, logger.child({ mod: 'llm' }), offline);
@@ -159,7 +198,8 @@ export function createApp(options: CreateAppOptions = {}): App {
   ]);
 
   return {
-    config,
+    ...(options.getSecret ? { getSecret: options.getSecret } : {}),
+    config: options.databaseUrl ? { ...config, databaseUrl: options.databaseUrl } : config,
     env,
     db: dbHandle.db,
     dbHandle,

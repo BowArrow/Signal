@@ -3,6 +3,7 @@ import type { Logger } from '../lib/logger.js';
 import type { Source } from '../db/schema.js';
 import { cleanText, MAX_TITLE_CHARS } from './normalize.js';
 import type { NormalizedItem, Poller, PollResult } from './types.js';
+import { publicSearchJson } from './public-search.js';
 
 /**
  * Stack Exchange, across any of its sites.
@@ -35,6 +36,7 @@ interface SeQuestion {
 }
 
 interface SeResponse {
+  readonly backoff?: number;
   readonly items?: SeQuestion[];
   readonly quota_remaining?: number;
   readonly error_message?: string;
@@ -100,6 +102,9 @@ export function siteLabel(site: string): string {
 
 export class StackExchangePoller implements Poller {
   readonly kind = 'stackexchange' as const;
+  private pending: Promise<unknown> = Promise.resolve();
+  private nextAllowedAt = 0;
+  private queries = new Map<string, number>();
 
   constructor(
     private readonly http: HttpClient,
@@ -113,7 +118,15 @@ export class StackExchangePoller implements Poller {
     return { ready: true };
   }
 
-  async poll(source: Source): Promise<PollResult> {
+  poll(source: Source, signal?: AbortSignal): Promise<PollResult> {
+    const result = this.pending.then(() => this.search(source, signal));
+    this.pending = result.catch(() => undefined);
+    return result;
+  }
+  private async search(source: Source, signal?: AbortSignal): Promise<PollResult> {
+    signal?.throwIfAborted();
+    if (Date.now() < this.nextAllowedAt || Date.now() < (this.queries.get(source.identifier) ?? 0)) throw new Error('Stack Exchange requested a search cooldown. Try later.');
+    this.queries.set(source.identifier, Date.now() + 60000);
     const { site, query } = parseIdentifier(source.identifier);
     const url = new URL(`${API}/search/advanced`);
 
@@ -139,13 +152,16 @@ export class StackExchangePoller implements Poller {
       url.searchParams.set('fromdate', String(from));
     }
 
-    const res = await this.http.json<SeResponse>(url.toString(), { official: true });
+    const res = await publicSearchJson(this.http, url.toString(), signal) as SeResponse;
+    if (Number.isFinite(res.backoff) && res.backoff! > 0) this.nextAllowedAt = Date.now() + res.backoff! * 1000;
+    if (res.quota_remaining === 0) this.nextAllowedAt = Math.max(this.nextAllowedAt, Date.now() + 3600000);
     if (res.error_message) throw new Error(`stack exchange: ${res.error_message}`);
+    if (!Array.isArray(res.items)) throw new Error('Unexpected Stack Exchange search response');
 
     const items: NormalizedItem[] = [];
     const skipped: PollResult['skipped'] = [];
 
-    for (const question of res.items ?? []) {
+    for (const question of res.items.slice(0, 100)) {
       const normalized = normalizeQuestion(question, site);
       if ('skip' in normalized) {
         skipped.push({ externalId: String(question.question_id ?? '?'), reason: normalized.skip });
