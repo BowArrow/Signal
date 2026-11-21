@@ -1,0 +1,20 @@
+{
+  "id": "alex-home-workspace-audio-v1",
+  "status": "user-rejected-overlay-feeling",
+  "description": "Close conversational microphone in a softly furnished room, centered mono voice with subtle short reflections and a continuous quiet synthetic room bed.",
+  "highpassHz": 75,
+  "lowpassHz": 9500,
+  "reflectionLevelDb": -25,
+  "decaySeconds": 0.22,
+  "roomToneRmsDbfs": -55,
+  "targetLufs": -17,
+  "maximumTruePeakDbfs": -1.5,
+  "seed": 42,
+  "timingPolicy": "No time stretch, pitch change, added breaths or word edits. Preserve sample count and direct speech onset. Condition video on the clean approved voice, then apply this room mix at export.",
+  "ambienceProvenance": "Locally synthesized filtered noise and room impulse response; not a recording of the depicted room. No music or outdoor effects.",
+  "review": {
+    "at": "2026-10-22",
+    "feedback": "Still sounds like an overlay",
+    "nextStep": "Assess guided audio-visual articulation before accepting another room mix."
+  }
+}

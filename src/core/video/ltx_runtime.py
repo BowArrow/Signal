@@ -26,7 +26,12 @@ import cuda_malloc
 import comfy_aimdo.control
 # host_buffer captures control.lib at import time; initialize before importing
 # model_management, just as ComfyUI main.py does.
-if not comfy_aimdo.control.init(simple_vram_headroom=3 * 1024 ** 3, nvml_pressure=True):
+# Respect the managed CLI reserve even during this early initialization.
+# A fixed 3 GiB target here previously defeated more conservative launches.
+headroom = float(sys.argv[sys.argv.index('--vram-headroom') + 1]) if '--vram-headroom' in sys.argv else 3
+if not 3 <= headroom <= 8:
+    raise RuntimeError('LTX GPU headroom must be between 3 and 8 GiB.')
+if not comfy_aimdo.control.init(simple_vram_headroom=int(headroom * 1024 ** 3), nvml_pressure=True):
     raise RuntimeError('The installed dynamic memory manager could not initialize.')
 import comfy.model_management
 comfy.model_management.MAX_PINNED_MEMORY = min(comfy.model_management.MAX_PINNED_MEMORY, 1024 ** 3)
@@ -34,5 +39,8 @@ from comfy.ldm.lightricks.latent_upsampler import LatentUpsampler
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ltx_upscaler import install_meta_upscaler
 install_meta_upscaler(LatentUpsampler)
+from comfy.ldm.lightricks.vae.causal_audio_autoencoder import CausalAudioAutoencoder
+from ltx_audio_compat import install_audio_encoder_dtype
+install_audio_encoder_dtype(CausalAudioAutoencoder)
 print('[Signal] LTX dynamic offload; pinned staging limited to 1 GiB.', flush=True)
 runpy.run_path(str(main), run_name='__main__')

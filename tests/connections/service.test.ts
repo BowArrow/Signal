@@ -19,6 +19,36 @@ const response = (value: unknown) => Response.json(value);
 beforeEach(() => { vi.stubEnv('SIGNAL_OFFLINE', '0'); __setConfigForTests(null); app = createApp({ databaseUrl: ':memory:', logger: silentLogger }); vault = new MemoryVault(); browser = []; service = new ConnectionService(app, vault, async url => { browser.push(url); }, vi.fn(async () => response({ emailAddress: 'owner@example.org' }))); service.view(); });
 afterEach(() => { service.cancelOAuth(); app.close(); vi.unstubAllEnvs(); __setConfigForTests(null); });
 const firstProduct = () => service.view().products[0]!.id;
+it.each(['allowed', 'wrong-account', 'rejected'] as const)('reconnects Bluesky in place and preserves old credentials on failure: %s', async scenario => {
+  const transport = vi.fn(async (url: string | URL | Request) => response(String(url).includes('createSession') ? { accessJwt: 'old-access', refreshJwt: 'old-refresh' } : { handle: 'owner.bsky.social' }));
+  service = new ConnectionService(app, vault, undefined, transport);
+  const input = { provider: 'bluesky', productId: firstProduct(), label: 'Social', username: 'owner.bsky.social', credential: 'app-password' };
+  await service.connect(input);
+  const original = service.accounts()[0]!;
+  await service.shareSocial(original.productId, original.id, service.view().products[1]!.id);
+  const ids = service.accounts().map(a => a.id).sort();
+  transport.mockImplementation(async url => scenario === 'rejected' ? new Response('', { status: 401 }) : response(String(url).includes('createSession') ? { accessJwt: 'new-access', refreshJwt: 'new-refresh' } : { handle: scenario === 'wrong-account' ? 'other.bsky.social' : 'owner.bsky.social' }));
+  if (scenario === 'allowed') await service.connect(input, original.id);
+  else await expect(service.connect(input, original.id)).rejects.toThrow();
+  expect(service.accounts().map(a => a.id).sort()).toEqual(ids);
+  expect(vault.get(`account.${original.id}`)).toContain(scenario === 'allowed' ? 'new-refresh' : 'old-refresh');
+  expect(JSON.stringify(service.view())).not.toContain('new-access');
+});
+it.each(['allowed', 'cancelled', 'rejected'] as const)('reconnects Google Analytics without replacing its configured account ID: %s', async scenario => {
+  const transport: typeof fetch = vi.fn(async url => String(url).includes('/token') ? scenario === 'rejected' ? new Response('', { status: 400 }) : response({ access_token: 'new-access', refresh_token: 'new-refresh', expires_in: 3600 }) : response({ accountSummaries: [] }));
+  service = new ConnectionService(app, vault, async url => { browser.push(url); }, transport);
+  await service.connect({ provider: 'ga4', productId: firstProduct(), label: 'Analytics', credential: 'old-access' });
+  const original = service.accounts()[0]!;
+  service.configureOAuth('ga4', { clientId: 'desktop-client', clientSecret: '', developerToken: '' });
+  await service.reconnectOAuth(original.productId, original.id);
+  const auth = new URL(browser[0]!);
+  expect(auth.searchParams.get('prompt')).toBe('select_account consent');
+  const callback = await fetch(`${CALLBACK_URL}?state=${auth.searchParams.get('state')}&${scenario === 'cancelled' ? 'error=access_denied' : 'code=fixture'}`);
+  expect(callback.status).toBe(scenario === 'rejected' ? 400 : 200);
+  expect(service.accounts()).toHaveLength(1);
+  expect(service.accounts()[0]!.id).toBe(original.id);
+  expect(vault.get(`account.${original.id}`)).toContain(scenario === 'allowed' ? 'new-refresh' : 'old-access');
+});
 it('keeps credentials out of SQLite and renderer views, scopes actions, and deletes saved tokens on disconnect', async () => {
   await service.connect({ provider: 'gmail', productId: firstProduct(), label: 'Sales inbox', credential: 'private-access-token' });
   const account = service.accounts()[0]!;

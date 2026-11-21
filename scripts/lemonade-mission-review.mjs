@@ -1,0 +1,12 @@
+import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { spawn } from 'node:child_process';
+const require = createRequire(import.meta.url);
+const esbuild = createRequire(require.resolve('vite'))('esbuild');
+const output = resolve('out/validation/lemonade-mission-review.cjs');
+await esbuild.build({ entryPoints: ['scripts/lemonade-mission-review.ts'], bundle: true, platform: 'node', format: 'cjs', packages: 'external', define: { 'import.meta.url': JSON.stringify(pathToFileURL(resolve('out/main/index.cjs')).href) }, outfile: output });
+const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
+const child = spawn(require('electron'), [output, ...process.argv.slice(2)], { env, windowsHide: true, stdio: 'inherit' });
+child.on('error', error => { console.error(error.message); process.exitCode = 1; });
+child.on('exit', code => { process.exitCode = code ?? 1; });

@@ -38,7 +38,7 @@ export function operationReadiness(app: App, state: OperationState): OperationRe
     add('YouTube ads', ready, ready ? `Upload approved ads to ${youtube.channelTitle} as ${youtube.privacy}, up to ${youtube.dailyLimit} per rolling day shared across this channel.` : 'Choose a verified channel with upload permission in Video production.');
   }
   if (state.discovery?.enabled) {
-    const ready = state.discovery.queries.every(q => q.kind === 'bluesky' ? accounts.some(a => a.provider === 'bluesky' && a.status === 'verified') : app.pollers.some(p => p.kind === q.kind && p.available().ready));
+    const ready = state.discovery.queries.some(q => q.kind === 'bluesky' || app.pollers.some(p => p.kind === q.kind && p.available().ready));
     add('Public buyer research', ready, ready ? 'Search recent public discussions for this business and use relevant buyer problems in campaigns. Public authors are not added to email outreach.' : 'The selected public search provider is unavailable.');
   }
   for (const id of state.accountIds) {

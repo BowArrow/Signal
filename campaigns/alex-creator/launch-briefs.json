@@ -1,0 +1,74 @@
+[
+  {
+    "id": "the-chair",
+    "title": "The chair wardrobe",
+    "mode": "original-test",
+    "sourceIds": [],
+    "script": "Why does every house have a chair that's technically a wardrobe? Too clean for the laundry. Too worn for the drawer. So it goes to the chair. The chair has a better outfit rotation than you do.",
+    "voiceDirection": "Conversational American English. Speak to a friend in the room at an easy natural pace. Open with an amused genuine question. Brief thoughtful pauses after laundry and drawer. Give the final sentence with quiet dry humor and a small smile, letting the punchline land. No announcer cadence.",
+    "caption": "The chair has a system. Apparently. #relatable #everydaylife #thechair",
+    "intent": "entertainment",
+    "visual": "Alex speaks warmly from a fixed eye-level tripod in his familiar workspace. Cut after the opening question to a wooden chair with clothes in a separate bedroom, seen from the doorway with bed and wardrobe visible. Use fixed wide/detail views, then return to Alex for the last sentence. Distinct location and angle must make the cutaway read as elsewhere in his house, without implying Alex disappeared.",
+    "commercialDisclosure": false,
+    "aiLabel": true,
+    "publishing": {
+      "authorizedByUser": true,
+      "enabled": false,
+      "state": "complete-edit-ready-for-playback-and-upload",
+      "exportPath": "output/alex-creator/exports/the-chair-edited-f28891ed-9a6d-4a1a-b2ab-97156ba5f82e/video.mp4",
+      "exportReceipt": "output/alex-creator/exports/the-chair-edited-f28891ed-9a6d-4a1a-b2ab-97156ba5f82e/receipt.json",
+      "handoffBlock": "Rechecked 2026-10-23: Alex is connected in Metricool, but the connector has no local-file upload tool and Computer Use reports no available browsers. Final video upload requires an accessible upload surface.",
+      "reviewCandidate": "output/alex-creator/exports/the-chair-edited-f28891ed-9a6d-4a1a-b2ab-97156ba5f82e/video.mp4",
+      "reviewCandidateScope": "Complete 14.625-second captioned first video, including a newly rendered closing shot.",
+      "reviewCandidateState": "Revised bedroom cutaway; full decoding and continuous-audio checks passed; final playback review pending.",
+      "editManifest": "campaigns/alex-creator/the-chair-edit.json",
+      "previousExportState": "Older rejected export preserved separately in previousRejectedExport.",
+      "previousRejectedExport": {
+        "path": "output/alex-creator/exports/the-chair-0c855a0a-ec60-4e61-bb72-d13fecd1d9f4/video.mp4",
+        "receipt": "output/alex-creator/exports/the-chair-0c855a0a-ec60-4e61-bb72-d13fecd1d9f4/receipt.json",
+        "state": "User rejected; never post."
+      },
+      "previousCutawayRevision": {
+        "path": "output/alex-creator/exports/the-chair-edited-59aa000f-49ee-48f8-bbe5-dbb0909b4c44/video.mp4",
+        "receipt": "output/alex-creator/exports/the-chair-edited-59aa000f-49ee-48f8-bbe5-dbb0909b4c44/receipt.json",
+        "state": "User rejected same-background continuity; superseded by bedroom cutaway."
+      }
+    }
+  },
+  {
+    "id": "one-thing",
+    "title": "The phone side quest",
+    "mode": "original-test",
+    "sourceIds": [],
+    "script": "Opening your phone to check one thing is a dangerous hobby. You answer a message, watch three videos, check the weather... then put it down. What was the one thing? Nobody knows.",
+    "voiceDirection": "Natural conversational American English, warm low-key storytelling. Slightly build the rhythm through the list, pause at the ellipsis, then ask the final question with friendly curiosity. Deliver Nobody knows with a gentle shared sense of humor. No hype or sales tone.",
+    "caption": "What did you unlock your phone for? #relatable #phonehabits #everydaylife",
+    "intent": "entertainment",
+    "visual": "Alex talks warmly in his room, with relaxed brows and a small thoughtful glance after the list, then gently meets the lens again. A phone insert can cover a cut without any fabricated app interface.",
+    "commercialDisclosure": false,
+    "aiLabel": true,
+    "publishing": {
+      "authorizedByUser": true,
+      "enabled": false,
+      "state": "awaiting-render-and-quality-review"
+    }
+  },
+  {
+    "id": "one-small-fix",
+    "title": "One task you can finish",
+    "mode": "original-test",
+    "sourceIds": [],
+    "script": "Your to-do list says, sort your life out. Very manageable. Try one task you can actually finish: reply to the email. Put the mug away. Ten minutes, one small fix. The rest can wait.",
+    "voiceDirection": "Warm natural conversational American English. A gentle shared observation on Very manageable. Practical reassuring delivery, with short pauses between examples. Finish gently and confidently. Vary emphasis and cadence naturally.",
+    "caption": "Make the task smaller. What is your one small fix today? #smallhabits #everydaylife #productivity",
+    "intent": "practical-value",
+    "visual": "Alex speaks casually at home. Original insert of putting a mug away; return to Alex for the final reassurance.",
+    "commercialDisclosure": false,
+    "aiLabel": true,
+    "publishing": {
+      "authorizedByUser": true,
+      "enabled": false,
+      "state": "awaiting-render-and-quality-review"
+    }
+  }
+]

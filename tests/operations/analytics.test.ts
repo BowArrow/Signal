@@ -40,6 +40,14 @@ beforeEach(async () => {
 });
 afterEach(async () => { await service.stop(); app.close(); vi.unstubAllEnvs(); __setConfigForTests(null); });
 const configure = () => service.configure(productId, { accountId, propertyId: '1234' });
+it('recognizes team campaign metadata only within its own business', async () => {
+  const other = connection.view().products[1]!.id;
+  for (const [id, business] of [['team-own', productId], ['team-other', other]]) app.db.insert(settings).values({ key: `marketing.team.run.${id}`, value: { id, productId: business } }).run();
+  report.rows = [row('team-own'), row('team-other')]; report.rowCount = 2;
+  configure(); await service.sync(productId);
+  expect(service.snapshot(productId)!.rows.find(r => r.campaignId === 'team-own')?.sessions).toBe(100);
+  expect(service.snapshot(productId)!.rows.find(r => r.attribution === 'unknown')?.sessions).toBe(100);
+});
 it('matches video campaign traffic only to this business and a confirmed YouTube receipt', async () => {
   app.videoPublishing = new VideoPublishingService(app, vault, () => { throw new Error('No video file reads during analytics.'); });
   const other = connection.view().products[1]!.id;

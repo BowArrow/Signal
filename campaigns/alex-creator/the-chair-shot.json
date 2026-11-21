@@ -1,0 +1,11 @@
+{
+  "profile": "guided_speech",
+  "duration": 14.56,
+  "validationOnly": false,
+  "image": "output/alex-creator/alex-room-video-v1.png",
+  "imageSha256": "e8137ad11dc12d3750432f58ee2db398c0d64c6d3e8eb7a3ea610e59c344a142",
+  "audio": "output/alex-creator/voice/the-chair/ryan-42.wav",
+  "audioSha256": "d70ccc0a9817c9c4447a185c1ac236d50a7cc97377287b3519cc27f0076e1f40",
+  "seed": 42,
+  "prompt": "A natural phone-camera video of the man in the reference image speaking directly to the viewer in his home workspace. He says the words in the supplied audio, visibly speaking in synchronization with the recording. His delivery is warm, approachable and informative, as if explaining an everyday observation to a friend. His expression follows his speech with relaxed eye contact and small conversational head movements. Preserve the same face, dark wavy hair, espresso suede jacket and yellow knit polo. Soft window daylight from camera-left, natural skin texture, clearly defined eyes and lips. The walnut desk stays camera-left; the bookshelf, plants and olive sofa stay camera-right. Stationary eye-level camera, one continuous real-time shot, no text or graphics."
+}

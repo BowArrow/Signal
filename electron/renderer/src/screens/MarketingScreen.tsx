@@ -4,13 +4,13 @@ import '../styles/growth.css';
 import '../styles/marketing.css';
 
 type Tab = 'chat' | 'engineering' | 'memory' | 'content' | 'budget' | 'media';
-type Props = { onToast: (message: string, kind?: 'ok' | 'warn') => void; initialTab?: Tab };
+type Props = { onToast: (message: string, kind?: 'ok' | 'warn') => void; initialTab?: Tab; initialProductId?: string };
 const labels: Record<Tab, string> = { chat: 'Talk to Signal', engineering: 'Engineering requests', memory: 'Memory graph', content: 'Content & responses', budget: 'Cash & tiers', media: 'Media & product access' };
 
-export function MarketingScreen({ onToast, initialTab = 'chat' }: Props): React.JSX.Element {
+export function MarketingScreen({ onToast, initialTab = 'chat', initialProductId = '' }: Props): React.JSX.Element {
   const [data, setData] = useState<MarketingView | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab);
-  const [productId, setProductId] = useState('');
+  const [productId, setProductId] = useState(initialProductId);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -127,5 +127,5 @@ function CashForm({ productId, busy, act }: { productId: string; busy: boolean; 
 
 function DraftEditor({ body, busy, save }: { body: string; busy: boolean; save: (body: string) => Promise<boolean> }): React.JSX.Element {
   const [text, setText] = useState(body);
-  return <details><summary>Edit this draft</summary><form onSubmit={(e) => { e.preventDefault(); void save(text); }}><textarea aria-label="Edit draft body" value={text} onChange={(e) => setText(e.target.value)} maxLength={4000} required rows={6} /><button className="btn" disabled={busy}>Save edited draft</button><p className="growth-muted">Editing returns the copy to draft status for review.</p></form></details>;
+  return <details><summary>Edit this draft</summary><form onSubmit={(e) => { e.preventDefault(); void save(text); }}><textarea aria-label="Edit draft body" value={text} onChange={(e) => setText(e.target.value)} maxLength={16000} required rows={6} /><button className="btn" disabled={busy}>Save edited draft</button><p className="growth-muted">Editing returns the copy to draft status for review.</p></form></details>;
 }

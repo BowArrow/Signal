@@ -2,6 +2,7 @@ import { eq, like } from 'drizzle-orm';
 import type { App } from '../app.js';
 import { settings, studioCampaigns } from '../db/schema.js';
 import { initializeMarketing, requireProduct } from '../marketing/store.js';
+import { teamRuns } from '../marketing/team-store.js';
 import { analyticsConfigSchema, analyticsTotals, type AnalyticsConfig, type AnalyticsRow, type AnalyticsSnapshot, type AnalyticsState, type AnalyticsView, type FunnelRow } from '../../shared/analytics.js';
 
 const CONFIG = 'analytics.config.'; const SNAPSHOT = 'analytics.snapshot.';
@@ -41,7 +42,7 @@ export class AnalyticsService {
     const product = requireProduct(this.app, productId); const state = this.get<AnalyticsState>(CONFIG + productId); const snapshot = this.snapshot(productId);
     let sourceAvailable = false; if (state) { try { this.account(productId, state.accountId); sourceAvailable = new URL(product.utmBase).hostname === state.hostname; } catch { /* connection unavailable */ } }
     return { configured: Boolean(state), status: state?.status ?? 'unconfigured', sourceAvailable,
-      stale: !snapshot || !sourceAvailable || this.app.clock.now() - snapshot.observedAt > 36 * 3600000,
+      stale: !snapshot || !sourceAvailable || state?.status !== 'current' || snapshot.accountId !== state.accountId || snapshot.propertyId !== state.propertyId || snapshot.hostname !== state.hostname || snapshot.observedAt > this.app.clock.now() || this.app.clock.now() - snapshot.observedAt > 36 * 3600000,
       snapshot: snapshot ? { ...snapshot, ...(snapshot.funnel ? { funnel: { ...snapshot.funnel, rows: [...snapshot.funnel.rows].sort((a, b) => b.count - a.count).slice(0, 100), omittedRows: Math.max(0, snapshot.funnel.rows.length - 100), boundary: 'Event counts, not unique people or a sequential cohort. Missing events may reflect missing instrumentation or consent. Do not infer drop-off or activation rates from these aggregates.' } } : {}), rows: [...snapshot.rows].sort((a, b) => b.sessions - a.sessions).slice(0, 100), omittedRows: Math.max(0, snapshot.rows.length - 100), totals: analyticsTotals(snapshot.rows) } : null,
       boundary: 'GA4 website observations for the exact hostname and reported date window. Key events and purchase events depend on site instrumentation and consent; missing data is not proof of no sales. Revenue is an analytics estimate in currency major units, not Stripe payment evidence or spendable funds. Unknown campaigns are not inferred. Attribution is association, not causality. Respect reporting limitations and freshness; never add overlapping snapshots together.',
     };
@@ -74,6 +75,7 @@ export class AnalyticsService {
       if (this.get<AnalyticsState>(CONFIG + productId)?.revision !== state.revision) return;
       if (new URL(requireProduct(this.app, productId).utmBase).hostname !== state.hostname) throw new Error('Website hostname changed.');
       const ids = new Set(this.app.db.select({ id: studioCampaigns.id }).from(studioCampaigns).where(eq(studioCampaigns.productId, productId)).all().map(c => c.id));
+      for (const run of teamRuns(this.app, productId)) ids.add(run.id);
       for (const delivery of this.app.operations?.deliveries() ?? []) if (delivery.productId === productId) ids.add(delivery.id);
       for (const delivery of this.app.videoPublishing?.jobs() ?? []) if (delivery.productId === productId && delivery.receipt) ids.add(delivery.id);
       const groups = new Map<string, AnalyticsRow>();
@@ -97,9 +99,11 @@ export class AnalyticsService {
         this.put(SNAPSHOT + productId, snapshot);
         this.put(CONFIG + productId, { ...state, lastAttemptAt: this.app.clock.now(), lastCompleteAt: snapshot.observedAt, status: report.limitations.length ? 'limited' : 'current', detail: report.limitations.length ? 'Report saved with limitations. Review them before comparing campaigns.' : 'Complete report saved. Analytics observations are separate from payment evidence.' } satisfies AnalyticsState);
       });
-    } catch {
+    } catch (error) {
       if (signal.aborted) return;
-      if (this.get<AnalyticsState>(CONFIG + productId)?.revision === state.revision) this.put(CONFIG + productId, { ...this.get<AnalyticsState>(CONFIG + productId)!, status: 'attention', detail: 'Analytics sync failed. Check account access, property ID, enabled Google Analytics Data/Admin APIs, website hostname and network. Reports over 10,000 campaign rows or with restricted metrics cannot replace the previous snapshot.' });
+      const code = error instanceof Error ? /^Provider returned HTTP (\d{3})\./.exec(error.message)?.[1] : undefined;
+      const detail = code === '401' || code === '400' ? `Google Analytics access failed (HTTP ${code}). Reconnect this business Google account, then sync again. The last saved report remains historical.` : code === '403' ? 'Google Analytics denied access (HTTP 403). Use an account with access to this property and enabled Analytics Data/Admin APIs, then sync again.' : 'Analytics sync failed. Check account access, property ID, enabled Google Analytics Data/Admin APIs, website hostname and network. Reports over 10,000 campaign rows or with restricted metrics cannot replace the previous snapshot.';
+      if (this.get<AnalyticsState>(CONFIG + productId)?.revision === state.revision) this.put(CONFIG + productId, { ...this.get<AnalyticsState>(CONFIG + productId)!, status: 'attention', detail });
     }
   }
 }

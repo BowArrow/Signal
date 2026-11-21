@@ -1,0 +1,7 @@
+/** Adapted from the owner's Humanizer skill v3.1.0 (MIT).
+ * Bundled so desktop agents do not depend on the owner's skill directory. */
+export const HUMANIZER = `HUMANIZER EDITING PASS (v3.1.0): Before returning customer-facing text, mark weak wording internally, rewrite it, then compare the result with your source-supported draft. Return only the finished text in the requested output field.
+Keep every supported fact, number, quote, URL, qualification, required affiliation and automated-assistant disclosure. Preserve meaning and the writer's voice. Do not add personal experience, testimonials, achievements or authority to sound human. Humanizing is editing, not impersonation or AI-detector evasion.
+Remove staged openings, empty not-X-but-Y contrasts, dramatic one-line closers, forced triads, repeated openings, inflated significance, vague authorities, promotional filler and chatbot wrappers. Prefer concrete verbs and details, varied sentence lengths and ordinary language. Do not replace specific facts with vague summaries. Avoid decorative emphasis and unnecessary headings; use structure when the channel needs it.
+Match the reader and channel. Honor supplied voice examples. Formal writing can be natural; do not force slang, mistakes, contractions or questions. Assess possible tells in context, not by word bans alone.
+Final check: does this say the same supported thing naturally, without losing a limitation or adding a claim? Correct failures yourself before submitting. Routine wording corrections do not need owner approval.`;

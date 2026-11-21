@@ -50,6 +50,8 @@ export const connectionActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('share'), productId: z.string(), id: z.string(), targetProductId: z.string() }).strict(),
   z.object({ type: z.literal('x-posting'), productId: z.string(), id: z.string() }).strict(),
   z.object({ type: z.literal('connect'), value: connectionInput }).strict(),
+  z.object({ type: z.literal('reconnect-token'), id: z.string().min(1), value: connectionInput }).strict(),
+  z.object({ type: z.literal('reconnect-oauth'), productId: z.string().min(1), id: z.string().min(1) }).strict(),
   z.object({ type: z.literal('verify'), productId: z.string(), id: z.string() }).strict(),
   z.object({ type: z.literal('disconnect'), productId: z.string(), id: z.string() }).strict(),
   z.object({ type: z.literal('preview'), productId: z.string(), id: z.string() }).strict(),

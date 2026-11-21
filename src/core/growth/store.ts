@@ -365,7 +365,17 @@ export function applyGrowthAction(app: App, input: unknown): GrowthDashboard {
       } else {
         if (!['failed', 'cancelled'].includes(task.status))
           throw new Error('Only failed or cancelled tasks can be retried');
-        queueTask(app, task.productId, task.kind, task.targetId);
+        const retryId = queueTask(app, task.productId, task.kind, task.targetId);
+        if (retryId && task.kind === 'marketing') {
+          // Retried guidance/recovery keeps its original read-and-draft scope.
+          for (const prefix of ['marketing.guide-task.', 'marketing.recovery-task.', 'marketing.team.recovery-task.']) {
+            const marker = tx.select().from(settings).where(eq(settings.key, prefix + task.id)).get();
+            if (marker) tx.insert(settings).values({ key: prefix + retryId, value: marker.value, updatedAt: now }).run();
+          }
+          const key = `marketing.acquisition-recovery.${task.productId}`;
+          const recovery = tx.select().from(settings).where(eq(settings.key, key)).get()?.value as { taskId?: string } | undefined;
+          if (recovery?.taskId === task.id) tx.update(settings).set({ value: { ...recovery, taskId: retryId, at: now }, updatedAt: now }).where(eq(settings.key, key)).run();
+        }
       }
       return;
     }

@@ -1,0 +1,11 @@
+Use case: identity-preserve.
+Asset type: a finished square TikTok profile photograph for the fictional lifestyle creator Alex, "Alex | Slightly Better".
+Create one photoreal portrait using the supplied references. Image 1 exclusively controls Alex's face, facial proportions, brown eyes, warm medium skin, dark wavy crop, hairline and light natural stubble. Preserve that exact adult identity. Image 2 controls only clothing: the espresso suede jacket, butter-yellow open-collar knit polo and delicate silver chain. Do not redesign his face or introduce permanent features.
+
+Make him approachable and quietly confident: direct eye contact, a small genuine closed-mouth smile, relaxed eyebrows, easy shoulders. Head nearly straight to the lens, torso subtly angled about 10 degrees. A natural creator portrait with understated style. No hands or props.
+
+Composition: square 1024 by 1024 image, close head-and-shoulders portrait. Center the face horizontally; full hair silhouette with generous top clearance, crown around 12% down and chin around 68% down. Include shoulders and the jacket/polo neckline in the bottom portion. All hair, face and ears must fit comfortably within an imagined centered circular crop, with no actual circle, border or frame drawn. Face is the clear focal point and easily recognizable at tiny thumbnail sizes.
+
+Background: single flat neutral medium-gray field, uniform corner to corner, no environment or texture. Broad soft frontal illumination with balanced fill, flattering natural skin color and fine skin texture, clear catchlights and soft hair detail. Keep the field shadowless, no halo, no vignette, no color spill. Matte natural skin, realistic suede and knit textures. Avoid waxy skin, beauty-filter smoothing, dramatic shadows, fashion-model scowling or a corporate stock-headshot expression. Keep facial anatomy faithful to image 1.
+
+No text, initials, logos, watermark, product branding, fake UI, frame or other people. This is a creator account portrait; the clothing color is simply personal style.

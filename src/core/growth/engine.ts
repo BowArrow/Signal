@@ -1,7 +1,12 @@
+import { activeTeamCampaign } from '../marketing/team-runtime.js';
+import { recordTeamWorker } from '../marketing/team-monitor.js';
 import { and, asc, desc, eq, inArray, lt } from 'drizzle-orm';
 import type { App } from '../app.js';
 import { hasPendingMedia, marketingSettings, scheduleMarketing } from '../marketing/store.js';
 import { runMarketingAgent } from '../marketing/agent.js';
+import { runTeamAgent } from '../marketing/team-agent.js';
+import { tickTeamExecution, scheduleTeamRuns, teamTask } from '../marketing/team-store.js';
+import { codexConnection, codexGuideTaskIds, isCodexGuideTask, scheduleMissionReviews } from '../marketing/mission.js';
 import { runAdDirector } from '../video/ad-director.js';
 import { pollMedia } from '../marketing/comfy.js';
 import {
@@ -47,6 +52,7 @@ export class GrowthEngine {
   private controller: AbortController | null = null;
   private activeTaskId: string | null = null;
   private stopped = true;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly app: App,
@@ -76,6 +82,8 @@ export class GrowthEngine {
   start(): void {
     if (!this.stopped) return;
     this.stopped = false;
+    recordTeamWorker(this.app, true);
+    this.heartbeatTimer = setInterval(() => { if (!this.stopped) recordTeamWorker(this.app, true); }, 5000);
     initializeGrowth(this.app);
     // Approved mail and fresh inbox checks must not wait for a model call.
     // These services serialize their own work; false prevents this loop from
@@ -83,11 +91,11 @@ export class GrowthEngine {
     const deliveryLoop = (): void => {
       if (this.stopped) return;
       this.deliveryActive = (async () => {
-        await this.app.sales?.tick(false);
+        await this.app.sales?.tick(false, false);
         if (this.stopped) return;
-        await this.app.salesReplies?.tick(false);
+        await this.app.salesReplies?.tick(false, false);
         if (this.stopped) return;
-        await this.app.outreach?.tick(false);
+        await this.app.outreach?.tick(false, false);
       })().catch(error => {
         this.app.logger.error('approved email worker failed', { error: String(error) });
       }).finally(() => {
@@ -99,6 +107,7 @@ export class GrowthEngine {
     const loop = async (): Promise<void> => {
       if (this.stopped) return;
       try {
+        tickTeamExecution(this.app);
         const runtimeReady = await this.app.runtimeSupervisor?.readyForAgents() ?? true;
         await pollMedia(this.app);
         const agentsReady = runtimeReady && !hasPendingMedia(this.app);
@@ -112,8 +121,13 @@ export class GrowthEngine {
         await this.app.analytics?.tick();
         await this.app.seo?.tick();
         if (agentsReady) this.app.operations?.schedule();
+        else if (!hasPendingMedia(this.app)) for (const state of this.app.operations?.view().states ?? []) { if (activeTeamCampaign(this.app, state.productId) && codexConnection(this.app, state.productId)) this.app.operations?.schedule(state.productId); }
         await this.app.operations?.tick(agentsReady);
-        if (agentsReady) { scheduleMarketing(this.app); this.schedule(); await this.runNext(); }
+        scheduleTeamRuns(this.app);
+        scheduleMissionReviews(this.app);
+        const codexTasks = codexGuideTaskIds(this.app);
+        if (codexTasks.length) await this.runNext(['marketing'], codexTasks);
+        else if (agentsReady) { scheduleMarketing(this.app); this.schedule(); await this.runNext(); }
       } catch (error) {
         this.app.logger.error('growth worker failed', { error: String(error) });
       }
@@ -124,6 +138,9 @@ export class GrowthEngine {
 
   async stop(): Promise<void> {
     this.stopped = true;
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = null;
+    recordTeamWorker(this.app, false);
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     if (this.deliveryTimer) clearTimeout(this.deliveryTimer);
@@ -152,6 +169,9 @@ export class GrowthEngine {
     const now = this.app.clock.now();
     this.app.db.transaction((tx) => {
       for (let product of dashboard(this.app).products) {
+        // Active acquisition owns the next experiment. Re-running the broad
+        // channel analysis every hour cannot create new customer evidence.
+        if (this.app.operations?.state(product.id).running) continue;
         const plan = tx
           .select()
           .from(growthPlans)
@@ -213,9 +233,9 @@ export class GrowthEngine {
     });
   }
 
-  runNext(kinds?: GrowthTaskKind[]): Promise<boolean> {
+  runNext(kinds?: GrowthTaskKind[], taskIds?: string[]): Promise<boolean> {
     if (this.active) return this.active;
-    this.active = this.executeNext(kinds).finally(() => {
+    this.active = this.executeNext(kinds, taskIds).finally(() => {
       this.active = null;
     });
     return this.active;
@@ -284,8 +304,9 @@ export class GrowthEngine {
       applyGrowthAction(this.app, { type: 'shortlist', channelId: channel.id });
   }
 
-  private async executeNext(kinds?: GrowthTaskKind[]): Promise<boolean> {
+  private async executeNext(kinds?: GrowthTaskKind[], taskIds?: string[]): Promise<boolean> {
     const app = this.app;
+    if (taskIds && !taskIds.length) return false;
     if (app.outreach?.agentBusy() || hasPendingMedia(app)) return false;
     const now = app.clock.now();
     const lease = newId();
@@ -321,8 +342,9 @@ export class GrowthEngine {
       const urgent = operationTasks.length ? tx.select().from(growthTasks).where(and(
         eq(growthTasks.status, 'queued'), eq(growthTasks.kind, 'marketing'), inArray(growthTasks.id, operationTasks),
         kinds ? inArray(growthTasks.kind, kinds) : undefined,
+        taskIds ? inArray(growthTasks.id, taskIds) : undefined,
       )).orderBy(asc(growthTasks.createdAt), asc(growthTasks.id)).get() : undefined;
-      const requestedAd = !kinds || kinds.includes('ad-concepts') ? tx.select().from(growthTasks).where(and(
+      const requestedAd = !taskIds && (!kinds || kinds.includes('ad-concepts')) ? tx.select().from(growthTasks).where(and(
         eq(growthTasks.status, 'queued'), eq(growthTasks.kind, 'ad-concepts'),
       )).orderBy(asc(growthTasks.createdAt), asc(growthTasks.id)).get() : undefined;
       const next = requestedAd ?? urgent ?? tx
@@ -332,6 +354,7 @@ export class GrowthEngine {
           and(
             eq(growthTasks.status, 'queued'),
             kinds ? inArray(growthTasks.kind, kinds) : undefined,
+            taskIds ? inArray(growthTasks.id, taskIds) : undefined,
           ),
         )
         .orderBy(asc(growthTasks.createdAt), asc(growthTasks.id))
@@ -369,6 +392,7 @@ export class GrowthEngine {
     let promptVersion: string | null = null;
     let actualModel =
       ['marketing', 'ad-concepts'].includes(task.kind) ? agentModel(app, 'marketing') : task.kind === 'opportunities' ? config.pipelineModel : config.model;
+    if (task.kind === 'marketing' && isCodexGuideTask(app, task.productId, task.id)) actualModel = codexConnection(app, task.productId)!.model;
     app.db.update(growthTasks).set({ model: actualModel }).where(eq(growthTasks.id, task.id)).run();
     try {
       const product = app.db
@@ -383,7 +407,9 @@ export class GrowthEngine {
         throw new Error('Product retired or removed');
       let output: Record<string, unknown>;
       if (task.kind === 'marketing') {
-        output = await runMarketingAgent(app, task.productId, task.id, task.targetId, this.controller.signal, this.testLlm);
+        output = teamTask(app, task.id)
+          ? await runTeamAgent(app, task.productId, task.id, this.controller.signal, this.testLlm)
+          : await runMarketingAgent(app, task.productId, task.id, task.targetId, this.controller.signal, this.testLlm);
       } else if (task.kind === 'ad-concepts') {
         promptVersion = 'ad-director.v1';
         output = await runAdDirector(app, task.productId, task.targetId, task.id, llm, actualModel, this.controller.signal);

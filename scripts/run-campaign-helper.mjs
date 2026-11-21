@@ -1,0 +1,11 @@
+import {spawn} from 'node:child_process';
+import {createRequire} from 'node:module';
+import {resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+const require=createRequire(import.meta.url),{build}=createRequire(require.resolve('vite'))('esbuild');
+const entry=process.argv[2];if(!/^scripts\/lemonade-[a-z-]+\.ts$/.test(entry))throw Error('Expected campaign helper');
+const output=resolve('out/main/'+entry.split('/').at(-1).replace('.ts','.cjs'));
+await build({entryPoints:[entry],outfile:output,bundle:true,platform:'node',format:'cjs',packages:'external',define:{'import.meta.url':JSON.stringify(pathToFileURL(output).href)},logLevel:'silent'});
+const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
+const child=spawn(require('electron'),[output,'--disable-gpu'],{env,windowsHide:true,stdio:['ignore','pipe','pipe']});
+child.stdout.pipe(process.stdout);child.stderr.pipe(process.stderr);child.on('exit',code=>process.exitCode=code??1);

@@ -1,0 +1,16 @@
+{
+  "id": "alex-home-workspace-audio-v2",
+  "status": "user-approved-in-tripod-preview",
+  "description": "Arm-length conversational recording perspective for the room shot; gently reduced proximity and high-frequency sheen, short soft reflections and a quiet continuous room bed.",
+  "highpassHz": 100,
+  "lowpassHz": 7800,
+  "reflectionLevelDb": -18,
+  "decaySeconds": 0.16,
+  "roomToneRmsDbfs": -49,
+  "targetLufs": -17,
+  "maximumTruePeakDbfs": -1.5,
+  "seed": 42,
+  "timingPolicy": "No time stretch, pitch change, added breaths or word edits. Preserve sample count and direct speech onset. Condition video on the clean approved voice, then apply this room mix at export.",
+  "ambienceProvenance": "Locally synthesized filtered noise and room impulse response; not a recording of the depicted room. No music or outdoor effects.",
+  "userFeedback": "It sounds better; video still needs eye stability, fixed camera and engaged performance."
+}

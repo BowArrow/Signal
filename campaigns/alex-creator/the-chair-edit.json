@@ -1,0 +1,55 @@
+{
+  "briefId": "the-chair",
+  "fps": 24,
+  "frames": 351,
+  "sourceAudio": "output/alex-creator/voice/the-chair/ryan-42.wav",
+  "sourceAudioSha256": "d70ccc0a9817c9c4447a185c1ac236d50a7cc97377287b3519cc27f0076e1f40",
+  "roomReceipt": "output/alex-creator/voice/the-chair/room-perspective-v2/receipt.json",
+  "roomAudioSha256": "dee48cec2f38c47dfbfde2d155e54a4de5aa1c9351df0e0d1b0ad9476a90ed9c",
+  "shots": [
+    {
+      "kind": "video",
+      "receipt": "output/alex-creator/renders/alex-2060a18a-f35b-4d50-b495-ab27146b9479/receipt.json",
+      "frames": 121,
+      "audioStart": 0
+    },
+    {
+      "kind": "still",
+      "image": "output/alex-creator/the-chair-cutaway-v2-bedroom.png",
+      "imageSha256": "a0b5082550f4bb20b6931bb8b6bddad40443b174bd7592181fdd0a7c40baa7ca",
+      "prompt": "output/alex-creator/the-chair-cutaway-v2-bedroom-prompt.txt",
+      "frames": 57,
+      "description": "Fixed bedroom-doorway view of wooden clothing chair, distinct from presenter workspace"
+    },
+    {
+      "kind": "still",
+      "image": "output/alex-creator/the-chair-cutaway-v2-bedroom.png",
+      "imageSha256": "a0b5082550f4bb20b6931bb8b6bddad40443b174bd7592181fdd0a7c40baa7ca",
+      "prompt": "output/alex-creator/the-chair-cutaway-v2-bedroom-prompt.txt",
+      "crop": {
+        "width": 700,
+        "height": 1244,
+        "x": 180,
+        "y": 300
+      },
+      "frames": 57,
+      "description": "Fixed closer crop of wooden clothing chair in a separate bedroom"
+    },
+    {
+      "kind": "still",
+      "image": "output/alex-creator/the-chair-cutaway-v2-bedroom.png",
+      "imageSha256": "a0b5082550f4bb20b6931bb8b6bddad40443b174bd7592181fdd0a7c40baa7ca",
+      "prompt": "output/alex-creator/the-chair-cutaway-v2-bedroom-prompt.txt",
+      "frames": 35,
+      "description": "Fixed bedroom-doorway view of wooden clothing chair, distinct from presenter workspace"
+    },
+    {
+      "kind": "video",
+      "receipt": "output/alex-creator/renders/alex-ae791b5b-25f6-47f0-98c9-a557b42b14f9/receipt.json",
+      "frames": 81,
+      "audioStart": 11.25
+    }
+  ],
+  "revision": "v2-bedroom-cutaway",
+  "changeReason": "User noted the same-room insert makes Alex appear to vanish. Replace all chair insert shots with a separate bedroom and visibly different wooden chair."
+}

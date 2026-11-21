@@ -6,6 +6,7 @@ import { revenueConfigSchema, type RevenueConfig, type RevenuePayment, type Reve
 import { purchaseContactHash } from './identity.js';
 import { mailboxAddress } from '../sales/inbox.js';
 import { fundingView } from './funding.js';
+import { teamRuns } from '../marketing/team-store.js';
 
 const POLICY = 'revenue.config.'; const SNAPSHOT = 'revenue.snapshot.'; const STAGE = 'revenue.stage.';
 export class RevenueService {
@@ -106,7 +107,9 @@ export class RevenueService {
     if (this.app.env.SIGNAL_OFFLINE === '1') return;
     for (const state of this.states()) {
       this.reconcileCustomers(state.productId);
-      if (!this.app.operations?.state(state.productId).running) continue;
+      const mission = this.get<{ active?: boolean; startsAt?: number; endsAt?: number }>(`marketing.mission.${state.productId}`);
+      const missionNeedsSync = mission?.active && (mission.startsAt ?? Infinity) <= this.app.clock.now() && ((mission.endsAt ?? 0) > this.app.clock.now() || (state.lastCompleteAt ?? 0) < (mission.endsAt ?? 0));
+      if (!this.app.operations?.state(state.productId).running && !missionNeedsSync) continue;
       const interval = state.status === 'partial' ? 2000 : state.status === 'attention' ? 60000 : 900000;
       if (state.lastAttemptAt !== null && this.app.clock.now() - state.lastAttemptAt < interval) continue;
       await this.sync(state.productId);
@@ -125,8 +128,9 @@ export class RevenueService {
       signal.throwIfAborted(); if (this.state(productId).revision !== state.revision) return;
       const previous = state.scanStartedAt === null ? [] : this.get<RevenuePayment[]>(STAGE + productId) ?? [];
       const records = new Map(previous.map(p => [p.id, p]));
+      const teamIds = new Set(teamRuns(this.app, productId).map(r => r.id));
       for (const row of result.rows) {
-        const campaign = row.campaign && (this.app.db.select().from(studioCampaigns).where(and(eq(studioCampaigns.id, row.campaign), eq(studioCampaigns.productId, productId))).get() || this.app.operations?.deliveries().some(d => d.id === row.campaign && d.productId === productId) || this.app.outreach?.jobs(productId).some(j => j.id === row.campaign && j.status === 'sent') || this.app.videoPublishing?.jobs().some(j => j.id === row.campaign && j.productId === productId && j.receipt));
+        const campaign = row.campaign && (teamIds.has(row.campaign) || this.app.db.select().from(studioCampaigns).where(and(eq(studioCampaigns.id, row.campaign), eq(studioCampaigns.productId, productId))).get() || this.app.operations?.deliveries().some(d => d.id === row.campaign && d.productId === productId) || this.app.outreach?.jobs(productId).some(j => j.id === row.campaign && j.status === 'sent') || this.app.videoPublishing?.jobs().some(j => j.id === row.campaign && j.productId === productId && j.receipt));
         records.set(row.id, { id: row.id, productId, accountId: state.accountId, live: row.live, currency: row.currency, captured: row.captured, refunded: row.refunded, disputed: row.disputed, createdAt: row.createdAt, observedAt: now, campaignId: campaign ? row.campaign : null, attribution: campaign ? 'matched' : row.hasCampaign ? 'unknown' : 'none', contactHash: row.contactHash ?? null, contactMatch: row.contactMatch ?? 'missing', ...(row.settlement ? { settlement: row.settlement } : {}) });
       }
       if (records.size > 50000) throw new Error('Revenue history exceeds this scan capacity. Choose a shorter history window.');

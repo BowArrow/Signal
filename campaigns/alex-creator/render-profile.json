@@ -1,0 +1,141 @@
+{
+  "engine": "LTX 2.5 development INT8",
+  "command": "npm run avatar:render -- campaigns/alex-creator/the-chair-closing-shot.json",
+  "preferredProfile": "guided_speech_high",
+  "nativeWidth": 768,
+  "nativeHeight": 1344,
+  "fps": 24,
+  "requestLimitSeconds": 20,
+  "longestDecodedSpeakingSeconds": 5.041666666666667,
+  "longerRenderState": "first-edited-video-decoded-awaiting-playback-review",
+  "qualityApproved": true,
+  "voiceProfile": "campaigns/lemonade-tiktok/voice.json",
+  "runtime": {
+    "ramCommitLimitGiB": 16,
+    "residentWorkingSetGiB": 1,
+    "minimumSystemRamReserveGiB": 6,
+    "minimumSystemCommitReserveGiB": 8,
+    "wholeDeviceGpuStopGiB": 8,
+    "minimumGpuReserveGiB": 1,
+    "maximumGpuTemperatureC": 78,
+    "gpuPolicy": "Dynamic offload plus sampled watchdog; the GPU threshold is not a hard allocation cap.",
+    "gpuJobsAtOnce": 1
+  },
+  "longForm": "Assemble reviewed shots around a continuous approved narration master. Per-shot request limit does not limit final edit duration.",
+  "legacyPreview": "The older app preview and its production hold remain separate from this command.",
+  "validatedReceipts": [
+    "output/alex-creator/renders/alex-0f48e7d4-0dc7-4eb4-a3d4-07904cce695f/receipt.json",
+    "output/alex-creator/renders/alex-10f100b0-4053-4c24-a84b-e60cd6b22974/receipt.json",
+    "output/alex-creator/renders/alex-d854d049-e6de-48c2-a16a-b5ea952ff0ea/receipt.json",
+    "output/alex-creator/renders/alex-0c0b424f-65f9-43c1-8a32-315bfbd9cb81/receipt.json",
+    "output\\alex-creator\\renders\\alex-2060a18a-f35b-4d50-b495-ab27146b9479\\receipt.json",
+    "output/alex-creator/renders/alex-ae791b5b-25f6-47f0-98c9-a557b42b14f9/receipt.json"
+  ],
+  "measuredRenderSeconds": 2039.528,
+  "lastQualifiedAt": "2026-10-23",
+  "measurements": {
+    "peakJobCommitBytes": 12835414016,
+    "peakProcessCommitBytes": 12834168832,
+    "minimumAvailableRamBytes": 9366224896,
+    "minimumAvailableCommitBytes": 29835059200,
+    "peakSystemGpuUsedBytes": 6656630784,
+    "peakGpuTemperatureC": 74
+  },
+  "previousQualityRejection": "Older takes were rejected for unnatural mouth/facial movement, blurred eyes and camera pullback. The new tripod preview was approved.",
+  "preferredProfileState": "Five-second native high-resolution tripod take user approved.",
+  "plannedEngine": "LTX 2.5 development INT8 with CFG, STG and modality guidance",
+  "plannedNativeResolution": {
+    "width": 768,
+    "height": 1344
+  },
+  "performance": "Warm, attentive and informative; relaxed brows and jaw, natural speech and brief sincere smiles at pauses.",
+  "roomAudioProfile": "campaigns/alex-creator/room-audio-v2.json",
+  "roomAudioState": "Approved as part of five-second tripod preview.",
+  "guidedModel": {
+    "verified": true,
+    "revision": "49b093a39c19169a8a81721dcc541e07e945232f",
+    "sha256": "2edbdb4465cd6c3b532cd67a31ddb38a63e97dcad20be3729675e2a4e8caf92b",
+    "bytes": 21504034224
+  },
+  "guidedHighTrial": {
+    "receipt": "output/alex-creator/renders/alex-b29a5a2b-e711-44ed-b9bf-6940572f549a/receipt.json",
+    "seconds": 3.041667,
+    "renderSeconds": 1147.473,
+    "qualityApproved": false,
+    "reason": "Mouth remains closed during speech."
+  },
+  "previousRejectedFullTake": {
+    "durationSeconds": 14.708333,
+    "profile": "quality",
+    "renderSeconds": 262.076,
+    "reason": "Unnatural mouth/facial motion and blurred eyes."
+  },
+  "guidedSpeechTrial": {
+    "receipt": "output/alex-creator/renders/alex-0c0b424f-65f9-43c1-8a32-315bfbd9cb81/receipt.json",
+    "durationSeconds": 5.041666666666667,
+    "renderSeconds": 1093.363,
+    "qualityApproved": false
+  },
+  "roomAudioCandidate": "campaigns/alex-creator/room-audio-v2.json",
+  "lipsyncFallback": {
+    "receipt": "output/alex-creator/renders/alex-0c0b424f-65f9-43c1-8a32-315bfbd9cb81/lipsync-v1/receipt.json",
+    "tested": true,
+    "selectedAsDefault": false
+  },
+  "latestUserReview": {
+    "date": "2026-10-23",
+    "source": "User playback review",
+    "audio": "Room-v2 audio approved as part of the five-second tripod preview.",
+    "visual": "Looks good; use this direction.",
+    "qualityApproved": true,
+    "scope": "Five-second tripod preview and performance direction, not unseen future renders."
+  },
+  "nextTrial": {
+    "manifest": "campaigns/alex-creator/speaking-tripod-high-check.json",
+    "profile": "guided_speech_high",
+    "nativeWidth": 768,
+    "nativeHeight": 1344,
+    "temporalSize": 128,
+    "temporalOverlap": 32,
+    "qualityApproved": true,
+    "residentWorkingSetGiB": 1,
+    "reason": "Completed and user approved. One-GiB resident footprint retained native resolution and all guidance while staying above the unchanged RAM reserve.",
+    "renderFolder": "output/alex-creator/renders/alex-2060a18a-f35b-4d50-b495-ab27146b9479"
+  },
+  "status": "approved-direction-first-complete-edit-ready",
+  "pauseState": "campaigns/alex-creator/pause-state.json",
+  "qualityApprovalScope": "Five-second tripod take only; new shots and final edit still require review.",
+  "tripodHighTrial": {
+    "receipt": "output\\alex-creator\\renders\\alex-2060a18a-f35b-4d50-b495-ab27146b9479\\receipt.json",
+    "durationSeconds": 5.041667,
+    "renderSeconds": 2039.528,
+    "qualityApproved": true
+  },
+  "editCommand": "node apps/avatar-marketing/export-edited-review.mjs campaigns/alex-creator/the-chair-edit.json",
+  "latestEditedVideo": {
+    "path": "output/alex-creator/exports/the-chair-edited-f28891ed-9a6d-4a1a-b2ab-97156ba5f82e/video.mp4",
+    "receipt": "output/alex-creator/exports/the-chair-edited-f28891ed-9a6d-4a1a-b2ab-97156ba5f82e/receipt.json",
+    "durationSeconds": 14.625,
+    "nativeTalkingResolution": "768x1344",
+    "exportResolution": "1080x1920",
+    "qualityApproved": false,
+    "published": false,
+    "revision": "v2-bedroom-cutaway"
+  },
+  "closingShot": {
+    "receipt": "output/alex-creator/renders/alex-ae791b5b-25f6-47f0-98c9-a557b42b14f9/receipt.json",
+    "durationSeconds": 3.375,
+    "renderSeconds": 1333.605,
+    "qualityApproved": false,
+    "decodeVerified": true
+  },
+  "pipelineUpgrade": {
+    "date": "2026-11-09",
+    "newJobDefault": "guided_speech_high",
+    "configuration": "campaigns/alex-creator/relay-profile.json",
+    "guide": "apps/avatar-marketing/RELAYVSR.md",
+    "approvedReferenceProfile": "guided_speech_high",
+    "playbackQualityApproved": false,
+    "status": "Fast preview has unaccepted eye artifacts; approved baseline restored pending guided-low-resolution comparison"
+  }
+}

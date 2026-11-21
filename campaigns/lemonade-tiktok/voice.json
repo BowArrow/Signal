@@ -1,0 +1,46 @@
+{
+  "id": "alex-voice-v1",
+  "status": "user-approved-voice-and-delivery",
+  "preferredStudio": "Isolated local Qwen runner supplies a frozen WAV to ComfyUI native audio nodes; Voicebox remains optional",
+  "model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "speaker": "Ryan",
+  "language": "English",
+  "accent": "American English",
+  "seed": 42,
+  "identity": "Warm clear male voice, calm and lightly dry-humored. Same speaker and model across all lines.",
+  "deliveryPolicy": "Write natural complete phrases. Give each phrase a performance direction separate from spoken text. Generate two takes for important hooks. Preserve breaths and pauses; do not force all lines into the same duration.",
+  "directions": {
+    "hook": "Ask with genuine curiosity, a slight upward inflection, then pause briefly. Speak to one person; no announcer voice.",
+    "dryHumor": "Understate the punchline with a small smile in the voice and a short pause before the reveal.",
+    "proof": "Explain clearly and matter-of-factly, slowing slightly on the key distinction. No exaggerated enthusiasm.",
+    "cta": "Give a relaxed helpful invitation, with a gentle falling cadence. No sales shout."
+  },
+  "productionApproved": true,
+  "approvedAt": "2026-10-22",
+  "approvalScope": "User approved the 14.56-second chair take: Keep this voice and delivery. Longer expressive consistency remains to be tested.",
+  "referenceAudioPath": "output/alex-creator/voice/the-chair/ryan-42.wav",
+  "referenceSha256": "d70ccc0a9817c9c4447a185c1ac236d50a7cc97377287b3519cc27f0076e1f40",
+  "modelRevision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+  "draftOnlyBackend": {
+    "engine": "Kokoro v1.0 ONNX",
+    "speaker": "am_michael",
+    "speed": 1.0,
+    "use": "Timing and pronunciation audition, never silently substituted for production."
+  },
+  "uniqueVoiceOption": "Qwen VoiceDesign -> approved synthetic reference -> reusable Base clone prompt. This is a different path from CustomVoice and does not have the same documented per-line instruct controls; audition expressive range before switching.",
+  "audioPipeline": "Generate and approve dialogue first. Freeze clean WAV and settings hashes. Condition LTX on clean approved audio for visible speech. The room scene can apply its versioned room-audio profile at export; preserve timing and source bytes and save the processed waveform hash separately. Review room sound together with lip sync.",
+  "auditionCriteria": [
+    "Same timbre across hook, explanation, dry humor and CTA",
+    "Natural phrase stress, breathing and pauses",
+    "Exact words; no repetitions or invented speech",
+    "Lemonade pronounced correctly",
+    "No clipped syllables or unnatural joins",
+    "Stable voice across a 60-90 second sample"
+  ],
+  "sources": [
+    "https://github.com/QwenLM/Qwen3-TTS",
+    "https://github.com/DarioFT/ComfyUI-Qwen3-TTS",
+    "https://docs.voicebox.sh/developer/tts-engines",
+    "https://huggingface.co/hexgrad/Kokoro-82M"
+  ]
+}

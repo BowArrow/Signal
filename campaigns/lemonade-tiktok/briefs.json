@@ -1,0 +1,48 @@
+[
+  {
+    "id": "final-final-files", "title": "The final-final file problem", "sourceIds": [], "mode": "original-test",
+    "pattern": "Relatable office frustration followed by a concrete reveal.",
+    "twist": "Alex treats three conflicting final files as suspects; the payoff is opening the actual source behind an answer.",
+    "changedElements": ["Fictional supplier documents", "Original detective framing and wording", "Real Lemonade source navigation as payoff"],
+    "script": "Why are there three files called final? One says forty. Another says forty-five. Very reassuring. Ask Lemonade about the files, then open the sources and check the answer. Try it free with a report of your own.",
+    "delivery": [
+      {"text":"Why are there three files called final?","direction":"Curious, lightly exasperated question. Slight rise on final, then a beat."},
+      {"text":"One says forty. Another says forty-five. Very reassuring.","direction":"Matter-of-fact numbers, then a dry understated punchline. No exaggerated laugh."},
+      {"text":"Ask Lemonade about the files, then open the sources and check the answer.","direction":"Clear helpful explanation, stress check the answer."},
+      {"text":"Try it free with a report of your own.","direction":"Warm invitation, relaxed falling cadence."}
+    ],
+    "proofNeeded": ["Capture two fictional documents with those exact conflicting values", "Capture the actual Lemonade answer and source navigation; revise script if it differs"],
+    "cta": "Try Lemonade free", "durationSeconds": 25
+  },
+  {
+    "id": "private-file-test", "title": "The file that stays here", "sourceIds": [], "mode": "original-test",
+    "pattern": "Expectation reversal with a visible technical demonstration.",
+    "twist": "The reveal is local document work after setup, with the privacy boundary explained plainly.",
+    "changedElements": ["Original local-files premise", "New fictional report and question", "Real product evidence with honest setup caveat"],
+    "script": "This report can stay on this computer. Lemonade processes your documents locally. After the initial downloads, local chat and file work can run offline. Setup, updates and licence checks still use the internet. Try it with a file you actually need help with.",
+    "delivery": [
+      {"text":"This report can stay on this computer.","direction":"Quiet confidence, small emphasis on this computer."},
+      {"text":"Lemonade processes your documents locally.","direction":"Conversational, clear, no jargon flourish."},
+      {"text":"After the initial downloads, local chat and file work can run offline.","direction":"Measured explanation, pause naturally after downloads."},
+      {"text":"Setup, updates and licence checks still use the internet.","direction":"Plain factual clarification, do not rush the caveat."},
+      {"text":"Try it with a file you actually need help with.","direction":"Friendly practical suggestion."}
+    ],
+    "proofNeeded": ["Real captured local file workflow after setup", "Include online-services caveat in captions and narration"],
+    "cta": "Try it with your own files", "durationSeconds": 30
+  },
+  {
+    "id": "check-the-answer", "title": "An answer with somewhere to look", "sourceIds": [], "mode": "original-test",
+    "pattern": "A skeptical host asks for proof, then reveals the source.",
+    "twist": "Alex challenges the answer instead of praising AI; Lemonade's source links become the demonstration.",
+    "changedElements": ["Original skeptical host dialogue", "Own screen recording", "Source-checking payoff rather than a generic tools list"],
+    "script": "That answer sounds confident. Where did it come from? In Lemonade, ask across your files, then follow the linked sources and check. Start with one report. There is a fourteen-day free trial, with no credit card required.",
+    "delivery": [
+      {"text":"That answer sounds confident. Where did it come from?","direction":"Mild skepticism, short pause between sentences, genuine question."},
+      {"text":"In Lemonade, ask across your files, then follow the linked sources and check.","direction":"Helpful demonstration voice, stress sources and check."},
+      {"text":"Start with one report.","direction":"Simple low-pressure suggestion."},
+      {"text":"There is a fourteen-day free trial, with no credit card required.","direction":"Calm factual CTA, natural sentence ending."}
+    ],
+    "proofNeeded": ["Show actual linked sources opening in Lemonade", "Recheck trial terms on the live website before publishing"],
+    "cta": "Try free for 14 days", "durationSeconds": 25
+  }
+]

@@ -166,8 +166,10 @@ export class ConnectionService {
     const senders = await this.gmailSenders(productId, id);
     return { title: 'Gmail sender addresses', rows: senders.map(row => ({ title: row.email, detail: row.primary ? 'Primary Gmail address' : row.verified ? 'Verified Gmail alias. Select this address in Sales to route incoming conversations and send replies from it.' : 'Not verified for sending in Gmail.' })) };
   }
-  async connect(input: unknown): Promise<void> {
+  async connect(input: unknown, replacingId?: string): Promise<void> {
     const value = connectionInput.parse(input); const product = requireProduct(this.app, value.productId);
+    const previous = replacingId ? this.requireAccount(value.productId, replacingId) : undefined;
+    if (previous && (previous.provider !== 'bluesky' || value.provider !== 'bluesky')) throw new Error('App-password reconnection is supported for Bluesky.');
     let site = value.site.replace(/\/$/, '');
     if (['wordpress', 'mastodon'].includes(value.provider)) site = publicOrigin(site);
     if (value.provider === 'posthog' && !['https://us.posthog.com', 'https://eu.posthog.com'].includes(site)) throw new Error('Choose the PostHog US or EU cloud origin.');
@@ -181,6 +183,17 @@ export class ConnectionService {
       credential = { accessToken: z.string().min(1).parse(data.accessJwt), refreshToken: z.string().min(1).parse(data.refreshJwt) };
     }
     const account: ConnectedAccount = { id: newId(), productId: value.productId, provider: value.provider, label: value.label, site, username: value.username, identity: '', status: 'saved', detail: 'Saved; account read access has not been verified.', checkedAt: null, expiresAt: value.provider === 'bluesky' ? this.app.clock.now() + 90 * 60000 : value.expiresAt, refreshable: Boolean(credential.refreshToken), grantedScopes: [], createdAt: this.app.clock.now() };
+    if (previous) {
+      const checked = await probeAccount(account, credential, this.transport, false);
+      const current = this.requireAccount(value.productId, previous.id);
+      if (checked.identity.toLowerCase() !== (current.identity || current.username).toLowerCase()) throw new Error('Reconnect the same Bluesky account to preserve campaign destinations.');
+      const family = connectionCredentialId(current);
+      this.vault.set(`account.${family}`, JSON.stringify(credential));
+      this.app.db.transaction(() => {
+        for (const linked of this.accounts().filter(a => connectionCredentialId(a) === family)) this.save({ ...linked, username: value.username, identity: checked.identity, status: 'verified', detail: 'Bluesky reconnected. Existing campaign links are preserved.', checkedAt: this.app.clock.now(), expiresAt: account.expiresAt, refreshable: true });
+      }, { behavior: 'immediate' });
+      return;
+    }
     this.persist(account, credential);
     if (this.app.env.SIGNAL_OFFLINE !== '1') await this.verify(account.productId, account.id);
   }
@@ -322,8 +335,13 @@ export class ConnectionService {
   async blueskyRequests(productId: string, accountId: string, query: string, signal: AbortSignal) {
     this.online();
     const allowed = () => { this.online(); const account = this.requireAccount(productId, accountId); if (account.provider !== 'bluesky' || account.status !== 'verified') throw new Error('Verify this business Bluesky account before searching.'); return account; };
-    const credential = await this.credentials(allowed());
-    return searchBlueskyRequests(credential.accessToken, query, this.app.clock.now(), signal, allowed, this.transport);
+    let credential = await this.credentials(allowed());
+    const read = () => searchBlueskyRequests(credential.accessToken, query, this.app.clock.now(), signal, allowed, this.transport);
+    try { return await read(); }
+    catch (error) {
+      if (!credential.refreshToken || !(error instanceof Error) || !error.message.startsWith('Provider returned HTTP 401.')) throw error;
+      signal.throwIfAborted(); credential = await this.credentials(allowed(), true); return read();
+    }
   }
   /** Fixed Google Search Console endpoint; tokens remain in the credential vault. */
   async searchRead(productId: string, config: SeoState, signal: AbortSignal) {
@@ -417,9 +435,14 @@ export class ConnectionService {
     if (account.provider !== 'x' || !account.identity) throw new Error('Choose an identified X account.');
     await this.beginOAuth('x', productId, account.label, 'publish', id);
   }
+  async reconnectOAuth(productId: string, id: string) {
+    const account = this.requireAccount(productId, id);
+    if (account.provider !== 'ga4') throw new Error('Browser reconnection is supported for Google Analytics.');
+    await this.beginOAuth(account.provider, productId, account.label, 'read', id);
+  }
   async beginOAuth(provider: ProviderId, productId: string, label: string, access: 'read' | 'publish' = 'read', replacingId?: string) {
     this.online(); requireProduct(this.app, productId);
-    if (replacingId && (provider !== 'x' || this.requireAccount(productId, replacingId).provider !== 'x')) throw new Error('Only an existing X connection can use this authorization upgrade.');
+    if (replacingId && (!['x', 'ga4'].includes(provider) || this.requireAccount(productId, replacingId).provider !== provider)) throw new Error('Choose an existing connection for this provider.');
     if (this.pending || this.opening) throw new Error('Finish or cancel the current browser sign-in first.');
     const spec = OAUTH[provider]; const config = this.oauthConfig(provider);
     if (!spec || !config) throw new Error('Save this provider’s developer app configuration first.');
@@ -427,6 +450,7 @@ export class ConnectionService {
     try {
       const state = randomBytes(32).toString('base64url'); const verifier = randomBytes(48).toString('base64url');
       const server = createServer((req, res) => {
+        res.setHeader('connection', 'close'); // A later sign-in must not reuse the consumed callback server.
         res.setHeader('content-type', 'text/plain; charset=utf-8'); res.setHeader('cache-control', 'no-store'); res.setHeader('referrer-policy', 'no-referrer');
         const url = new URL(req.url ?? '/', CALLBACK_URL); const flow = this.pending;
         if (req.method !== 'GET' || req.headers.host !== '127.0.0.1:43821' || url.pathname !== '/oauth/callback' || !flow || url.searchParams.get('state') !== flow.state || flow.expiresAt <= this.app.clock.now()) { res.writeHead(400); res.end('Invalid or expired authorization. Return to Signal.'); return; }
@@ -441,6 +465,7 @@ export class ConnectionService {
       this.pending = { provider, productId, label, state, verifier, expiresAt: this.app.clock.now() + 5 * 60000, server, timer, config, epoch: ++this.authEpoch, ...(replacingId ? { replacingId } : {}) };
       const scopes = [...spec.scopes, ...(access === 'publish' ? PUBLISH_SCOPES[provider] ?? [] : [])];
       const url = new URL(spec.authorize); const values: Record<string, string> = { client_id: config.clientId, response_type: 'code', redirect_uri: CALLBACK_URL, state, scope: scopes.join(provider === 'pinterest' ? ',' : ' '), ...spec.extra };
+      if (replacingId && provider === 'ga4') values.prompt = 'select_account consent';
       if (spec.pkce) { values.code_challenge = createHash('sha256').update(verifier).digest('base64url'); values.code_challenge_method = 'S256'; }
       for (const [key, value] of Object.entries(values)) url.searchParams.set(key, value);
       this.message = 'Finish sign-in in your browser. Signal never asks for your provider password.';
@@ -458,11 +483,11 @@ export class ConnectionService {
       const checked = await probeAccount(account, credential, this.transport, false);
       if (flow.epoch !== this.authEpoch) throw new Error('Authorization was cancelled.');
       const current = this.requireAccount(flow.productId, flow.replacingId);
-      if (checked.identity.toLowerCase() !== current.identity.toLowerCase() || !account.grantedScopes.includes('tweet.write')) throw new Error('Authorize posting for the same X account.');
+      if (flow.provider === 'x' && (checked.identity.toLowerCase() !== current.identity.toLowerCase() || !account.grantedScopes.includes('tweet.write'))) throw new Error('Authorize posting for the same X account.');
       const family = connectionCredentialId(current);
       this.vault.set(`account.${family}`, JSON.stringify(credential));
       this.app.db.transaction(() => {
-        for (const linked of this.accounts().filter(a => connectionCredentialId(a) === family)) this.save({ ...linked, status: 'verified', detail: 'X posting permission authorized. Configure publishing in Operations.', grantedScopes: account.grantedScopes, expiresAt: account.expiresAt, refreshable: account.refreshable, checkedAt: this.app.clock.now() });
+        for (const linked of this.accounts().filter(a => connectionCredentialId(a) === family)) this.save({ ...linked, identity: checked.identity, status: 'verified', detail: flow.provider === 'x' ? 'X posting permission authorized. Configure publishing in Operations.' : 'Google Analytics reconnected. Refresh Analytics to check access to the selected property.', grantedScopes: account.grantedScopes, expiresAt: account.expiresAt, refreshable: account.refreshable, checkedAt: this.app.clock.now() });
       }, { behavior: 'immediate' });
       return;
     }

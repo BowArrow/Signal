@@ -1,6 +1,6 @@
 {
   "name": "signal",
-  "version": "0.53.0",
+  "version": "0.59.2",
   "private": true,
   "description": "Agent-powered growth workspace with campaign production, local creative tools, customer pipelines, and measured outcomes.",
   "type": "module",
@@ -10,6 +10,10 @@
   "main": "out/main/index.cjs",
   "scripts": {
     "signal": "tsx src/cli/index.ts",
+    "demo:studio": "node apps/demo-studio/server.mjs",
+    "demo:test": "node --test apps/demo-studio/tests/*.test.mjs",
+    "avatar:render": "node --import tsx apps/avatar-marketing/render-local.ts",
+    "avatar:export": "node apps/avatar-marketing/export-review.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/cli/index.ts db migrate",
     "db:seed": "tsx src/cli/index.ts db seed",
@@ -86,6 +90,7 @@
       "icon": "build/icon.png"
     },
     "nsis": {
+      "runAfterFinish": false,
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico"
     }

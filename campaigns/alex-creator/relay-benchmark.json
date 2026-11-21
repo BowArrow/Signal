@@ -1,0 +1,16 @@
+{
+  "profile": "relay_fast",
+  "audio": "output/alex-creator/voice/the-chair/ryan-42.wav",
+  "audioSha256": "d70ccc0a9817c9c4447a185c1ac236d50a7cc97377287b3519cc27f0076e1f40",
+  "excerpt": true,
+  "detail": 0.8,
+  "shots": [
+    {
+      "image": "output/alex-creator/alex-room-video-v2-tripod.png",
+      "imageSha256": "770d7814bcc9436c903074351b3cd934658415316c6fc6b2280e15c582fc6ce5",
+      "prompt": "One continuous five-second shot of the man in the reference image talking directly to the viewer in his home workspace. The phone is fixed on a rigid tripod at eye height: the composition, focal length, subject scale, window edge, desk and bookshelves remain stationary throughout, without any zoom, pullback, pan or reframing. He visibly speaks the words in the supplied recording in sync, warmly explaining an everyday observation to a friend. His eyes remain naturally focused on the lens with clear pupils and eyelids, normal brief blinks. On the opening question his eyebrows lift slightly with curiosity; as he mentions the chair, his right hand makes one small open-palm gesture near his lower chest, fingers relaxed and separated, then settles back beside his other hand. His head makes a small conversational nod, his shoulders stay relaxed. His lips articulate naturally and his expression softens into a brief friendly smile at the end. Preserve the same face, dark wavy hair, espresso suede jacket, yellow knit polo and silver necklace. Keep the soft daylight from camera-left and the same room geometry. Natural real-time movement, crisp face detail, no text or graphics.",
+      "frames": 73,
+      "seed": 42
+    }
+  ]
+}

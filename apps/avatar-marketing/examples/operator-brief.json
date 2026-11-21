@@ -1,0 +1,27 @@
+{
+  "id": "the-chair",
+  "title": "The chair wardrobe",
+  "script": "Why does every house have a chair that's technically a wardrobe? Too clean for the laundry. Too worn for the drawer. So it goes to the chair. The chair has a better outfit rotation than you do.",
+  "voiceDirection": "Conversational American English. Speak to a friend in the room at an easy natural pace. Open with an amused genuine question. Brief thoughtful pauses after laundry and drawer. Give the final sentence with quiet dry humor and a small smile, letting the punchline land. No announcer cadence.",
+  "caption": "The chair has a system. Apparently. #relatable #everydaylife #thechair",
+  "intent": "entertainment",
+  "mode": "original-test",
+  "sourceIds": [],
+  "pattern": "Recognizable everyday contradiction, three observations, understated punchline",
+  "twist": "The clothes chair has a better outfit rotation than its owner.",
+  "changedElements": [
+    "Original Alex script",
+    "Original fictional presenter and bedroom insert",
+    "Original outfit-rotation payoff"
+  ],
+  "productEvidence": [],
+  "commercialDisclosure": "none",
+  "aiLabel": true,
+  "cutaway": {
+    "image": "output/alex-creator/the-chair-cutaway-v2-bedroom.png",
+    "sha256": "a0b5082550f4bb20b6931bb8b6bddad40443b174bd7592181fdd0a7c40baa7ca",
+    "promptPath": "output/alex-creator/the-chair-cutaway-v2-bedroom-prompt.txt",
+    "location": "Separate bedroom seen through doorway, wooden chair beside wardrobe and bed.",
+    "distinctFromPresenter": true
+  }
+}

@@ -8,7 +8,7 @@ Signal brings product research, campaign drafts, creative production, prospect c
 
 | At a glance | Details |
 | --- | --- |
-| Version | `0.53.0` in [package.json](package.json) |
+| Version | `0.59.2` in [package.json](package.json) |
 | Interface | Electron desktop app and a CLI for the core engine |
 | Stack | TypeScript, React, SQLite, Drizzle, Electron Vite |
 | AI | Signal-managed Ollama, configured GPT, and an OpenAI-compatible or Anthropic community pipeline |
@@ -19,11 +19,15 @@ Signal brings product research, campaign drafts, creative production, prospect c
 
 | Workspace | What you can do | Guide |
 | --- | --- | --- |
+| Marketing team | Run seven coordinated specialists from a campaign brief through research, copy, creative direction, distribution, sales follow-up and attributed results. Watch campaign activity, worker heartbeat, blockers, delivery receipts and outcomes in one control room. Edit the brief, destinations and cadence in place. | [Marketing team](docs/marketing-team.md) |
+| My marketer | Start with a saved business goal, one explained next step, a conversation with the agent, and decisions that need your help. | [Guided marketing](docs/marketing-guide.md) |
+| Codex revenue mission | Connect the locally signed-in Codex, review a collected-revenue target, prepare sales work and track verified payment evidence. | [Revenue mission](docs/revenue-mission.md) |
 | Operations | Research current product information, prepare and review campaigns, run configured activities, and inspect delivery receipts. | [Operating guide](docs/autonomous-operation.md), [readiness](docs/run-readiness.md) |
 | Growth workspace and Growth lab | Brief campaigns, explore all 19 Bullseye channels, shortlist experiments, and record acquisition cost and audience fit. | [Workspace setup](docs/signal-0.3.md), [Growth lab](docs/growth-lab.md) |
 | Sales | Manage prospects, triage Gmail or Outlook conversations, prepare replies, run permitted follow-ups, and hand decisions back to the owner. | [Sales inbox](docs/sales-inbox.md), [handoffs](docs/sales-handoffs.md) |
 | Prospect research | Inspect public business, blog, and community pages; prepare proposals with source evidence and an explicit next step. | [Prospect research](docs/prospect-research-0.48.md) |
 | Creative studio | Connect local ComfyUI image/video workflows and produce campaign media. Branded campaign cards work without ComfyUI. | [Campaign images](docs/automatic-campaign-images.md), [video production](docs/marketing-research/video-production.md) |
+| Local demo app | Operate an isolated Lemonade workspace, capture real screenshots and silent clips, and export scripts and capture manifests through a local UI or agent client. | [Demo Studio](apps/demo-studio/README.md) |
 | Connections | Link business accounts, select verified Gmail sender aliases, and check provider readiness. | [Connection setup](docs/easy-connections.md), [Gmail aliases](docs/gmail-aliases.md) |
 | Analytics and Revenue | Read GA4 campaign engagement and Stripe payment/refund evidence within each business's scope. | [Analytics](docs/campaign-analytics.md), [Revenue](docs/revenue-sync.md) |
 | Community review queue | Discover threads, inspect community rules, score opportunities, and review drafted replies. | [Community workflow](#community-workflow) |
@@ -73,12 +77,12 @@ Before seeding your own workspace, edit the products, sources, and timezone in [
 
 | Step | Where | Action |
 | --- | --- | --- |
-| 1 | Settings | Start the managed local runtime or configure GPT, then select the required models. |
-| 2 | Connections | Link the accounts needed for your chosen activities and check their readiness. |
-| 3 | Growth workspace | Select a business and prepare a campaign brief or review existing materials. |
-| 4 | Sales | Configure inboxes, prospect sources, consent records, and reply/outreach policies if needed. |
-| 5 | Operations | Review missing requirements, select activities and destinations, save the operating policy, and Run. |
-| 6 | Analytics and Revenue | Select the relevant GA4 property and Stripe products to inspect results. |
+| 1 | My marketer | Choose a business and save your goal. Leave the audience blank if you need help choosing one. |
+| 2 | Your next step | Follow the explained recommendation. It opens the relevant business and section. |
+| 3 | Talk to your marketer | Ask about your audience, channel choices or a useful draft. Configure the agent in Settings if prompted. |
+| 4 | Where I need you | Review customer questions, prepared suggestions and uncertain publications. |
+| 5 | Operations | When ready, review activities, destinations and limits before enabling them. |
+| 6 | What we actually know | Follow the links to Analytics and Revenue to check measured outcomes and report freshness. |
 
 Desktop Operations runs while Signal is running, including supported tray operation. The CLI worker runs the core scheduler and Growth lab jobs; it does not replace every desktop integration.
 

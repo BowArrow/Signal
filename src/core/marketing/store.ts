@@ -6,6 +6,15 @@ import { dashboard, initializeGrowth, queueTask } from '../growth/store.js';
 import { newId } from '../lib/id.js';
 import { engineeringRequests, growthTasks, marketingCash, marketingCommitments, marketingDrafts, marketingEdges, marketingMedia, marketingMemory, marketingMessages, marketingToolCalls, marketingWorkflows, products, settings } from '../db/schema.js';
 import { marketingSettingsSchema, memoryInputSchema, requestInputSchema, type BudgetView, type MarketingSettings, type MarketingView } from '../../shared/marketing.js';
+import { guidePlanSchema } from '../../shared/marketing-guide.js';
+import { codexConnection, missionView } from './mission.js';
+import { unfinishedTeam, teamViews, teamRuns } from './team-store.js';
+import { salesDiagnosis } from './sales-diagnosis.js';
+
+export function guidePlan(app: App, productId: string) {
+  const row = app.db.select().from(settings).where(eq(settings.key, `marketing.guide-plan.${productId}`)).get();
+  return row ? guidePlanSchema.parse(row.value) : null;
+}
 
 const KEY = 'marketing.operator.v1';
 export const DEFAULT_MARKETING: MarketingSettings = {
@@ -115,6 +124,7 @@ export function scheduleMarketing(app: App): void {
   const config = marketingSettings(app);
   if (!config.enabled) return;
   for (const p of dashboard(app).products) {
+    if (teamRuns(app, p.id).some(r => unfinishedTeam(r))) continue;
     if (app.operations?.state(p.id).running) continue;
     const latest = app.db.select().from(growthTasks).where(and(eq(growthTasks.productId, p.id), eq(growthTasks.kind, 'marketing'))).orderBy(desc(growthTasks.createdAt)).get();
     if (latest && (['queued', 'running'].includes(latest.status) || app.clock.now() - latest.createdAt < config.intervalHours * 3600000)) continue;
@@ -132,7 +142,7 @@ export function initializeMarketing(app: App): void {
       tx.update(products).set({ positioning: current.positioning, targetBuyer: current.targetBuyer, proofPoints: current.proofPoints }).where(eq(products.id, p.id)).run();
       const lemon = config.key === 'lemonade';
       remember(app, p.id, { kind: 'product', title: `${p.name}: public product positioning`, body: lemon
-        ? 'Local AI desktop assistant for Windows and Linux. Works with local files and models. $49 perpetual license with a 14-day trial. No behavioral telemetry; use voluntary attribution and checkout records. Public website claims must be checked before quoting specifics.'
+        ? 'Local AI desktop assistant for Windows and Linux. Works with local files and models. Inspect current pricing and trial terms on the product website before quoting an offer; historical perpetual pricing is not a current offer. No behavioral telemetry; use voluntary attribution and checkout records.'
         : 'Browser-based AI video production workspace: storyboarding, character creation, generation, timeline editing and collaborative review. 3D scene creator is beta. Free offer includes one project and watermarked 720p exports. Verify current pricing and entitlements before quoting them.', source: config.utmBase, confidence: 0.9 });
       remember(app, p.id, { kind: 'preference', title: 'No financial runway', body: 'The founder has no financial runway. Start at zero cash. Never invent revenue or treat gross sales, model forecasts, free credits or experiment estimates as spendable cash. Use recorded settled surplus after fees, refunds, fulfillment costs and obligations. Keep customer responses specific, truthful and useful.', source: 'Founder instruction, 2026-09-08', confidence: 1 });
       remember(app, p.id, { kind: 'lesson', title: 'Bullseye operating method', body: 'Consider all 19 channels, run at most three affordable tests, measure customer acquisition cost, volume and fit, then focus on a measured winner. Cash tiers are Signal’s conservative adaptation, not thresholds prescribed by Traction. Founder learning and useful demonstrations come before paid scale.', source: 'https://mixergy.com/interviews/gabriel-weinberg-traction/', confidence: 0.9 });
@@ -143,10 +153,17 @@ export function initializeMarketing(app: App): void {
   });
 }
 export function marketingView(app: App): MarketingView {
+  const recoveryTasks = new Set(app.db.select({ key: settings.key }).from(settings).where(sql`${settings.key} like 'marketing.recovery-task.%'`).all().map(r => r.key.slice('marketing.recovery-task.'.length)));
   initializeMarketing(app);
   return {
+    salesDiagnoses: app.operations ? dashboard(app).products.map(p => salesDiagnosis(app, p.id)) : [],
+    teamRuns: teamViews(app),
+    missions: dashboard(app).products.flatMap(p => { const mission = missionView(app, p.id); return mission ? [mission] : []; }),
+    codexConnections: dashboard(app).products.flatMap(p => { const connection = codexConnection(app, p.id); return connection ? [{ productId: p.id, ...connection }] : []; }),
+    guidePlans: dashboard(app).products.flatMap(p => { const value = guidePlan(app, p.id); return value ? [{ productId: p.id, value }] : []; }),
+    guideTaskIds: app.db.select({ key: settings.key }).from(settings).where(sql`${settings.key} like 'marketing.guide-task.%'`).all().map(r => r.key.slice('marketing.guide-task.'.length)),
     settings: marketingSettings(app), products: dashboard(app).products.map((p) => ({ id: p.id, name: p.name, currency: p.currency, url: requireProduct(app, p.id).utmBase, budget: budget(app, p.id) })),
-    messages: app.db.select().from(marketingMessages).orderBy(desc(marketingMessages.createdAt), desc(sql`rowid`)).limit(150).all().reverse(),
+    messages: app.db.select().from(marketingMessages).orderBy(desc(marketingMessages.createdAt), desc(sql`rowid`)).limit(150).all().reverse().map(m => m.role === 'user' && m.taskId && recoveryTasks.has(m.taskId) ? { ...m, role: 'assistant', body: 'The acquisition experiment stalled, so Signal requested a recovery brief: a reachable placement, a useful trial task and copy for review. Check activity for its progress or any problem that needs attention.' } : m),
     memories: app.db.select().from(marketingMemory).orderBy(desc(marketingMemory.createdAt)).limit(1000).all(),
     edges: app.db.select().from(marketingEdges).all(), requests: app.db.select().from(engineeringRequests).orderBy(desc(engineeringRequests.createdAt)).all(),
     drafts: app.db.select().from(marketingDrafts).orderBy(desc(marketingDrafts.createdAt)).limit(200).all(), cash: app.db.select().from(marketingCash).orderBy(desc(marketingCash.createdAt)).all(),

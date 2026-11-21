@@ -19,25 +19,26 @@ import { OperationsScreen } from './screens/OperationsScreen.js';
 import { RevenueScreen } from './screens/RevenueScreen.js';
 import { AnalyticsScreen } from './screens/AnalyticsScreen.js';
 import { SalesScreen } from './screens/SalesScreen.js';
+import { GuideScreen } from './screens/GuideScreen.js';
+import { MarketingTeamScreen } from './screens/MarketingTeamScreen.js';
+import type { GuideDestination } from '../../../src/shared/marketing-guide.js';
 
 export function App(): React.JSX.Element {
   const contentRef = useRef<HTMLDivElement>(null);
-  // Remembered per machine, so reopening lands where you left off rather than
-  // always on the same screen. Wrapped because storage can throw outright in
-  // some contexts, and a missing preference must never stop the app rendering.
+  // Always open on a useful next step. Remember the business, not a deep tool tab.
   const [screen, setScreen] = useState<ScreenKey>(() => {
-    try {
-      const saved = localStorage.getItem('signal.screen');
-      return NAV.some(n => n.key === saved) ? saved as ScreenKey : 'operations';
-    } catch {
-      return 'operations';
-    }
+    try { const saved = sessionStorage.getItem('signal.screen'); return NAV.some(n => n.key === saved) ? saved as ScreenKey : 'guide'; }
+    catch { return 'guide'; }
   });
+  const [guideProduct, setGuideProduct] = useState(() => { try { return localStorage.getItem('signal.guide-business') ?? ''; } catch { return ''; } });
+  const [destination, setDestination] = useState<GuideDestination | null>(null);
+  const navigate = (next: ScreenKey) => { setDestination(null); setScreen(next); };
+  const selectGuideProduct = (id: string) => { setGuideProduct(id); try { localStorage.setItem('signal.guide-business', id); } catch { /* Storage is optional. */ } };
 
   useEffect(() => {
     contentRef.current?.scrollTo(0, 0);
     try {
-      localStorage.setItem('signal.screen', screen);
+      sessionStorage.setItem('signal.screen', screen);
     } catch {
       // A remembered tab is a convenience, not a requirement.
     }
@@ -123,7 +124,7 @@ export function App(): React.JSX.Element {
       <Sidebar
         version={status?.version ?? null}
         screen={screen}
-        onNavigate={setScreen}
+        onNavigate={navigate}
         badges={badges}
       />
 
@@ -142,16 +143,20 @@ export function App(): React.JSX.Element {
               <h1 className="page-title">Signal could not read its own state</h1>
               <p className="page-lede selectable">{error}</p>
             </div>
+          ) : screen === 'team' ? (
+            <MarketingTeamScreen productId={guideProduct} onProduct={selectGuideProduct} onToast={say} onNavigate={(next, id) => { selectGuideProduct(id); setDestination(next); setScreen(next.screen); }} />
+          ) : screen === 'guide' ? (
+            <GuideScreen productId={guideProduct} onProduct={selectGuideProduct} onToast={say} onNavigate={(next, id) => { selectGuideProduct(id); setDestination(next); setScreen(next.screen); }} />
           ) : screen === 'sales' ? (
-            <SalesScreen onToast={say} />
+            <SalesScreen onToast={say} initialProductId={guideProduct} initialSection={destination?.screen === 'sales' ? destination.section : 'prospects'} />
           ) : screen === 'revenue' ? (
-            <RevenueScreen onToast={say} />
+            <RevenueScreen onToast={say} initialProductId={guideProduct} />
           ) : screen === 'analytics' ? (
-            <AnalyticsScreen onToast={say} />
+            <AnalyticsScreen onToast={say} initialProductId={guideProduct} />
           ) : screen === 'operations' ? (
-            <OperationsScreen onToast={say} onNavigate={setScreen} />
+            <OperationsScreen onToast={say} onNavigate={navigate} initialProductId={guideProduct} initialSection={destination?.screen === 'operations' ? destination.section : 'overview'} />
           ) : screen === 'connections' ? (
-            <ConnectionsScreen onToast={say} />
+            <ConnectionsScreen onToast={say} initialProductId={guideProduct} />
           ) : screen === 'creative' ? (
             <CreativeScreen onToast={say} />
           ) : screen === 'studio' ? (
@@ -159,7 +164,7 @@ export function App(): React.JSX.Element {
           ) : screen === 'settings' ? (
             <SettingsScreen onToast={say} />
           ) : screen === 'marketing' || screen === 'engineering' ? (
-            <MarketingScreen onToast={say} initialTab={screen === 'engineering' ? 'engineering' : 'chat'} />
+            <MarketingScreen onToast={say} initialProductId={guideProduct} initialTab={screen === 'engineering' ? 'engineering' : destination?.screen === 'marketing' ? destination.section : 'chat'} />
           ) : screen === 'growth' ? (
             <GrowthScreen onToast={say} />
           ) : screen === 'attribution' || screen === 'digest' ? (

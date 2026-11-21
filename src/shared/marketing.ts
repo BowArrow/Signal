@@ -1,6 +1,11 @@
 import { z } from 'zod';
+import type { SalesDiagnosis } from './sales-diagnosis.js';
+import { guidePlanSchema, type GuidePlan } from './marketing-guide.js';
+import { revenueMissionSchema, type MissionView } from './revenue-mission.js';
+import { teamActionSchema, type TeamRun } from './marketing-team.js';
 
 const text = z.string().trim().min(1).max(4000);
+const draftBody = z.string().trim().min(1).max(16000);
 const cents = z.number().int().min(0).max(100_000_000);
 export const localUrl = z.string().url().refine((s) => {
   const u = new URL(s);
@@ -28,7 +33,7 @@ export const requestInputSchema = z.object({
 }).strict();
 export type EngineeringInput = z.infer<typeof requestInputSchema>;
 export const draftInputSchema = z.object({
-  title: z.string().trim().min(1).max(160), body: text,
+  title: z.string().trim().min(1).max(160), body: draftBody,
   kind: z.enum(['reply', 'article', 'email', 'social', 'demo']),
   targetUrl: z.string().url().or(z.literal('')), evidence: z.array(text).max(8),
 }).strict();
@@ -38,6 +43,12 @@ export const cashInputSchema = z.object({
   note: text,
 }).strict();
 export const marketingActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('team'), productId: text, action: teamActionSchema }).strict(),
+  z.object({ type: z.literal('mission'), productId: text, value: revenueMissionSchema }).strict(),
+  z.object({ type: z.literal('mission-review'), productId: text }).strict(),
+  z.object({ type: z.literal('connect-codex'), productId: text }).strict(),
+  z.object({ type: z.literal('guide-plan'), productId: text, value: guidePlanSchema }).strict(),
+  z.object({ type: z.literal('guide-chat'), productId: text, message: text }).strict(),
   z.object({ type: z.literal('chat'), productId: text, message: text }).strict(),
   z.object({ type: z.literal('cycle'), productId: text }).strict(),
   z.object({ type: z.literal('settings'), value: marketingSettingsSchema }).strict(),
@@ -46,7 +57,7 @@ export const marketingActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('forget'), productId: text, id: text }).strict(),
   z.object({ type: z.literal('requestStatus'), productId: text, id: text, status: z.enum(['proposed', 'accepted', 'building', 'shipped', 'dismissed']) }).strict(),
   z.object({ type: z.literal('draftStatus'), productId: text, id: text, status: z.enum(['draft', 'approved', 'published', 'rejected']), publishedUrl: z.string().url().optional() }).strict(),
-  z.object({ type: z.literal('draftEdit'), productId: text, id: text, body: text }).strict(),
+  z.object({ type: z.literal('draftEdit'), productId: text, id: text, body: draftBody }).strict(),
   z.object({ type: z.literal('workflow'), productId: text, name: text, workflow: z.record(z.unknown()) }).strict(),
   z.object({ type: z.literal('media'), productId: text, workflowId: text, prompt: text }).strict(),
   z.object({ type: z.literal('reserve'), productId: text, amountCents: cents, reference: text, note: text }).strict(),
@@ -58,6 +69,12 @@ export interface MemoryView {
   confidence: number; status: string; createdAt: number; supersedesId: string | null;
 }
 export interface MarketingView {
+  salesDiagnoses?: SalesDiagnosis[];
+  teamRuns?: TeamRun[];
+  missions?: MissionView[];
+  codexConnections?: { productId: string; model: string; verifiedAt: number; detail: string }[];
+  guidePlans?: { productId: string; value: GuidePlan }[];
+  guideTaskIds?: string[];
   settings: MarketingSettings;
   products: { id: string; name: string; url: string; currency: string; budget: BudgetView }[];
   messages: { id: string; productId: string; role: string; body: string; taskId: string | null; createdAt: number }[];

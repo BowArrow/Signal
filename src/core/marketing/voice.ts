@@ -1,5 +1,7 @@
+import { HUMANIZER } from './humanizer.js';
 /** Shared by automatic social replies, sales email and the legacy draft flow. */
 export const NATURAL_VOICE = [
+  HUMANIZER,
   'VOICE: Write like a helpful colleague replying to this particular person, not a campaign template.',
   'Answer their actual question in the first sentence with one concrete, supported point. Do not restate their whole post or turn it into a product pitch. If their request does not fit the product, hold rather than force a connection.',
   'Use everyday words, natural contractions and varied sentence lengths. Match the conversation: short social replies usually need one or two sentences, email only as much explanation as the question needs. Do not force slang, lowercase, deliberate mistakes or fake familiarity.',
@@ -8,7 +10,7 @@ export const NATURAL_VOICE = [
   'Illustrative style contrast, not product evidence or text to copy: "Great question! Our game-changing solution seamlessly streamlines your workflow" is empty. "Start with one document and ask for the passage behind each answer" describes a useful action, but needs supporting product evidence. Product facts always come from the current source, not these examples.',
 ].join('\n');
 
-export const VOICE_REVIEW = 'Assess the voice separately from factual correctness: does this answer the specific person, using plain conversational language and an appropriately brief response? Reject canned compliments, empty empathy, formulaic pitches, forced slang, invented personal experience and an unnecessary engagement question. Natural writing can be formal or casual, and need not contain slang or contractions. Keep required affiliation and automated-assistant disclosures; those are not voice defects. Judge the actual words in context, not whether you suspect AI authorship. Explain a failure with the exact offending wording and a concrete correction.';
+export const VOICE_REVIEW = 'Assess the voice separately from factual correctness: does this answer the specific person, using plain conversational language and an appropriately brief response? Reject canned compliments, empty empathy, formulaic pitches, forced slang, invented personal experience and an unnecessary engagement question. Natural writing can be formal or casual, and need not contain slang or contractions. Keep required affiliation and automated-assistant disclosures; those are not voice defects. Judge the actual words in context, not whether you suspect AI authorship. Explain a failure with the exact offending wording and a concrete correction.' + '\n' + HUMANIZER;
 
 /** Narrow, explainable style checks, not an AI-authorship detector. */
 export function replyVoiceWarnings(body: string): string[] {

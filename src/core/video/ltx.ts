@@ -11,8 +11,10 @@ export const LTX_MODELS = {
   upscaler: 'ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors',
 } as const;
 export type VideoGraph = Record<string, { class_type: string; inputs: Record<string, unknown> }>;
-export const LTX_LIMIT_ARGS = ['--dynamic-vram', '--ram-gb', '16', '--working-set-gb', '4'] as const;
-export const LTX_RUNTIME_ARGS = ['--enable-dynamic-vram', '--async-offload', '2', '--bf16-vae', '--fast-disk', '--cache-none', '--reserve-vram', '3', '--vram-headroom', '3'] as const;
+export const LTX_LIMIT_ARGS = ['--dynamic-vram', '--ram-gb', '16', '--working-set-gb', '3'] as const;
+// One transfer stream bounds the Gemma encoder's overlapping staging buffers.
+// Two streams exceeded the device watchdog with full directing prompts.
+export const LTX_RUNTIME_ARGS = ['--enable-dynamic-vram', '--async-offload', '1', '--bf16-vae', '--fast-disk', '--cache-none', '--reserve-vram', '6', '--vram-headroom', '6'] as const;
 export function ltxWorkflow(job: VideoJob, image: string): VideoGraph {
   if (!/^[A-Za-z0-9_-]{1,100}$/.test(job.id) || !/^signal-video-[a-f0-9]{64}\.jpg$/.test(image)) throw new Error('Invalid local video input.');
   if (job.characters.length !== 1 || !job.shot) throw new Error('LTX image-to-video needs one approved starting reference and a shot plan.');
@@ -49,7 +51,7 @@ export function ltxWorkflow(job: VideoJob, image: string): VideoGraph {
     '26': { class_type: 'ManualSigmas', inputs: { sigmas: '0.85, 0.7250, 0.4219, 0.0' } },
     '27': { class_type: 'SamplerCustomAdvanced', inputs: { noise: ['16', 0], guider: ['15', 0], sampler: ['18', 0], sigmas: ['26', 0], latent_image: ['25', 0] } },
     '28': { class_type: 'LTXVSeparateAVLatent', inputs: { av_latent: ['27', 0] } },
-    '29': { class_type: 'VAEDecodeTiled', inputs: { samples: ['28', 0], vae: ['3', 0], tile_size: 256, overlap: 64, temporal_size: 16, temporal_overlap: 4 } },
+    '29': { class_type: 'VAEDecodeTiled', inputs: { samples: ['28', 0], vae: ['3', 0], tile_size: 256, overlap: 64, temporal_size: 64, temporal_overlap: 16 } },
     '30': { class_type: 'CreateVideo', inputs: { images: ['29', 0], fps: 24 } },
     '17': { class_type: 'SaveVideo', inputs: { video: ['30', 0], filename_prefix: 'Signal/video/' + job.id, format: 'mp4', 'format.codec': 'h264' } },
   };

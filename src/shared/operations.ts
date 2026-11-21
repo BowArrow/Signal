@@ -38,6 +38,8 @@ export interface OperationTraffic {
   reference?: { id: string; title: string; description: string; sessions: number; engagedSessions: number };
 }
 export interface OperationState extends OperationPolicy {
+  teamRunId?: string;
+  teamEndsAt?: number;
   demandEvidence?: DemandFinding[];
   targetAccountId?: string | null;
   learning?: OperationLearning;
@@ -54,6 +56,7 @@ export const deliveryInputSchema = z.object({
 }).strict();
 export type DeliveryInput = z.infer<typeof deliveryInputSchema>;
 export interface Delivery extends DeliveryInput {
+  teamRunId?: string;
   reply?: { uri: string; cid: string; authorDid: string; text: string };
   publicationAttempt?: { author: string; startedAt: number; id?: string };
   demandEvidence?: DemandFinding[];

@@ -5,8 +5,8 @@ import '../styles/revenue.css';
 import { SalesFunding } from '../components/SalesFunding.js';
 const money = (amount: number, currency: string) => { const format = new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.toUpperCase() }); const digits = format.resolvedOptions().maximumFractionDigits ?? 2; return format.format(amount / 10 ** digits); };
 
-export function RevenueScreen({ onToast }: { onToast: (message: string, kind?: 'ok' | 'warn') => void }) {
-  const [view, setView] = useState<RevenueView | null>(null); const [business, setBusiness] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+export function RevenueScreen({ onToast, initialProductId = '' }: { initialProductId?: string; onToast: (message: string, kind?: 'ok' | 'warn') => void }) {
+  const [view, setView] = useState<RevenueView | null>(null); const [business, setBusiness] = useState(initialProductId); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   useEffect(() => { let active = true; const refresh = () => { void window.signal.revenue().then(result => { if (active) { setView(result); setError(''); } }).catch(() => { if (active) setError('Could not load revenue records.'); }); }; refresh(); const timer = setInterval(refresh, 4000); return () => { active = false; clearInterval(timer); }; }, []);
   const act = async (action: RevenueAction): Promise<RevenueResult | undefined> => { setBusy(true); try { const result = await window.signal.revenueAction(action); setView(result.view); if (action.type === 'funding') onToast('Funding rule saved. Operations is paused; no advertising was launched.'); else if (action.type !== 'catalog') { const state = result.view.states.find(s => s.productId === action.productId); onToast(state?.detail ?? 'Revenue source updated', state?.status === 'attention' ? 'warn' : 'ok'); } return result; } catch (err) { onToast(String(err), 'warn'); return undefined; } finally { setBusy(false); } };
   if (!view) return <div className="page"><h1>Revenue</h1><p role="status">{error || 'Loading revenue…'}</p></div>;

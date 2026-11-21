@@ -1,0 +1,152 @@
+{
+  "id": "alex-creator",
+  "market": "US",
+  "status": "account-created-user-confirmed-metricool-connected",
+  "account": {
+    "type": "Personal",
+    "visibility": "Public",
+    "handle": "alexslightlybetter",
+    "handleAvailability": "created-user-confirmed-and-observed-in-browser-title",
+    "alternatives": [
+      "slightlybetterwithalex",
+      "alexmakesitsimple"
+    ],
+    "displayName": "Alex | Slightly Better",
+    "bio": "Life, slightly easier. Useful finds, dry humor. Fictional AI creator.",
+    "profileImage": "output/alex-creator/alex-profile-v2-room.png",
+    "website": null,
+    "websitePlan": "A creator-branded useful-finds page with separate disclosed product links when available. No hub or domain created. Verify profile-link eligibility in the app.",
+    "registration": "Use the real operator's owner details for age, verification, payment and tax information; Alex is a fictional presenter.",
+    "accountTypeRationale": "Audience-led creator content with occasional product partnerships. Reassess if promoting the operator's business becomes the primary purpose.",
+    "profileImageSha256": "db3e184c990ecdde399b3a06ebede3c27220df11baf5c73ea9d1a0b4ff726443",
+    "profileImageStatus": "Natural room portrait generated and saved; not uploaded to TikTok."
+  },
+  "positioning": {
+    "promise": "Relatable everyday problems, dry observations and practical ways to make life slightly easier.",
+    "audience": "Adults juggling work, digital clutter and everyday routines who enjoy understated humor and useful discoveries.",
+    "personality": [
+      "Warm, approachable and informative",
+      "Observant and gently funny; humor invites the viewer in",
+      "Curious, practical and reassuring",
+      "Stylish without looking like a corporate spokesperson"
+    ],
+    "identity": "Same approved face and persistent voice across campaigns. Wardrobe is editable; yellow is a style choice, not exclusive Lemonade branding.",
+    "pillars": [
+      "Everyday and work-life frustrations",
+      "Useful shortcuts and simple routines",
+      "Thoughtful finds: software, desk/home tools and occasional style"
+    ],
+    "series": [
+      "Why is this a thing?",
+      "One small fix",
+      "Worth the space?"
+    ],
+    "honesty": "Clearly fictional AI creator. Use observational comedy and visibly staged scenes; do not invent personal product use, purchases, results or testimonials. Demonstrations require real evidence from the operator."
+  },
+  "editorial": {
+    "startingMixPercent": {
+      "relatableEntertainment": 70,
+      "practicalValue": 20,
+      "commercial": 10
+    },
+    "mixIs": "An initial experiment, not a TikTok rule or guarantee.",
+    "first14Posts": {
+      "relatableEntertainment": 10,
+      "practicalValue": 3,
+      "commercial": 1
+    },
+    "pinnedPosts": [
+      "Meet Alex and the channel premise, including fictional AI identity",
+      "Strong relatable sketch with no sales CTA",
+      "Useful standalone tip showing the channel's value"
+    ],
+    "organicCTA": "A relevant question, save/share invitation, or no CTA. No forced product mention.",
+    "productGate": "Only feature an offer that solves a demonstrated audience problem and fits a recurring content pillar. Do not require every trend to end in a sale.",
+    "firstProduct": "Lemonade",
+    "laterProducts": "Audience-relevant affiliate offers or owned products. PLR only with verified resale rights, useful content and suitable destination.",
+    "measurement": [
+      "Watch time and completion",
+      "Shares and saves",
+      "Returning viewers",
+      "Follows per 1,000 views",
+      "Comment themes and audience requests"
+    ],
+    "commercialMeasurement": [
+      "Qualified clicks",
+      "Trials or purchases",
+      "Revenue per product campaign"
+    ],
+    "cutawayContinuity": "Object cutaways establish a distinct location or motivated off-camera angle. Do not replace the seated presenter with an object in the same framing, which makes him appear to disappear. Use visible spatial cues such as bedroom furniture or a doorway."
+  },
+  "research": {
+    "queries": [
+      "everyday annoyances relatable humor",
+      "office work funny digital clutter",
+      "small things that make life easier",
+      "desk setup useful finds",
+      "simple outfits everyday style"
+    ],
+    "cadence": "Each cycle scout 10-20 candidates, watch 5, shortlist 3, model 1; no schedule installed.",
+    "modeling": [
+      "Record source provenance, direct metrics, creator baseline and observation time.",
+      "Deconstruct hook, pacing, tension and payoff.",
+      "Build an original Alex situation, script, visuals and payoff.",
+      "Choose entertainment, practical value or commercial intent before scripting.",
+      "Product integration is optional and must earn its place. Never label unverified inspiration as viral."
+    ]
+  },
+  "publishing": {
+    "enabled": false,
+    "aiLabel": true,
+    "commercialDisclosure": {
+      "editorial": "None when there is no promotional purpose or material connection.",
+      "ownProduct": "Your brand / Promotional content",
+      "affiliateOrSponsored": "Branded content / Paid partnership; clearly state the actual commission, sponsorship or gifted relationship."
+    },
+    "music": "Commercial posts use original cleared sound or commercially licensed music; a Personal account's sound library does not confer commercial rights.",
+    "eligibility": "TikTok Shop affiliate and other monetization require separate eligibility checks. Do not assume account creation or an AI presenter guarantees acceptance.",
+    "firstCompleteEdit": "output/alex-creator/exports/the-chair-edited-f28891ed-9a6d-4a1a-b2ab-97156ba5f82e/video.mp4",
+    "handoff": "Metricool connector confirms Alex connected but cannot upload local files; Computer Use browser inventory is empty and in-app browser creation returns Browser is not available: iab."
+  },
+  "sourcesCheckedAt": "2026-10-22",
+  "sources": [
+    "https://support.tiktok.com/en/using-tiktok/growing-your-audience/switching-to-a-creator-or-business-account",
+    "https://support.tiktok.com/en/business-and-creator/creator-and-business-accounts/promoting-a-brand-product-or-service",
+    "https://support.tiktok.com/en/using-tiktok/creating-videos/ai-generated-content/"
+  ],
+  "filmingSpace": {
+    "id": "alex-home-workspace-v1",
+    "referencePath": "output/alex-creator/alex-profile-v2-room.png",
+    "referenceSha256": "db3e184c990ecdde399b3a06ebede3c27220df11baf5c73ea9d1a0b4ff726443",
+    "status": "Tripod direction approved; complete first edit prepared for playback review and upload.",
+    "description": "Lived-in apartment workspace: daylight window and walnut desk with laptop, mug and notebook on camera-left; bookshelves and trailing plants camera-right; muted olive sofa and cream throw behind a charcoal fabric chair; warm off-white walls.",
+    "lighting": "Soft natural window light from camera-left with gentle room bounce and coherent shadows.",
+    "performance": "Warm, attentive and engaged. Subtle curious brow changes, natural blinks, small conversational nods, one restrained open-palm gesture near the lower chest and brief friendly smile. Hands stay below the face, relaxed between gestures. Preserve approved voice and identity.",
+    "continuity": "Use this image as the room and lighting reference for future room shots. The separate approved face remains the identity reference.",
+    "videoReferencePath": "output/alex-creator/alex-room-video-v2-tripod.png",
+    "videoReferenceSha256": "770d7814bcc9436c903074351b3cd934658415316c6fc6b2280e15c582fc6ce5",
+    "roomAudioProfile": "campaigns/alex-creator/room-audio-v2.json",
+    "roomAudioState": "Approved in the five-second tripod preview.",
+    "roomAudioCandidate": "campaigns/alex-creator/room-audio-v2.json",
+    "camera": "Fixed eye-level tripod framing. No zoom, pullback, pan or reframing. Keep background and face scale stable.",
+    "videoReferenceCandidate": "output/alex-creator/alex-room-video-v2-tripod.png",
+    "latestUserReview": {
+      "date": "2026-10-23",
+      "source": "User playback review",
+      "audio": "Room-v2 audio approved as part of the five-second tripod preview.",
+      "visual": "Looks good; use this direction.",
+      "qualityApproved": true,
+      "scope": "Five-second tripod preview and performance direction."
+    }
+  },
+  "metricool": {
+    "brandId": "7428314",
+    "network": "tiktok",
+    "connectedDisplayName": "Alex | SlightlyBetter",
+    "verifiedAt": "2026-10-23",
+    "handle": "alexslightlybetter",
+    "postingAuthorizedByUser": true,
+    "publishedCount": 0,
+    "handleEvidence": "Observed Alex | SlightlyBetter (@alexslightlybetter) | TikTok in the browser window title on 2026-10-22; connector display name also matches."
+  }
+}

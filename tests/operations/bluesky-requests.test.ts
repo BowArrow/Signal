@@ -31,6 +31,17 @@ beforeEach(() => {
 const search = () => searchBlueskyRequests('fixture', 'recommend PDF', now, new AbortController().signal, () => {}, transport);
 const send = () => deliver(account, { accessToken: 'fixture' }, job, transport, new AbortController().signal, () => { if (paused) throw Error('Paused'); });
 
+it('can research the public AppView without a publishing session or an authorization header', async () => {
+  const publicRead = vi.fn<typeof fetch>(async (input, init) => {
+    expect(new URL(String(input)).origin).toBe('https://api.bsky.app');
+    expect(new Headers(init?.headers).has('authorization')).toBe(false);
+    expect(init?.method).toBe('GET');
+    return Response.json({ posts: [post] });
+  });
+  const findings = await searchBlueskyRequests(null, 'recommend PDF', now, new AbortController().signal, () => {}, publicRead);
+  expect(findings).toHaveLength(1); expect(writes).toBe(0);
+});
+
 it('searches through the connected endpoint and attaches an immutable original-post reference', async () => {
   expect(await search()).toMatchObject([{ kind: 'bluesky', url: `https://bsky.app/profile/${buyer}/post/${uri.split('/').at(-1)}`, excerpt: text, reply: { uri, cid, authorDid: buyer } }]); expect(writes).toBe(0);
   expect(String(transport.mock.calls[0]![0])).toContain('since=');

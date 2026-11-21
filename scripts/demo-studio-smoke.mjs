@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import { readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { studioCommand as command } from '../apps/demo-studio/client.mjs';
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const initial=await command({action:'status'});
+assert.equal(initial.connected,false,'Close the existing demo session before running this check.');
+let session;
+try{
+  session=await command({action:'launch',title:'Lemonade demo studio check'});
+  assert.equal(session.saved,true);
+  let view=await command({action:'observe'});
+  assert.ok(view.width>=1100&&view.width<=1400,'Native expanded window width');
+  assert.ok(view.height>=650,'Native expanded window height');
+  const input=view.controls.find(c=>c.editable&&c.role==='textarea');assert.ok(input);
+  await command({action:'fill',ref:input.ref,revision:view.revision,text:'Fictional demo: plan a client workshop.'});
+  await assert.rejects(command({action:'click',ref:input.ref,revision:view.revision}),/Observe again/);
+  await command({action:'screenshot',title:'Lemonade with a fictional request, not submitted'});
+  await command({action:'record.start',title:'Navigate from chat to projects'});
+  await delay(1000);
+  view=await command({action:'observe'});
+  const projects=view.controls.find(c=>c.name==='Projects');assert.ok(projects);
+  await command({action:'click',ref:projects.ref,revision:view.revision});await delay(1200);
+  view=await command({action:'observe'});assert.match(view.text,/project/i);
+  const shot=await command({action:'screenshot',title:'Real Lemonade project workspace'});
+  await delay(700);const clip=await command({action:'record.stop'});
+  assert.ok(clip.asset.bytes>1000);assert.ok(clip.asset.frameCount>3);
+  assert.equal(createHash('sha256').update(await readFile(clip.asset.path)).digest('hex'),clip.asset.sha256);
+  assert.equal((await readFile(shot.asset.path)).subarray(1,4).toString(),'PNG');
+  await command({action:'note',text:'This check typed fictional text without submitting it, then navigated to Projects. No inference or publishing was performed.'});
+  const pack=await command({action:'export'});assert.ok(pack.saved);
+  const receipt={checkedAt:new Date().toISOString(),passed:true,sessionId:session.sessionId,viewport:{width:view.width,height:view.height},shot:shot.asset.path,clip:clip.asset.path,frames:clip.asset.frameCount,pack:pack.folder,checks:['real product launch','native expanded window','keyboard text input','stale reference rejection','real mouse navigation','PNG capture','MP4 recording','asset hash','durable script and manifest'],externalDeliveries:0};
+  await writeFile('data/demo-studio/smoke-receipt.json',JSON.stringify(receipt,null,2));console.log(JSON.stringify(receipt,null,2));
+}finally{if(session)await command({action:'close'});}

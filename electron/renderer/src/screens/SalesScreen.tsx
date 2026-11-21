@@ -11,9 +11,9 @@ import { ProspectWorkspace } from '../components/ProspectWorkspace.js';
 import { ProspectSource } from '../components/ProspectSource.js';
 
 type Act = (action: SalesAction) => Promise<void>;
-export function SalesScreen({ onToast }: { onToast: (message: string, kind?: 'ok' | 'warn') => void }) {
-  const [section, setSection] = useState<'prospects' | 'drafts' | 'conversations' | 'setup'>('prospects');
-  const [view, setView] = useState<SalesView | null>(null); const [business, setBusiness] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [edit, setEdit] = useState(''); const [showAll, setShowAll] = useState(false);
+export function SalesScreen({ onToast, initialProductId = '', initialSection = 'prospects' }: { initialProductId?: string; initialSection?: 'prospects' | 'drafts' | 'conversations' | 'setup'; onToast: (message: string, kind?: 'ok' | 'warn') => void }) {
+  const [section, setSection] = useState(initialSection);
+  const [view, setView] = useState<SalesView | null>(null); const [business, setBusiness] = useState(initialProductId); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [edit, setEdit] = useState(''); const [showAll, setShowAll] = useState(false);
   useEffect(() => { let active = true; const refresh = () => { void window.signal.sales().then(result => { if (active) { setView(result); setError(''); } }).catch(() => { if (active) setError('Could not load sales conversations.'); }); }; refresh(); const timer = setInterval(refresh, 4000); return () => { active = false; clearInterval(timer); }; }, []);
   const act: Act = async action => { setBusy(true); try { const result = await window.signal.salesAction(action); setView(result); const state = 'accountId' in action ? result.sources.find(s => s.accountId === action.accountId) : null; onToast(state?.detail ?? 'Sales workspace updated', state?.status === 'attention' ? 'warn' : 'ok'); if (action.type === 'configure' || action.type === 'remove-source') setEdit(''); } catch (err) { onToast(String(err), 'warn'); } finally { setBusy(false); } };
   if (!view) return <div className="page"><h1>Sales</h1><p role="status">{error || 'Loading sales conversations…'}</p></div>;

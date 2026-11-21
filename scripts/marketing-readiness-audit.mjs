@@ -21,6 +21,8 @@ try {
   const video = get('video.config') ?? {};
   report = {
     checkedAt, evidence: 'Installed owner database snapshot; saved connection status is not a fresh provider check.',
+    taskSummary: db.prepare('SELECT kind,status,count(*) AS total,max(updated_at) AS latestAt FROM growth_tasks GROUP BY kind,status').all(),
+    deliveryCoverage: 'Operations receipts cover actions performed or linked in Signal. Posts published manually or through another scheduler may be absent; compare account-level analytics before claiming no publishing.',
     runtime: { provider: runtime.provider, device: runtime.localDevice, autoStart: runtime.autoStart, dailyCallLimit: runtime.dailyCallLimit },
     video: { renderer: video.renderer, agentCloudEnabled: video.agentCloudEnabled, h3DailyBudgetUsd: video.h3DailyBudgetUsd },
     businesses: products.map(product => {
@@ -33,6 +35,7 @@ try {
       const assets = db.prepare('SELECT status FROM studio_assets WHERE product_id=?').all(product.id);
       const rows = snapshot.rows ?? [];
       const prospects = get('prospects.website.' + product.id) ?? {};
+      const discovery = get('operations.discovery.' + product.id);
       return {
         key: product.key, name: product.name, running: operation.running, dailyPublishLimit: operation.dailyLimit,
         destinations: (operation.accountIds ?? []).map(id => accounts.find(account => account.id === id)?.provider ?? 'unknown'),
@@ -40,6 +43,8 @@ try {
         leads: { total: leads.length, byStage: counts(leads, 'stage'), byPermission: counts(leads, 'permission'), overdueReminders: leads.filter(lead => lead.followUpAt && lead.followUpAt < Date.now()).length },
         assets: counts(assets, 'status'),
         campaigns: db.prepare('SELECT count(*) AS n FROM studio_campaigns WHERE product_id=?').get(product.id).n,
+        discovery: discovery ? { lastAttemptAt: iso(discovery.lastAttemptAt), searches: discovery.searches, observations: discovery.findings?.length ?? 0 } : null,
+        funnel: snapshot.funnel ?? null,
         recordedOutcomes: db.prepare('SELECT count(*) AS n FROM studio_outcomes WHERE product_id=?').get(product.id).n,
         deliveries: counts(settings.filter(row => row.key.startsWith('operations.delivery.') && row.value.productId === product.id).map(row => row.value), 'status'),
         analytics: { propertyId: analytics.propertyId, savedStatus: analytics.status, lastCompleteAt: iso(analytics.lastCompleteAt), startDate: snapshot.startDate, endDate: snapshot.endDate, sessions: rows.reduce((n, row) => n + row.sessions, 0), matchedCampaignRows: rows.filter(row => row.attribution === 'matched').length, limitations: snapshot.limitations },

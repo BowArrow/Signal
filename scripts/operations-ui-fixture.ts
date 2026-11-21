@@ -20,6 +20,7 @@ try {
   const account: ConnectedAccount = { id: 'fixture-website', productId: product.id, provider: 'signal-blog', label: 'Lemonade website (test fixture)', site: 'https://siplemona.de', username: '', identity: 'Offline fixture', status: 'verified', detail: 'Test fixture only; no credentials', checkedAt: Date.now(), expiresAt: null, refreshable: false, grantedScopes: [], createdAt: Date.now() };
   app.db.insert(settings).values({ key: `connections.account.${account.id}`, value: account }).run();
   app.db.insert(settings).values({ key: 'connections.account.fixture-blue', value: { ...account, id: 'fixture-blue', provider: 'bluesky', label: 'Bluesky publishing fixture', site: '', identity: 'fixture.bsky.social' } }).run();
+  app.db.insert(settings).values({ key: 'connections.account.fixture-ga4', value: { ...account, id: 'fixture-ga4', provider: 'ga4', label: 'Analytics reconnect fixture', site: '', status: 'attention', detail: 'Sign-in expired; reconnect this account.' } }).run();
   for (const publish of [true, false]) {
     const linked: ConnectedAccount = { ...account, id: 'fixture-linkedin-' + publish, provider: 'linkedin', site: '', label: publish ? 'LinkedIn publishing fixture' : 'LinkedIn read-only fixture', grantedScopes: publish ? ['openid', 'profile', 'w_member_social'] : ['openid', 'profile'] };
     app.db.insert(settings).values({ key: `connections.account.${linked.id}`, value: linked }).run();

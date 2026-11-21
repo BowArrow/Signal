@@ -41,6 +41,15 @@ beforeEach(async () => {
 });
 afterEach(async () => { await service.stop(); app.close(); vi.unstubAllEnvs(); __setConfigForTests(null); });
 const configure = (live = false) => service.configure(productId, { accountId, stripeProductIds: ['prod_lemonade'], since: clock.now() - 86400000, live });
+it('matches team campaign payment metadata only for the scoped business', async () => {
+  const other = connection.view().products[1]!.id;
+  app.db.insert(settings).values({ key: 'marketing.team.run.team-own', value: { id: 'team-own', productId } }).run();
+  app.db.insert(settings).values({ key: 'marketing.team.run.team-other', value: { id: 'team-other', productId: other } }).run();
+  campaign = 'team-own'; configure(); await service.sync(productId);
+  expect(service.payments(productId)[0]).toMatchObject({ campaignId: 'team-own', attribution: 'matched' });
+  campaign = 'team-other'; await service.sync(productId);
+  expect(service.payments(productId)[0]).toMatchObject({ campaignId: null, attribution: 'unknown' });
+});
 it('matches Stripe metadata to confirmed business-owned video deliveries without inferring attribution', async () => {
   app.videoPublishing = new VideoPublishingService(app, vault, () => { throw new Error('No video file reads during revenue sync.'); });
   const other = connection.view().products[1]!.id;

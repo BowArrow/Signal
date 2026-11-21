@@ -1,0 +1,35 @@
+{
+  "retrievedAt": "2026-10-22T18:07:46.009Z",
+  "files": [
+    {
+      "file": "ltx25-audio-to-video-official.json",
+      "sha256": "bcabfb983a6c4e5b4dfc9f4789f4522d8aa64076e34cb5b58791553389af252f"
+    },
+    {
+      "file": "qwen3-custom-voice.json",
+      "sha256": "8a4b3892a9bb41a0c2884dbb28815e48e7ea00563b76a1e5265c0fc062cfa7f7"
+    },
+    {
+      "file": "voice-overlay-api.json",
+      "sha256": "c51f713f0d353c53ca0eb4cda952c941be96458140c7e607eb950aca2f674745"
+    },
+    {
+      "file": "z-image-face-api.json",
+      "sha256": "4cbc00dd8fb4997917427ce56e9602bed8ef9d20ddf3f2f149fe96f339427014"
+    },
+    {
+      "file": "z-image-identity-lora-api.json",
+      "sha256": "6e393200b89c9cd6f0fe33a70327fe6974045143f30f22c8b0748ffef0fa8149"
+    },
+    {
+      "file": "z-image-turbo-official.json",
+      "sha256": "baaf937ff071970cc6b1e2fa0093a4dd664a4cc734d38adc4c7810e535c1f1d3"
+    }
+  ],
+  "sources": {
+    "z-image-turbo-official.json": "https://github.com/Comfy-Org/workflow_templates/blob/main/templates/image_z_image_turbo.json",
+    "qwen3-custom-voice.json": "https://github.com/DarioFT/ComfyUI-Qwen3-TTS/blob/main/example_workflows/custom_voice.json",
+    "ltx25-audio-to-video-official.json": "https://github.com/Lightricks/ComfyUI-LTXVideo/blob/master/example_workflows/2.5/LTX-2.5_A2V_Two_Stage_Distilled.json"
+  },
+  "executed": false
+}

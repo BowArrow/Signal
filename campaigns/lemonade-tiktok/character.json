@@ -1,0 +1,31 @@
+{
+    "id":  "alex-presenter-v1",
+    "name":  "Alex",
+    "fictional":  true,
+    "render":  "photoreal",
+    "specApproved":  true,
+    "faceApproved":  true,
+    "facePath":  "output/lemonade-tiktok/avatar/alex-face-v1.png",
+    "faceSha256":  "89968be1563b556afd29c9da7619e750f6372e5a0126cf900bf4edc139d147fd",
+    "outfitSpecApproved":  true,
+    "outfitImageApproved":  false,
+    "outfitPath":  "output/lemonade-tiktok/avatar/alex-outfit-v2.png",
+    "outfitSha256":  "d0a7bfffb97019b0ae07aed71a9ceb4537e91275b94fdfc4cbcdace76905b581",
+    "identity":  "Short dark wavy crop; warm medium skin; brown eyes; softly angular face; no permanent markings; calm dry humor.",
+    "wardrobe":  "Cropped espresso suede jacket, butter-yellow open-collar knit polo, ecru pleated relaxed trousers, dark brown belt, oxblood loafers, fine silver chain and slim rectangular watch; unbranded.",
+    "faceGeneration":  "Built-in image generation; approved by user. Not a Z-Image render or trained LoRA.",
+    "lora":  {
+                 "status":  "not-trained",
+                 "datasetPath":  "output/lemonade-tiktok/avatar/dataset",
+                 "filename":  "alex-presenter-v1.safetensors",
+                 "heldOutValidationRequired":  true,
+                 "trigger":  "alexpresenter_v1"
+             },
+    "wardrobeHistory":  [
+                            {
+                                "path":  "output/lemonade-tiktok/avatar/alex-outfit-v1.png",
+                                "sha256":  "299bb16a0df7ffb4040e1d9885b9397357490e2b98d60a8104a558a7ccfb7a77",
+                                "wardrobe":  "Charcoal crewneck, muted yellow open overshirt, dark trousers, charcoal shoes; unbranded."
+                            }
+                        ]
+}

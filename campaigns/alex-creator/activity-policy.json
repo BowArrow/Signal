@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "generationEnabled": true,
+  "timezone": "America/Los_Angeles",
+  "startInclusive": "00:00",
+  "endExclusive": "14:00",
+  "allowedBackgroundExecutables": [],
+  "status": "enabled-by-owner-2026-10-27",
+  "observedBlocker": null,
+  "requirements": [
+    "Midnight inclusive to 14:00 exclusive America/Los_Angeles; only one active console session",
+    "Complete process-name snapshot; recognized games and game streaming runtimes cause hold",
+    "Mouse, keyboard, browser use and a connected controller alone do not cause hold",
+    "Only owned generation descendants stop on detected game, window boundary, unknown process inventory, monitoring gap or clock jump"
+  ],
+  "stopPolicy": "Stop only the anonymous Job Object created for the stage. Keep completed receipts; interrupted jobs require inspection before retry. Do not remove stale locks without verifying their recorded PIDs exited.",
+  "activityMode": "games-only",
+  "detectionLimit": "Process-name markers identify recognized games, not every possible game. No protected executable paths, CIM, foreground or input queries are used.",
+  "crossSessionPolicy": "Require sole active console session. No cross-process session or executable-path queries."
+}

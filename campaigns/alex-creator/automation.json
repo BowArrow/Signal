@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "owner": "Fredward",
+  "account": "alexslightlybetter",
+  "metricoolBrandId": "7428314",
+  "timezone": "America/Los_Angeles",
+  "postsPerDay": 3,
+  "slots": [
+    "10:00",
+    "14:00",
+    "18:00"
+  ],
+  "slotPolicy": "Initial spaced experiment. Metricool timing data checked 2026-10-24; adapt from Alex's actual results after enough posts, not from a claim that these hours guarantee reach.",
+  "bufferPosts": 6,
+  "cycle": [
+    "entertainment",
+    "entertainment",
+    "practical-value",
+    "entertainment",
+    "entertainment",
+    "entertainment",
+    "entertainment",
+    "practical-value",
+    "entertainment",
+    "entertainment",
+    "commercial",
+    "entertainment",
+    "entertainment",
+    "practical-value",
+    "entertainment",
+    "entertainment",
+    "entertainment",
+    "commercial",
+    "entertainment",
+    "practical-value",
+    "entertainment"
+  ],
+  "cycleAnchor": "2026-10-24",
+  "authorization": {
+    "date": "2026-10-24",
+    "source": "Owner requested three daily videos, audience growth and product marketing, and designated Fredward with this Windows computer connected.",
+    "publish": true,
+    "paidSpend": false,
+    "delegateWorkOrCodex": false
+  },
+  "research": {
+    "scoutPerDay": 15,
+    "watchPerDay": 5,
+    "shortlist": 3,
+    "snapshotMaximumAgeHours": 48,
+    "sourceMaximumAgeDays": 14,
+    "minimumCreatorBaselinePosts": 5,
+    "breakoutMinimumViews": 10000,
+    "breakoutMinimumRelativeLift": 3,
+    "recheckAfterHours": 1,
+    "fallback": "original-test; never invent viral evidence"
+  },
+  "quality": {
+    "reviewer": "Fredward",
+    "required": [
+      "watchedEntireVideo",
+      "identity",
+      "eyes",
+      "mouthSync",
+      "hands",
+      "warmDelivery",
+      "roomContinuity",
+      "exactSpeech",
+      "captions",
+      "disclosures"
+    ],
+    "onFailure": "hold and revise; never lower guidance to fill a slot"
+  },
+  "production": {
+    "profile": "guided_speech_high",
+    "gpuJobsAtOnce": 1,
+    "maximumNewJobsPerDay": 3,
+    "authorizedBatch": {
+      "id": "alex-original-12-2026-10-25",
+      "maximumJobs": 12,
+      "mode": "modeled",
+      "authorization": "Owner requested twelve original videos. One bounded batch; posting remains capped at three daily. Generation hold remains in force."
+    },
+    "skipWhileGamesRunning": true,
+    "buildAheadDays": 2,
+    "retryPolicy": "Persist each completed stage. No automatic retry after an uncertain external publish."
+  },
+  "measurement": {
+    "checkpointsHours": [
+      24,
+      72,
+      168
+    ],
+    "minimumPostsForComparison": 5,
+    "minimumViewsForComparison": 100,
+    "compareAtHours": 24,
+    "compareMaximumAgeHours": 48,
+    "commercial": [
+      "trackedVisits",
+      "trials",
+      "purchases",
+      "netRevenueUsd"
+    ],
+    "unknownMetrics": "null; never turn unavailable values into zero"
+  },
+  "publishing": {
+    "transport": "Fredward's connected Metricool plugin plus authorized local-file upload UI",
+    "aiGeneratedLabel": true,
+    "accountMustMatch": "alexslightlybetter",
+    "onMissedSlot": "skip expired slots; do not flood catch-up posts",
+    "noDuplicates": "One video hash and script per account, persisted attempt before scheduling, reconcile uncertain attempts before retrying."
+  },
+  "scheduleStatus": "prepared-not-yet-confirmed-by-Fredward",
+  "localWorker": {
+    "taskName": "Signal-Alex-Production-Worker",
+    "installed": true,
+    "enabled": false,
+    "disabledByOwnerOn": "2026-10-25",
+    "disabledReason": "Owner requested stopping the recurring console popups. Do not re-enable the background worker without a new owner request.",
+    "intervalMinutes": 30,
+    "lastSmokeExitCode": 0,
+    "validation": "Real Task Scheduler execution completed successfully with the existing chair waiting for review and no new queued GPU job.",
+    "computerRequirement": "Windows signed in and awake. No wake timer or power settings changed."
+  }
+}

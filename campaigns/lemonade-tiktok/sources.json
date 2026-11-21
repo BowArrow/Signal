@@ -1,0 +1,31 @@
+[
+  {
+    "id": "self-help-ad",
+    "url": "https://ads.tiktok.com/business/creativecenter/topads/7603066824532295681/mobile/en?countryCode=US&period=30",
+    "title": "Self-Help is BROKEN!",
+    "creator": "Not established from accessible page",
+    "region": "Not verified; query URL requests US but does not establish ad region",
+    "kind": "paid-ad",
+    "publishedAt": null,
+    "discoveredAt": "2026-10-22T18:07:46.009Z",
+    "observations": [
+      {
+        "at": "2026-10-22T18:07:46.009Z",
+        "views": null,
+        "likes": 1000,
+        "comments": 3,
+        "shares": 4,
+        "evidence": "Search-index snapshot of TikTok Top Ads. Likes displayed as 1K, rounded. Crawl reported last month. Direct video and current metrics unavailable; observation time is research date, not metric freshness.",
+        "method": "search-index"
+      }
+    ],
+    "baselineViews": [],
+    "contentReviewed": false,
+    "hook": "Caption suggests a contrarian statement about self-improvement.",
+    "structure": "Unknown until video playback is inspected.",
+    "payoff": "Unknown until video playback is inspected.",
+    "buyerFit": 0.35,
+    "reproducibility": 0.5,
+    "notes": "Research lead only. Do not claim current organic virality or copy its script. The three launch pilots are original tests, not modeled from this unwatched ad."
+  }
+]

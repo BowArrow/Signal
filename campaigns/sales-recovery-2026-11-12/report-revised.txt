@@ -1,0 +1,8 @@
+SYNTHETIC DEMO DATA — not a real company or customer.
+Northstar service report — revised — October 2026
+Completed requests: 120.
+Average response time: 6 hours.
+Outstanding requests: 9.
+Coverage: Monday through Friday.
+Correction note: The baseline omitted 20 completed requests.
+No figures for revenue, margin, headcount or customer satisfaction are provided.

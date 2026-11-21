@@ -13,6 +13,11 @@ import type { LlmClient } from '../../src/core/llm/client.js';
 import type { Delivery, DeliveryInput } from '../../src/shared/operations.js';
 import { reviewOperationCopy } from '../../src/core/operations/review.js';
 import { reviewFixture } from './review-fixture.js';
+import { saveTeamRun, teamAction, teamRun, tickTeamExecution, teamViews } from '../../src/core/marketing/team-store.js';
+import { TEAM_ROLES, type TeamRun } from '../../src/shared/marketing-team.js';
+import { codexGuideTaskIds } from '../../src/core/marketing/mission.js';
+import { campaignAgentReady } from '../../src/core/marketing/team-client.js';
+import { recordTeamWorker } from '../../src/core/marketing/team-monitor.js';
 
 it.each(['plain', 'help-only', 'generic', 'missing'])('requires an explicit conversation-voice verdict for public replies: %s', async mode => {
   start(); const id = task(); observed();
@@ -61,6 +66,77 @@ function task() { const id = operations.state(product).taskId!; app.db.update(gr
 function observed() { app.db.insert(marketingToolCalls).values({ id: newId(), productId: product, taskId: operations.state(product).taskId!, name: 'product.inspect', status: 'done', result: JSON.stringify({ url: 'https://siplemona.de/', body: 'Current source text.' }), createdAt: clock.now() }).run(); }
 function queue() { const id = task(); observed(); return operations.enqueue(product, id, copy()).id; }
 function saveJob(job: Delivery) { app.db.update(settings).set({ value: job }).where(eq(settings.key, `operations.delivery.${job.id}`)).run(); }
+
+function preparedTeam() {
+  operations.configure(product, { objective: 'Help buyers verify local document answers.', accountIds: [accountId], intervalHours: 1, dailyLimit: 2 });
+  const run: TeamRun = { id: 'approved-team', productId: product, status: 'review', revision: 1, createdAt: clock.now(), updatedAt: clock.now(), feedback: '', evidence: [], brief: { objective: 'Show how to verify the source of a local document answer.', audience: 'Document researchers', offer: 'Try a supported document workflow', constraints: 'No spending. No invented claims.', references: [] }, steps: TEAM_ROLES.map(r => ({ role: r.id, taskId: null, status: 'done', draftId: null, error: null, artifact: { status: 'ready', title: r.name, summary: r.job, body: 'Show a local document question and check its supporting passage.', evidenceIds: ['fixture'], nextAction: 'Execute within the approved destinations.', draft: null, experiment: null } })) };
+  saveTeamRun(app, run); return run;
+}
+function approveTeam(run: TeamRun) { return teamAction(app, product, { command: 'approve', runId: run.id, operationRevision: operations.state(product).revision, durationDays: 7 }); }
+it('edits campaign scope without losing specialist work or bypassing the new approval', () => {
+  const run = preparedTeam(); approveTeam(run); operations.schedule(); const old = operations.state(product); const originalTask = old.taskId!;
+  teamAction(app, product, { command: 'update-settings', runId: run.id, expectedRevision: run.revision, operationRevision: old.revision, value: { accountIds: [accountId], dailyLimit: 1, intervalHours: 12, durationDays: 4 } });
+  const edited = teamRun(app, product, run.id);
+  expect(edited.status).toBe('review'); expect(edited.execution).toBeUndefined(); expect(edited.steps).toEqual(run.steps); expect(edited.launchDurationDays).toBe(4);
+  expect(operations.state(product)).toMatchObject({ running: false, dailyLimit: 1, intervalHours: 12 });
+  expect(app.db.select().from(growthTasks).where(eq(growthTasks.id, originalTask)).get()?.status).toBe('cancelled');
+  expect(() => teamAction(app, product, { command: 'update-settings', runId: run.id, expectedRevision: edited.revision, operationRevision: old.revision, value: { accountIds: [accountId], dailyLimit: 1, intervalHours: 12, durationDays: 4 } })).toThrow('settings changed');
+});
+it('shows a completed no-fit check as research waiting rather than publication or active generation', () => {
+  const run = preparedTeam(); approveTeam(run); operations.schedule(); recordTeamWorker(app, true);
+  app.db.update(growthTasks).set({ status: 'done', output: { acquisition: 'no-fit', summary: 'No observed request needed the supported product workflow.' } }).where(eq(growthTasks.id, operations.state(product).taskId!)).run();
+  const state = operations.state(product);
+  app.db.update(settings).set({ value: { ...state, mode: 'acquisition' } }).where(eq(settings.key, 'operations.policy.' + product)).run();
+  vi.spyOn(operations, 'readiness').mockReturnValue({ productId: product, ready: true, blockers: [], activities: [], needsAgents: true });
+  const view = teamViews(app).find(r => r.id === run.id)!;
+  expect(view.monitor.state).toBe('waiting'); expect(view.monitor.headline).toContain('suitable buyer');
+  expect(view.monitor.activity.some(a => a.detail.includes('No observed request'))).toBe(true); expect(view.outcomes.published).toBe(0);
+});
+it('starts an already approved legacy packet without rerunning its specialists', () => {
+  const run = preparedTeam(); run.status = 'approved'; saveTeamRun(app, run);
+  approveTeam(run); expect(teamRun(app, product, run.id).execution?.status).toBe('active');
+  expect(teamRun(app, product, run.id).steps).toEqual(run.steps);
+});
+it('starts once after campaign approval, automatically humanizes and reviews copy, publishes and links receipts across restart', async () => {
+  const run = preparedTeam(); operations.schedule(); expect(operations.state(product).taskId).toBeNull(); expect(writes).toBe(0);
+  approveTeam(run); const revision = operations.state(product).revision; approveTeam(run); expect(operations.state(product).revision).toBe(revision);
+  app.db.insert(settings).values({ key: `marketing.codex.${product}`, value: { model: 'codex-fixture' } }).run();
+  operations = new OperationsService(app); app.operations = operations; tickTeamExecution(app); operations.schedule();
+  expect(campaignAgentReady(app, product, false)).toBe(true);
+  expect(codexGuideTaskIds(app)).toContain(operations.state(product).taskId);
+  let attempts = 0;
+  const llm: LlmClient = { available: () => ({ ready: true }), complete: async request => {
+    let value: unknown;
+    if (request.task === 'operations.review') { expect(request.prompt).toContain('HUMANIZER EDITING PASS'); value = { ...reviewFixture(request), campaignFit: { withinScope: true, explanation: 'The document task matches the approved experiment.' }, voice: { fitsConversation: true, plainLanguage: true, explanation: 'Concrete document advice fits the audience and channel.' } }; }
+    else { attempts++; expect(request.prompt).toContain('approvedCampaign'); expect(request.prompt).toContain(run.brief.objective); expect(request.prompt).toContain('HUMANIZER EDITING PASS'); value = { message: 'Queue reviewed campaign copy.', actions: [{ tool: 'operations.enqueue', input: { ...copy(), body: (attempts === 1 ? 'Great question! ' : '') + copy().body } }] }; }
+    return { text: JSON.stringify(value), model: 'fixture', inputTokens: 0, outputTokens: 0, stopReason: 'stop' };
+  } };
+  await new GrowthEngine(app, llm).runNext(['marketing']);
+  expect(attempts).toBeGreaterThan(1); expect(operations.deliveries()).toHaveLength(1);
+  await operations.tick(); tickTeamExecution(app);
+  expect(writes).toBe(1); expect(operations.deliveries()[0]).toMatchObject({ teamRunId: run.id, status: 'published' });
+  expect(teamViews(app).find(r => r.id === run.id)?.outcomes?.published).toBe(1);
+  await operations.tick(); expect(writes).toBe(1);
+});
+it('honors pause, expiry, scope changes and cancellation without a second routine approval', () => {
+  const run = preparedTeam(); approveTeam(run); operations.schedule(); const originalTask = operations.state(product).taskId!;
+  teamAction(app, product, { command: 'pause', runId: run.id }); tickTeamExecution(app);
+  expect(operations.state(product).running).toBe(false); expect(app.db.select().from(growthTasks).where(eq(growthTasks.id, originalTask)).get()?.status).toBe('cancelled');
+  expect(() => operations.run(product)).toThrow('Marketing team');
+  teamAction(app, product, { command: 'resume', runId: run.id }); expect(operations.state(product).running).toBe(true);
+  clock.advance(7 * 86400000); expect(operations.state(product).running).toBe(false); tickTeamExecution(app);
+  expect(teamRun(app, product, run.id).execution?.status).toBe('complete'); expect(() => operations.run(product)).toThrow('ended');
+});
+it('rejects stale or offline approval and never resurrects manually changed operating scope', () => {
+  const run = preparedTeam(); const revision = operations.state(product).revision;
+  expect(() => teamAction(app, product, { command: 'approve', runId: run.id, operationRevision: revision - 1, durationDays: 7 })).toThrow('changed');
+  app.env.SIGNAL_OFFLINE = '1'; expect(() => approveTeam(run)).toThrow('offline'); expect(teamRun(app, product, run.id).status).toBe('review');
+  app.env.SIGNAL_OFFLINE = '0'; approveTeam(run);
+  operations.configure(product, { objective: 'A different campaign objective.', accountIds: [accountId], intervalHours: 24, dailyLimit: 1 }); tickTeamExecution(app);
+  expect(teamRun(app, product, run.id).execution?.status).toBe('paused');
+  expect(() => teamAction(app, product, { command: 'resume', runId: run.id })).toThrow('scope changed'); expect(operations.state(product).running).toBe(false);
+  teamAction(app, product, { command: 'cancel', runId: run.id }); expect(teamRun(app, product, run.id).status).toBe('cancelled');
+});
 
 async function linkedIn(scopes = ['openid', 'profile', 'w_member_social']) {
   transport.mockImplementation(async (url, init) => {

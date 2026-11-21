@@ -9,6 +9,14 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['apps/demo-studio/**/*.mjs', 'apps/avatar-marketing/**/*.mjs', 'scripts/demo-studio-*.mjs'],
+    languageOptions: { globals: { console: 'readonly', process: 'readonly', Buffer: 'readonly', WebSocket: 'readonly', URL: 'readonly', URLSearchParams:'readonly',FormData:'readonly',Blob:'readonly',AbortSignal: 'readonly', fetch: 'readonly', setTimeout: 'readonly', clearTimeout: 'readonly' } },
+  },
+  {
+    files: ['apps/demo-studio/ui/*.js'],
+    languageOptions: { globals: { document: 'readonly', fetch: 'readonly', URL: 'readonly', URLSearchParams: 'readonly', location: 'readonly', history: 'readonly', navigator: 'readonly', setInterval: 'readonly' } },
+  },
+  {
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],

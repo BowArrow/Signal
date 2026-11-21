@@ -1,17 +1,31 @@
 import { and, eq, or } from 'drizzle-orm';
 import type { App } from '../app.js';
-import { engineeringRequests, marketingCash, marketingCommitments, marketingDrafts, marketingEdges, marketingMemory, marketingWorkflows } from '../db/schema.js';
+import { engineeringRequests, marketingCash, marketingCommitments, marketingDrafts, marketingEdges, marketingMemory, marketingWorkflows, settings } from '../db/schema.js';
 import { marketingActionSchema } from '../../shared/marketing.js';
 import { newId } from '../lib/id.js';
 import { budget, initializeMarketing, marketingView, queueMarketing, remember, requireProduct, saveMarketingSettings } from './store.js';
 import { parseWorkflow, submitMedia } from './comfy.js';
+import { connectCodex, queueMissionReview, saveMission } from './mission.js';
+import { teamAction } from './team-store.js';
 
 export async function marketingAction(app: App, input: unknown) {
   initializeMarketing(app);
   const action = marketingActionSchema.parse(input);
   if (action.type === 'settings') { saveMarketingSettings(app, action.value); return marketingView(app); }
   requireProduct(app, action.productId);
-  if (action.type === 'chat' || action.type === 'cycle') {
+  if (action.type === 'team') teamAction(app, action.productId, action.action);
+  else if (action.type === 'connect-codex') await connectCodex(app, action.productId);
+  else if (action.type === 'mission') saveMission(app, action.productId, action.value);
+  else if (action.type === 'mission-review') queueMissionReview(app, action.productId);
+  else if (action.type === 'guide-plan') {
+    app.db.insert(settings).values({ key: `marketing.guide-plan.${action.productId}`, value: action.value, updatedAt: app.clock.now() })
+      .onConflictDoUpdate({ target: settings.key, set: { value: action.value, updatedAt: app.clock.now() } }).run();
+  } else if (action.type === 'guide-chat') {
+    app.db.transaction(() => {
+      const id = queueMarketing(app, action.productId, action.message);
+      app.db.insert(settings).values({ key: `marketing.guide-task.${id}`, value: true, updatedAt: app.clock.now() }).run();
+    });
+  } else if (action.type === 'chat' || action.type === 'cycle') {
     queueMarketing(app, action.productId, action.type === 'chat' ? action.message : 'Run a practical zero-cash marketing cycle. Review current product facts and memory, create one useful draft or engineering request, and explain what changed.');
   } else if (action.type === 'memory') remember(app, action.productId, action.value);
   else if (action.type === 'forget') {

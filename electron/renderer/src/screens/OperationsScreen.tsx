@@ -12,11 +12,11 @@ import { SectionTabs } from '../components/SectionTabs.js';
 import type { ScreenKey } from '../components/Sidebar.js';
 import { buyerIntent } from '../../../../src/shared/buyer-intent.js';
 
-export function OperationsScreen({ onToast, onNavigate }: { onNavigate?: (screen: ScreenKey) => void; onToast: (message: string, kind?: 'ok' | 'warn') => void }) {
-  const [section, setSection] = useState<'overview' | 'research' | 'conversations' | 'deliveries' | 'settings'>('overview');
+export function OperationsScreen({ onToast, onNavigate, initialProductId = '', initialSection = 'overview' }: { initialProductId?: string; initialSection?: 'overview' | 'research' | 'conversations' | 'deliveries' | 'settings'; onNavigate?: (screen: ScreenKey) => void; onToast: (message: string, kind?: 'ok' | 'warn') => void }) {
+  const [section, setSection] = useState(initialSection);
   const [view, setView] = useState<OperationsView | null>(null);
   const request = useRef(0); const [starting, setStarting] = useState<string | null>(null);
-  const [business, setBusiness] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  const [business, setBusiness] = useState(initialProductId); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
   useEffect(() => { let disposed = false; const refresh = () => { void window.signal.operations().then(next => { if (!disposed) { setView(next); setError(''); } }).catch(() => { if (!disposed) setError('Could not load the operation.'); }); }; refresh(); const timer = setInterval(refresh, 3000); return () => { disposed = true; clearInterval(timer); }; }, []);
   const act = async (action: OperationAction) => {
     const id = ++request.current; setBusy(true); setStarting(action.type === 'run' ? action.productId : null);

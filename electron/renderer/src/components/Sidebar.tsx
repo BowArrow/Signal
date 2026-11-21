@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 
 export type ScreenKey =
+  | 'team'
+  | 'guide'
   | 'sales'
   | 'revenue'
   | 'analytics'
@@ -29,6 +31,8 @@ interface NavEntry {
 }
 
 export const NAV: readonly NavEntry[] = [
+  { key: 'guide', label: 'My marketer', icon: 'ph-compass' },
+  { key: 'team', label: 'Marketing team', icon: 'ph-users-three' },
   { key: 'sales', label: 'Sales', icon: 'ph-envelope' },
   { key: 'revenue', label: 'Revenue', icon: 'ph-chart-line-up' },
   { key: 'analytics', label: 'Analytics', icon: 'ph-chart-bar' },
@@ -57,6 +61,7 @@ interface SidebarProps {
 }
 
 const GROUPS: { label: string; keys: ScreenKey[] }[] = [
+  { label: 'Start here', keys: ['guide', 'team'] },
   { label: 'Work', keys: ['operations', 'sales', 'queue'] },
   { label: 'Create', keys: ['studio', 'creative', 'marketing'] },
   { label: 'Measure', keys: ['analytics', 'revenue'] },
@@ -107,8 +112,8 @@ export function Sidebar({
       </nav>
 
       <div className="sidebar-footer">
-        <p>Marketing, with a record.</p>
-        <span>Activity in Operations. Outcomes in Revenue.</span>
+        <p>A next step, with a reason.</p>
+        <span>Return to My marketer whenever you need direction.</span>
       </div>
     </aside>
   );

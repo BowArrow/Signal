@@ -1,0 +1,11 @@
+{
+  "profile": "quality_temporal",
+  "duration": 6,
+  "validationOnly": true,
+  "image": "output/alex-creator/alex-room-video-v1.png",
+  "imageSha256": "e8137ad11dc12d3750432f58ee2db398c0d64c6d3e8eb7a3ea610e59c344a142",
+  "audio": "output/alex-creator/voice/the-chair/ryan-42.wav",
+  "audioSha256": "d70ccc0a9817c9c4447a185c1ac236d50a7cc97377287b3519cc27f0076e1f40",
+  "seed": 42,
+  "prompt": "A natural phone-camera video of the same man speaking directly to the viewer in his home workspace. Preserve his exact face, dark wavy hair, espresso suede jacket and yellow knit polo. He speaks the supplied dialogue with natural lip movements synchronized to the audio, an amused questioning expression, a small eyebrow lift and restrained conversational head movements. His lips rest naturally during pauses. He blinks occasionally. His shoulders move subtly with breath; his hands stay below frame. The window and walnut desk remain camera-left; the bookshelf, plants and olive sofa remain camera-right. Soft daylight from camera-left, natural skin texture, gentle shadows. Eye-level stationary camera, normal lens perspective, one continuous real-time shot, no cuts or zoom. Stable room geometry and facial proportions, no text or graphics."
+}

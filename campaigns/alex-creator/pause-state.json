@@ -1,0 +1,27 @@
+{
+  "status": "resumed-by-user",
+  "at": "2026-10-23T01:57:43.088846+00:00",
+  "renderFolder": "output\\alex-creator\\renders\\alex-2e911e6c-22a4-4d7f-8a54-b44eb4efa275",
+  "completedSamplingSteps": 5,
+  "totalSamplingSteps": 30,
+  "resumeRequiresRestart": true,
+  "completedVideo": false,
+  "manifest": "campaigns/alex-creator/speaking-tripod-high-check.json",
+  "reference": "output/alex-creator/alex-room-video-v2-tripod.png",
+  "voice": "output/alex-creator/voice/the-chair/ryan-42.wav",
+  "audioProfile": "campaigns/alex-creator/room-audio-v2.json",
+  "residentWorkingSetGiB": 1,
+  "qualityApproved": false,
+  "published": false,
+  "notes": [
+    "Camera/framing, engaged facial expression and restrained hand gestures are in the revised prompt.",
+    "Native 768x1344, 30 guided steps and temporal decode 128/32 remain configured.",
+    "First attempt stopped on Windows status-file collision; bounded reporting retry fix passed three regression tests and a live allocation-limit check.",
+    "Second attempt stopped below the unchanged 6-GiB RAM reserve.",
+    "Third attempt reduced resident working set to 1 GiB. User closed unused apps and free RAM recovered to over 12 GiB.",
+    "Third attempt stopped at user request; no latent checkpoint exists. Do not auto-restart."
+  ],
+  "resumedAt": "2026-10-23T18:33:21.659007+00:00",
+  "resumeAuthorization": "User: Looks good you can continue the work now",
+  "resumedRenderFolder": "output/alex-creator/renders/alex-2060a18a-f35b-4d50-b495-ab27146b9479"
+}

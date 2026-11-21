@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-10-22",
+  "cameraControl": {
+    "source": "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Static",
+    "finding": "Official static-camera adapter targets the older LTX-2 19B base. Compatibility with the current 22B 2.5 transformer has not been established here.",
+    "installed": false,
+    "decision": "Do not silently load an adapter for a different base model. First review the revised tripod reference and explicit locked-camera prompt."
+  },
+  "detailRefinement": {
+    "source": "https://huggingface.co/Lightricks/LTX-2.5-22b-IC-LoRA-Refine-Details",
+    "finding": "Official 2.5 distilled video-to-video refinement adapter uses frame-aligned conditioning, tiled fusion and an optional spatially aligned identity reference. It is not trained for audio generation.",
+    "installed": false,
+    "decision": "Potential subsequent experiment if the native high-resolution take still loses eye texture. Requires a separately verified workflow and local resource qualification; do not describe it as an installed or tested fix."
+  }
+}

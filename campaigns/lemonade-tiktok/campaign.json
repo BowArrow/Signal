@@ -1,0 +1,42 @@
+{
+    "id":  "lemonade-alex-launch",
+    "market":  "US",
+    "offer":  "Lemonade",
+    "objective":  "Qualified trial downloads and attributable purchases from original TikTok content modeled on observed successful formats.",
+    "research":  {
+                     "creativeCenter":  "https://ads.tiktok.com/creative/creativeCenter/trends/video?period=7\u0026region=US",
+                     "queries":  [
+                                     "AI productivity documents",
+                                     "office work files funny",
+                                     "private AI on your computer",
+                                     "spreadsheet mistakes",
+                                     "AI tools actually useful"
+                                 ],
+                     "cadence":  "Each production cycle: scout 10-20 candidates, watch 5, shortlist 3, model 1. Recheck metrics before production. No schedule installed.",
+                     "windowDays":  14,
+                     "snapshotMaximumAgeHours":  48,
+                     "breakoutHeuristic":  "Organic post with at least 10,000 views and at least 3 times the median views of 5 comparable recent posts from its creator; hypothesis for prioritization, not a promise of virality.",
+                     "modeling":  [
+                                      "Capture source URL, creator, upload date, region, observed metrics and observation time.",
+                                      "Separate paid ads, organic posts and editorial examples.",
+                                      "Watch the opening, annotate beats and payoff, and record the viewer motivation.",
+                                      "Preserve the attention mechanism; change the situation, script, visual execution and payoff to a Lemonade-specific demonstration.",
+                                      "Check that the twist naturally serves a buyer problem before scripting.",
+                                      "Use an original-test label when current breakout evidence is unavailable."
+                                  ]
+                 },
+    "publishing":  {
+                       "enabled":  false,
+                       "aiLabel":  true,
+                       "commercialDisclosure":  "Your brand / Promotional content",
+                       "music":  "Original licensed audio or Commercial Music Library",
+                       "approval":  "Review rendered video, claims, voice, captions and destination before publishing."
+                   },
+    "experiment":  {
+                       "durationDays":  14,
+                       "cadence":  "Evaluate reviewed Lemonade product slots within the creator calendar; the three prepared scripts are alternatives, not three consecutive launch posts.",
+                       "success":  "Compare qualified visits, trials and purchases alongside retention. Do not select winners on views alone."
+                   },
+    "accountProfile":  "campaigns/alex-creator/account.json",
+    "role":  "First product campaign on Alex creator account; not the account identity or full editorial calendar."
+}

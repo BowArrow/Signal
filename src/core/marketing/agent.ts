@@ -1,3 +1,4 @@
+import { approvedCampaignContext } from './team-runtime.js';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { App } from '../app.js';
@@ -11,11 +12,14 @@ import { dashboard, applyGrowthAction, queueTask } from '../growth/store.js';
 import { modelContext } from '../growth/context.js';
 import { newId } from '../lib/id.js';
 import { loadPrompt } from '../prompts/loader.js';
-import { engineeringRequests, growthTasks, marketingDrafts, marketingEdges, marketingMemory, marketingMessages, marketingToolCalls, marketingWorkflows, opportunities } from '../db/schema.js';
+import { engineeringRequests, growthTasks, marketingDrafts, marketingEdges, marketingMemory, marketingMessages, marketingToolCalls, marketingWorkflows, opportunities, settings } from '../db/schema.js';
 import { draftInputSchema, memoryInputSchema } from '../../shared/marketing.js';
-import { addEngineeringRequest, budget, hasPendingMedia, initializeMarketing, marketingSettings, recall, remember, requireProduct } from './store.js';
+import { addEngineeringRequest, budget, guidePlan, hasPendingMedia, initializeMarketing, marketingSettings, recall, remember, requireProduct } from './store.js';
 import { comfyStatus, submitMedia } from './comfy.js';
-import { publicPage, searchWeb } from './web.js';
+import { publicPage } from './web.js';
+import { findBusinessPages } from '../sales/prospect-research.js';
+import { salesDiagnosis } from './sales-diagnosis.js';
+import { assertRecoveryActive, validateRecoveryDraft } from './acquisition-recovery.js';
 import { blogRequest } from './blog.js';
 import { brandProfile, studioAction, studioView } from '../studio/store.js';
 import { briefSchema } from '../../shared/studio.js';
@@ -24,8 +28,11 @@ import { operationAgentSchema } from '../operations/agent-schema.js';
 import { campaignFeedback, clearRecoveredFinding, rememberCampaignRejection } from '../operations/feedback.js';
 import { NATURAL_VOICE } from './voice.js';
 import { buyerIntent, CONSULTATIVE_REPLY } from '../../shared/buyer-intent.js';
+import { CodexClient } from '../llm/codex.js';
+import { codexConnection, isCodexGuideTask, missionView, reserveCodexCall } from './mission.js';
+import { demoStudioCommand } from './demo-studio.js';
 
-const tools = ['operations.enqueue', 'memory.search', 'memory.remember', 'memory.link', 'product.inspect', 'web.read', 'web.search', 'signals.find', 'engineering.add', 'draft.save', 'blog.read', 'blog.save', 'bullseye.research', 'bullseye.shortlist', 'opportunities.process', 'media.status', 'media.create', 'video.status', 'video.create', 'video.assemble', 'campaign.list', 'campaign.create', 'accounts.list', 'accounts.preview'] as const;
+const tools = ['demo.status', 'demo.command', 'operations.enqueue', 'memory.search', 'memory.remember', 'memory.link', 'product.inspect', 'web.read', 'web.search', 'signals.find', 'engineering.add', 'draft.save', 'blog.read', 'blog.save', 'bullseye.research', 'bullseye.shortlist', 'opportunities.process', 'media.status', 'media.create', 'video.status', 'video.create', 'video.assemble', 'campaign.list', 'campaign.create', 'accounts.list', 'accounts.preview'] as const;
 const stepSchema = z.object({ message: z.string().min(1).max(6000), actions: z.array(z.object({ tool: z.enum(tools), input: z.record(z.unknown()) })).max(3) });
 const outputSchema = { type: 'object', additionalProperties: false, required: ['message', 'actions'], properties: {
   message: { type: 'string', maxLength: 600 },
@@ -34,7 +41,15 @@ const outputSchema = { type: 'object', additionalProperties: false, required: ['
 
 export async function executeMarketingTool(app: App, productId: string, name: typeof tools[number], input: Record<string, unknown>, signal: AbortSignal, taskId?: string): Promise<unknown> {
   signal.throwIfAborted();
+  if (taskId) assertRecoveryActive(app, productId, taskId);
+  const recovering = taskId && app.db.select().from(settings).where(eq(settings.key, `marketing.recovery-task.${taskId}`)).get();
+  if (recovering && !['demo.status', 'memory.search', 'product.inspect', 'web.read', 'web.search', 'signals.find', 'draft.save', 'campaign.list', 'accounts.list', 'blog.read'].includes(name)) throw new Error('Acquisition recovery can only read evidence and save a draft.');
+  const coaching = taskId && app.db.select().from(settings).where(eq(settings.key, `marketing.guide-task.${taskId}`)).get();
+  if (coaching && !['demo.status', 'demo.command', 'memory.search', 'product.inspect', 'web.read', 'web.search', 'signals.find', 'draft.save', 'campaign.list', 'accounts.list', 'blog.read', 'engineering.add'].includes(name)) {
+    throw new Error('My marketer can research, explain and save drafts. Publishing, sending, paid generation and changing automation require their dedicated review screens.');
+  }
   const product = requireProduct(app, productId);
+  if (name === 'demo.status' || name === 'demo.command') return demoStudioCommand(product.key, name === 'demo.status' ? { action: 'status' } : input, signal, app.env);
   if (name === 'operations.enqueue') {
     if (!app.operations || !taskId) throw new Error('Operations require an active desktop operating cycle.');
     return app.operations.enqueue(productId, taskId, input);
@@ -80,7 +95,7 @@ export async function executeMarketingTool(app: App, productId: string, name: ty
     const memoryId = remember(app, productId, { title: page.title.slice(0, 200), body: page.body.slice(0, 4000) || 'Page returned no readable text.', kind: 'observation', source: page.url, confidence: 0.75 });
     return { ...page, memoryId };
   }
-  if (name === 'web.search') return searchWeb(app, string('query'));
+  if (name === 'web.search') return { available: true, urls: await findBusinessPages(app, string('query'), signal), boundary: 'Search leads only. Read the source before citing buyer evidence; search results do not grant contact permission.' };
   if (name === 'signals.find') {
     const query = string('query').toLowerCase();
     const stop = new Set(['the', 'and', 'for', 'with', 'how', 'what', 'user', 'users', 'need', 'needs', 'pain', 'points', 'workflow', 'marketing', 'challenge', 'challenges']);
@@ -95,6 +110,7 @@ export async function executeMarketingTool(app: App, productId: string, name: ty
   if (name === 'engineering.add') return addEngineeringRequest(app, productId, input);
   if (name === 'draft.save') {
     const value = draftInputSchema.parse(input);
+    if (recovering) validateRecoveryDraft(app, productId, taskId!, value);
     if (['article', 'demo'].includes(value.kind) && value.body.length < 350) throw new Error('Save the finished artifact, not a teaser or plan. An article needs useful explanatory paragraphs; a demo needs concrete steps, narration, verification and a call to action.');
     if (/still building out|still building (?:some |these )?features|(?:can't|cannot) promise specific performance claims|as an AI|game.changer|revolutionary/iu.test(value.body)) throw new Error('Revise the voice: remove hype, internal drafting caveats and unsupported claims that product features are unfinished. Give a concrete useful answer from the supplied facts.');
     if (/\b(as a satisfied customer|I bought|I purchased|I have been using)\b/i.test(value.body)) throw new Error('Remove invented personal/customer experience from the draft');
@@ -136,8 +152,10 @@ export async function executeMarketingTool(app: App, productId: string, name: ty
 export async function runMarketingAgent(app: App, productId: string, taskId: string, targetId: string, signal: AbortSignal, testLlm?: LlmClient): Promise<Record<string, unknown>> {
   initializeMarketing(app);
   const product = requireProduct(app, productId);
-  const operatorModel = agentModel(app, 'marketing');
-  const llm = testLlm ?? new RecordingLlmClient(agentClient(app, signal), app.db, runtimeSettings(app).provider, app.clock);
+  const codex = isCodexGuideTask(app, productId, taskId) ? codexConnection(app, productId) : undefined;
+  const operatorModel = codex?.model ?? agentModel(app, 'marketing');
+  const llm = testLlm ?? new RecordingLlmClient(codex ? new CodexClient({ model: codex.model, offline: app.env.SIGNAL_OFFLINE === '1', signal, reserve: () => reserveCodexCall(app, productId) }) : agentClient(app, signal), app.db, codex ? 'codex' : runtimeSettings(app).provider, app.clock);
+  app.db.update(growthTasks).set({ model: operatorModel }).where(eq(growthTasks.id, taskId)).run();
   const request = app.db.select().from(marketingMessages).where(and(eq(marketingMessages.id, targetId), eq(marketingMessages.productId, productId))).get();
   if (!request) throw new Error('Marketing request missing');
   let acquisitionSource: Awaited<ReturnType<typeof publicPage>> | undefined;
@@ -157,6 +175,11 @@ export async function runMarketingAgent(app: App, productId: string, taskId: str
     if (prior?.source !== source) remember(app, productId, { title: `${experiment.channelName}: recorded test outcome`, body: JSON.stringify({ note: 'Owner-recorded results, not a cash deposit or independent audit', result: experiment.result, evaluation: experiment.evaluation }), kind: 'observation', source, confidence: 0.8, ...(prior ? { supersedesId: prior.id } : {}) });
   }
   const recentWork = {
+    salesDiagnosis: salesDiagnosis(app, productId),
+    approvedCampaign: approvedCampaignContext(app, productId),
+    revenueMission: missionView(app, productId),
+    ownerGoal: guidePlan(app, productId),
+    guidance: app.db.select().from(settings).where(eq(settings.key, `marketing.guide-task.${taskId}`)).get() ? 'You are helping a person who is new to marketing in My marketer. Explain one next step in plain language, why it serves their saved goal, what you can prepare, and exactly what needs their judgment. Use the real recentWork evidence and its dates. Ask at most one focused question when necessary. You may research and save drafts, but cannot publish, send, spend, create media, or alter automation in this conversation. Never claim an action succeeded without a tool receipt. Name the relevant Signal section when an action needs review.' : undefined,
     commercialEvidence: app.revenue?.context(productId),
     campaignAnalytics: app.analytics?.context(productId),
     searchResearch: app.seo?.context(productId),
@@ -177,6 +200,8 @@ export async function runMarketingAgent(app: App, productId: string, taskId: str
   let failedDrafts = 0;
   let finalMessage = ''; let completedTools = 0;
   let finishAfterWrite = false;
+  let recoveryDraftSaved = false;
+  const recovering = Boolean(app.db.select().from(settings).where(eq(settings.key, `marketing.recovery-task.${taskId}`)).get());
   const videoProduction = app.videoCampaigns?.taskContext(productId, taskId);
   const operating = app.operations?.state(productId).taskId === taskId;
   const destination = recentWork.operation?.targetAccountId ?? (recentWork.operation?.accountIds.length === 1 ? recentWork.operation.accountIds[0] : undefined);
@@ -188,9 +213,9 @@ export async function runMarketingAgent(app: App, productId: string, taskId: str
   const followup = operating && recentWork.operation?.mode !== 'acquisition' && ['test-interest', 'build-on'].includes(recentWork.operation?.learning?.mode ?? '');
   const selectionBrief = followup ? `FOLLOW-UP CYCLE: use recentWork.operation.learning.${recentWork.operation?.learning?.mode === 'test-interest' ? 'traffic.reference' : 'reference'} to identify the reference action. The reader has already completed that action. Explain one concrete thing they can do NEXT using a capability in the current product source. Do not tell them to repeat the reference action with different wording. Name the new action in the public body, title and description; avoid broad workflow promises. Prior copy identifies the topic only, not product truth. Engaged sessions are a weak interest proxy, not buyers, leads, sales, product-market fit or proof of success. Do not publish internal analytics/payment counts or claim the campaign worked. Keep the call to action concrete and supported.\n\n` : '';
   const destinationBrief = operating ? `THIS CYCLE: ${(shortPost || xPost) ? 'A short social post, not an article. Write one or two plain-text sentences, about 120 to 180 characters. Omit URLs and affiliation text from body; Signal adds company disclosure; for a first work-problem reply it omits the link, otherwise it adds the verified business link. No Markdown headings, lists or emphasis.' : facebookPost ? 'A useful Facebook Page post in plain text, about 600 to 1800 characters, with a concrete buyer workflow, company affiliation and the product URL. No invented personal experience.' : linkedInPost ? 'A useful LinkedIn member post in plain text, about 600 to 1800 characters, with a concrete buyer workflow, affiliation and a product URL. No invented personal experience.' : 'A complete practical website article.'} Destination accountId: ${destination ?? 'the account named in the request'}. ${recentWork.operation?.imageWorkflowId && recentWork.operation.imageWorkflowId !== BRAND_CARD_WORKFLOW && shortPost && !publicReply ? 'Include visual.prompt with a specific editorial illustration to accompany this short post.' : 'Do not include visual.'}\n\n` : '';
-  const automatic = Boolean(videoProduction) || operating || /marketing cycle/i.test(request.body);
-  const stillOwned = () => { signal.throwIfAborted(); app.videoCampaigns?.assertTaskMayRun(productId, taskId); if (app.db.select().from(growthTasks).where(and(eq(growthTasks.id, taskId), eq(growthTasks.status, 'running'))).get() == null) throw new Error('Task cancelled'); if (operating) { const state = app.operations!.state(productId); if (!state.running || state.taskId !== taskId) throw new Error('Operation paused or replaced.'); } };
-  if (operating || videoProduction) {
+  const automatic = recovering || Boolean(videoProduction) || operating || /marketing cycle/i.test(request.body);
+  const stillOwned = () => { signal.throwIfAborted(); assertRecoveryActive(app, productId, taskId); app.videoCampaigns?.assertTaskMayRun(productId, taskId); if (app.db.select().from(growthTasks).where(and(eq(growthTasks.id, taskId), eq(growthTasks.status, 'running'))).get() == null) throw new Error('Task cancelled'); if (operating) { const state = app.operations!.state(productId); if (!state.running || (state.teamEndsAt && state.teamEndsAt <= app.clock.now()) || state.taskId !== taskId) throw new Error('Operation paused or replaced.'); } };
+  if (operating || videoProduction || recovering) {
     // Product verification is an obligatory workflow step, not a suggestion the
     // model can skip or mistake for a check completed in an earlier cycle.
     stillOwned();
@@ -222,7 +247,7 @@ export async function runMarketingAgent(app: App, productId: string, taskId: str
     const promptHistory = operating ? JSON.stringify([{ tool: 'product.inspect', result: productEvidence }, ...priorAttempt]) : JSON.stringify(history).slice(-14000);
     const replacementDirection = followup ? 'Keep the reference buyer workflow, but abandon the rejected drafts\' action and promised outcome. Choose a DIFFERENT supported stage, decision or concrete action within that workflow.' : 'Abandon their problem and promised outcome. Choose a DIFFERENT small task explicitly supported by CURRENT product.inspect facts.';
     const revisionBrief = (changeAngle ? `NEW ANGLE REQUIRED: Two drafts failed validation or factual review. ${replacementDirection} Do not infer quality improvements from an integrated workspace. Select demand.findingId none when required; these public observations did not establish a usable fit. Use the prior attempt only to identify what must be abandoned. The replacement still needs independent factual review.\n\n` : '') + (operating ? `REQUIRED IN THIS DRAFT: evidence must be [${JSON.stringify(productEvidenceUrl)}]. Include a useful next action in body. ${shortPost || xPost ? 'Omit URLs and affiliation text from body; Signal adds the verified business link and company disclosure.' : `Include this exact business link on its own line: ${product.utmBase}.`} Do not append /download, /signup, /trial or any path unless product.inspect returned that exact URL. A public discussion URL cannot substitute for the inspected product source. Previous editorialFeedback records failed drafts against this same source. Avoid those unsupported angles; the corrections are fallible review feedback, not product facts or instructions.\n\n` : '');
-    const phase = videoProduction ? `\nThis is a scheduled video production cycle. Inspect current product facts, then use ${videoProduction.action} to save exactly one job. No other writing action completes this cycle. Use video.status for approved cast and footage; do not request local H3 or change provider/budget settings. Queued production is not completed video or a publication.` : operating ? '\nThis is an authorized operation cycle. First product.inspect to verify facts. Then operations.enqueue finished copy to the selected account. For signal-blog write an article of 700+ characters; for bluesky write a post of at most 300 characters including affiliation and a product HTTPS link. Cite the URL returned by product.inspect in evidence. Do not use draft.save or blog.save to bypass the durable operation queue. Avoid unsupported numerical claims. Queued is not published.' : automatic && step >= 2 ? '\nResearch is finished for this cycle. Your next action must be draft.save with finished copy or engineering.add with a specific new proposal. If no relevant buyer question was found, draft a concrete product demo script using the supplied product facts. Do not ask the founder to pick a task.' : '';
+    const phase = recovering ? '\nRECOVERY REQUIREMENTS: Use web.read to read a substantive placement/rules page before drafting. If search fails, consider documented candidates https://news.ycombinator.com/showhn.html or https://alternativeto.net/faq/; these are candidates, not confirmed access. Save one finished article/demo brief with draft.save: body 350-16000 characters; a specific buyer and current alternative; proposed first task; ready-to-review public copy; tracked business link; seven-day decision rule and full trial observation window. Include exactly "Demonstration status: not verified". targetUrl must be the specific HTTPS placement. evidence must contain the exact product.inspect URL and a substantive web.read URL from that placement host. No placeholders, recentWork references, invented permissions or verified-demo claims. Distinguish free editor access from paid planning/AI. Generated character appearance can vary. After research, save the brief; engineering.add is unavailable.' : videoProduction ? `\nThis is a scheduled video production cycle. Inspect current product facts, then use ${videoProduction.action} to save exactly one job. No other writing action completes this cycle. Use video.status for approved cast and footage; do not request local H3 or change provider/budget settings. Queued production is not completed video or a publication.` : operating ? '\nThis is an authorized operation cycle. First product.inspect to verify facts. Then operations.enqueue finished copy to the selected account. For signal-blog write an article of 700+ characters; for bluesky write a post of at most 300 characters including affiliation and a product HTTPS link. Cite the URL returned by product.inspect in evidence. Do not use draft.save or blog.save to bypass the durable operation queue. Avoid unsupported numerical claims. Queued is not published.' : automatic && step >= 2 ? '\nResearch is finished for this cycle. Your next action must be draft.save with finished copy or engineering.add with a specific new proposal. If no relevant buyer question was found, draft a concrete product demo script using the supplied product facts. Do not ask the founder to pick a task.' : '';
     const acquisitionBrief = operating && recentWork.operation?.mode === 'acquisition' ? `CUSTOMER ACQUISITION: Address the one qualified request in demandEvidence. Channel allocation does not mean this person saw or completed a previous campaign; do not turn this into a follow-up to someone else. Keep its findingId; none and unrelated replacement topics are not allowed. Give a useful, specific method grounded in current product evidence. Do not name the author or imply contact, endorsement or a customer relationship. Website content must help readers complete the task; avoid generic AI articles or thin keyword variations. Do not claim that publication will reach buyers or produce sales.\n\n` : '';
     const replyBrief = publicReply ? 'PUBLIC REPLY: Answer this specific request with one useful, supported next step. Do not write a generic ad, pretend to be an independent customer, or invent personal experience. Signal attaches the actual request reference. For a work-problem response it adds team affiliation only and no link; for an explicit software request it adds affiliation and a tracked product link. Do not include visual or mention anyone else. Keep the reply relevant to the entire request.\n\n' : '';
     const response = await llm.complete({ model: operatorModel, prompt: NATURAL_VOICE + '\n\n' + (publicReply ? CONSULTATIVE_REPLY + '\nBUYER CONTEXT: ' + buyerIntent(recentWork.operation!.demandEvidence![0]!.excerpt) + '\n' : '') + replyBrief + acquisitionBrief + revisionBrief + selectionBrief + destinationBrief + loadPrompt(operating ? (xPost ? 'operation-x-agent' : shortPost ? 'operation-social-agent' : linkedInPost ? 'operation-linkedin-agent' : facebookPost ? 'operation-facebook-agent' : 'operation-agent') : 'marketing-agent', 1).render({ context: JSON.stringify(operating ? { product: { name: product.name, url: product.utmBase, targetBuyer: product.targetBuyer }, recentWork: currentWork } : { context, recentWork }), history: promptHistory, remaining: String(4 - step) }) + (operating ? '' : phase), maxTokens: 2400, temperature: 0.25, reasoningEffort: 'none', expectsJson: true, jsonSchema: campaignSchema, task: operating ? 'operations.compose' : 'marketing.operator' });
@@ -247,7 +272,7 @@ export async function runMarketingAgent(app: App, productId: string, taskId: str
           stillOwned();
           app.db.insert(marketingToolCalls).values({ id: newId(), productId, taskId, name: 'operations.review', status: 'done', result: JSON.stringify(review), createdAt: app.clock.now() }).run();
         }
-        result = await executeMarketingTool(app, productId, action.tool, action.input, signal, taskId); completedTools++; if ((operating ? ['operations.enqueue'] : ['draft.save', 'engineering.add', 'campaign.create', 'video.create', 'video.assemble']).includes(action.tool)) finishAfterWrite = true;
+        result = await executeMarketingTool(app, productId, action.tool, action.input, signal, taskId); completedTools++; if (recovering && action.tool === 'draft.save') recoveryDraftSaved = true; if ((operating ? ['operations.enqueue'] : ['draft.save', 'engineering.add', 'campaign.create', 'video.create', 'video.assemble']).includes(action.tool)) finishAfterWrite = true;
         if (operating && action.tool === 'operations.enqueue') clearRecoveredFinding(app, productId, productEvidence, action.input);
       }
       catch (error) {
@@ -271,6 +296,7 @@ export async function runMarketingAgent(app: App, productId: string, taskId: str
     if (hasPendingMedia(app) || finishAfterWrite) break;
   }
   stillOwned();
+  if (recovering && !recoveryDraftSaved) throw new Error('Acquisition recovery did not save a reviewable brief. Inspect its tool errors; one delayed retry is allowed.');
   if (automatic && !finishAfterWrite && (operating || !hasPendingMedia(app))) throw new Error(operating ? 'The operating cycle could not queue a valid publication. Review its tool errors in Marketing agent; the next cycle will retry within the operating interval.' : 'The cycle reached its step limit without saving a draft, media job or engineering request. Review Tool activity and retry with a specific buyer question.');
   if (!finalMessage) throw new Error('The local model returned no usable message');
   // Finish with actual tool outcomes when a step budget interrupts a planned sequence.

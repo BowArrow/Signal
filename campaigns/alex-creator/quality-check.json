@@ -1,0 +1,9 @@
+{
+  "profile": "quality",
+  "duration": 3,
+  "validationOnly": true,
+  "image": "output/alex-creator/alex-room-video-v1.png",
+  "imageSha256": "e8137ad11dc12d3750432f58ee2db398c0d64c6d3e8eb7a3ea610e59c344a142",
+  "seed": 42,
+  "prompt": "A natural phone-camera video of the same man sitting comfortably in the same home workspace. Preserve his exact face, dark wavy hair, espresso suede jacket and yellow knit polo. He looks into the camera, blinks once, subtly lifts one eyebrow and settles into a small closed-mouth smile. His shoulders move slightly with a breath; his hands remain below frame. No speech. The window and desk stay camera-left; the bookshelf, plants and olive sofa stay camera-right. Soft daylight from camera-left keeps natural skin texture and gentle shadows. Eye-level locked camera, normal lens perspective, one continuous real-time shot, no cuts or zoom. Stable room geometry, natural facial proportions, no text or graphics."
+}

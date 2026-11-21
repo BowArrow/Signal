@@ -51,6 +51,8 @@ def win32():
         'TerminateJobObject': ([wintypes.HANDLE, wintypes.UINT], wintypes.BOOL),
         'GlobalMemoryStatusEx': ([ctypes.POINTER(MemoryStatus)], wintypes.BOOL),
         'CloseHandle': ([wintypes.HANDLE], wintypes.BOOL),
+        'OpenProcess': ([wintypes.DWORD, wintypes.BOOL, wintypes.DWORD], wintypes.HANDLE),
+        'WaitForSingleObject': ([wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD),
     }
     for name, (args, result) in signatures.items():
         function = getattr(kernel, name)
@@ -72,11 +74,25 @@ def memory(kernel):
     return {'availableRamBytes': current.ullAvailPhys, 'availableCommitBytes': current.ullAvailPageFile}
 
 
-def report(path, state):
+def report(path, state, defer_busy=False):
     state['updatedAt'] = int(time.time() * 1000)
     temporary = path.with_suffix('.tmp')
-    temporary.write_text(json.dumps(state), encoding='utf-8')
-    os.replace(temporary, path)
+    # Windows readers may briefly open without FILE_SHARE_DELETE. A reporting
+    # collision must not kill an otherwise healthy, independently checked job.
+    # Bound retries so the watchdog still samples resource limits promptly.
+    for attempt in range(5):
+        try:
+            temporary.write_text(json.dumps(state), encoding='utf-8')
+            os.replace(temporary, path)
+            return True
+        except OSError as error:
+            if getattr(error, 'winerror', None) not in (5, 32, 33):
+                raise
+            if attempt == 4:
+                if defer_busy:
+                    return False
+                raise
+            time.sleep(0.025)
 
 
 def supervise(args):
@@ -115,7 +131,11 @@ def supervise(args):
         return 72
     job = checked(kernel.CreateJobObjectW(None, None))
     child = None
+    owner = None
     try:
+        if getattr(args, 'owner_pid', None):
+            owner = checked(kernel.OpenProcess(0x100000, False, args.owner_pid))
+            state['ownerPid'] = args.owner_pid
         limits = ExtendedLimit()
         # Process + entire descendant job commit limits, and kill on supervisor exit.
         limits.BasicLimitInformation.LimitFlags = 0x100 | 0x200 | 0x2000
@@ -145,6 +165,12 @@ def supervise(args):
         child.stdin.close()
         last_report = 0
         while child.poll() is None:
+            if owner and kernel.WaitForSingleObject(owner, 0) != 258:
+                checked(kernel.TerminateJobObject(job, 74))
+                child.wait(timeout=10)
+                state.update(state='stopped', reason='The owning application exited.')
+                report(status, state)
+                return 74
             usage = ExtendedLimit()
             checked(kernel.QueryInformationJobObject(job, 9, ctypes.byref(usage), ctypes.sizeof(usage), None))
             state['peakJobCommitBytes'] = usage.PeakJobMemoryUsed
@@ -171,8 +197,8 @@ def supervise(args):
                 report(status, state)
                 return 73
             if time.monotonic() - last_report > 2:
-                report(status, state)
-                last_report = time.monotonic()
+                if report(status, state, defer_busy=True):
+                    last_report = time.monotonic()
             time.sleep(0.25)
         state.update(state='exited', exitCode=child.returncode)
         report(status, state)
@@ -182,6 +208,8 @@ def supervise(args):
             kernel.TerminateJobObject(job, 74)
             child.wait(timeout=10)
         kernel.CloseHandle(job)
+        if owner:
+            kernel.CloseHandle(owner)
 
 
 def worker(args):
@@ -239,12 +267,15 @@ if __name__ == '__main__':
     parser.add_argument('--reserve-ram-gb', type=float, default=6)
     parser.add_argument('--reserve-commit-gb', type=float, default=8)
     parser.add_argument('--status')
+    parser.add_argument('--owner-pid', type=int, help='Stop the owned renderer if this application exits.')
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     if args.command and args.command[0] == '--':
         args.command.pop(0)
-    if args.dynamic_vram and (args.cpu_only or not args.command or Path(args.command[0]).name != 'ltx_runtime.py'):
-        parser.error('Dynamic mode is only available through the managed LTX entry point.')
+    relay_entry = Path(__file__).resolve().parents[3] / 'apps/avatar-marketing/relayvsr-bootstrap.py'
+    managed_entry = bool(args.command) and (Path(args.command[0]).name == 'ltx_runtime.py' or Path(args.command[0]).resolve() == relay_entry)
+    if args.dynamic_vram and (args.cpu_only or not managed_entry):
+        parser.error('Dynamic mode requires the managed LTX or RelayVSR entry point.')
     if not args.command or not 0.1 <= args.ram_gb <= 16 or not 0.05 <= args.working_set_gb <= 8 or not 0.1 <= args.gpu_gb <= 5 or not 1 <= args.device_vram_gb <= 8 or args.reserve_ram_gb < 6 or args.reserve_commit_gb < 8:
         parser.error('Use a command and conservative memory limits: RAM <=16 GiB, GPU <=5 GiB, system reserves >=6/8 GiB.')
     try:

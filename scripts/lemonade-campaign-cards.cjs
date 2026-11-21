@@ -1,0 +1,42 @@
+// Local campaign artwork. Product images are unaltered captures in labelled frames.
+const {app,BrowserWindow}=require('electron');
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'output/lemonade-work-assistant-20261112');
+const site=path.resolve(root,'../Lemonade/site');
+app.disableHardwareAcceleration();app.setPath('userData',path.join(out,'render-profile'));
+const data=(p,type)=>`data:${type};base64,${fs.readFileSync(p).toString('base64')}`;
+const font=n=>data(path.join(site,'fonts',n),'font/woff2');
+const mark='<svg viewBox="0 0 40 40" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="20" cy="20" r="18"/><circle cx="20" cy="20" r="12"/><path d="M20 8v24M8 20h24M11 11l18 18M29 11L11 29"/></svg>';
+const cards=[
+ {id:'hook-a',kicker:'A work task for your AI',title:'Two reports.<br>What changed?',body:'Ask Lemonade to compare the files<br>and show its sources.',visual:'numbers',note:'Fictional supplier reports. Actual captured result.'},
+ {id:'hook-b',kicker:'A work task for your AI',title:'The new quote<br>is $120 higher.',body:'Now check where that answer came from.',visual:'numbers',note:'Fictional supplier reports. Actual captured result.'},
+ {id:'hook-c',kicker:'A work task for your AI',title:'An answer you<br>can check.',body:'Compare. Open the sources.<br>Review and export the result.',visual:'result',note:'Real Lemonade capture using fictional reports.'},
+ {id:'result',kicker:'01 / Compare',title:'See the change.<br>Check the sources.',body:'The comparison identifies the price change<br>and the later delivery date.',visual:'result',note:'Real captured result. Sample data. Edited sequence.'},
+ {id:'review',kicker:'02 / Keep control',title:'Review the work<br>before saving.',body:'Keep file changes set to Ask.<br>Inspect the proposed edits.',visual:'review',note:'Product example with sample files. Separate workflow.'},
+ {id:'export',kicker:'03 / Keep working',title:'Take the result<br>with you.',body:'Review the comparison, then export<br>your working note as Markdown or text.',visual:'result',note:'Real sample workflow. Editorial review is part of the demo.'},
+ {id:'trial',kicker:'Lemonade / Your desktop work assistant',title:'Try it on<br>your next task.',body:'14 days free. No credit card.<br>For Windows 11 and Linux.',visual:'cta',note:'Local model inference. Setup, licensing and optional tools use the network.'},
+ {id:'price',kicker:'Lemonade / Your desktop work assistant',title:'A little help.<br>For the work ahead.',body:'Compare files. Review edits.<br>Create documents, spreadsheets and slides.',visual:'price',note:'USD per person, before applicable tax. Renews automatically. Cancel renewal in your account.'},
+ {id:'agent',kicker:'Your desktop work assistant',title:'Ask for a change.<br>Review the edit.',body:'Give Lemonade a task in your files.<br>Keep file changes set to Ask.',visual:'review',note:'Product example with sample files. No autonomous-run or timing claim.'},
+ {id:'sheet',kicker:'Keep working in your files',title:'A workbook<br>you can edit.',body:'Inspect the formulas.<br>Keep working in the spreadsheet.',visual:'sheet',note:'Product example with sample data, built with Lemonade’s file tools.'},
+];
+const esc=s=>s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+function html(c,h){
+ const portrait=h===1920,short=h===1080;
+ const result=data(path.join(out,'evidence/actual-result.png'),'image/png');
+ const review=data(path.join(site,'shots/diff-approve.png'),'image/png');
+ const visual=c.visual==='numbers'?'<div class="numbers"><span>Original report</span><b>$2,400</b><i>↓</i><span>Revised report</span><b>$2,520</b><em>+$120</em></div>':c.visual==='price'?'<div class="prices"><b>$9<span>/ month</span></b><p>or <strong>$79 / year</strong></p><small>Save $29 versus 12 monthly payments.</small><strong style="display:block;margin-top:32px;font:27px Archivo">Try free for 14 days ? siplemona.de</strong></div>':c.visual==='cta'?'<div class="cta-panel"><span>Start with one useful task.</span><b>Try Lemonade free ↗</b><strong>siplemona.de</strong></div>':`<div class="shot ${c.visual}"><img style="${c.visual==='sheet'?'width:1700px;max-width:none':''}" src="${c.visual==='review'?review:c.visual==='sheet'?data(path.join(site,'shots/spreadsheet.png'),'image/png'):result}" alt="Lemonade product capture"></div>`;
+ return `<!doctype html><html><head><meta charset="utf-8"><style>@font-face{font-family:Archivo;src:url('${font('archivo-latin-600-normal.woff2')}')}@font-face{font-family:Inter;src:url('${font('inter-latin-400-normal.woff2')}')}*{box-sizing:border-box}body{margin:0;width:1080px;height:${h}px;overflow:hidden;background:#fbf7ed;color:#241f16;font-family:Inter}header{display:flex;align-items:center;gap:14px;font:34px Archivo;position:absolute;top:${portrait?160:64}px;left:72px;color:#594111}header svg{color:#9b720e}.kicker{position:absolute;top:${portrait?280:158}px;left:72px;text-transform:uppercase;font-size:20px;letter-spacing:2px;color:#796440}h1{position:absolute;top:${portrait?340:210}px;left:66px;right:80px;margin:0;font:600 ${short?68:82}px/1.04 Archivo;letter-spacing:-3.5px}p.body{position:absolute;top:${portrait?550:short?365:410}px;left:72px;font-size:${short?27:30}px;line-height:1.5;margin:0;color:#625743}.visual{position:absolute;top:${portrait?720:short?475:555}px;left:72px;width:886px;height:${portrait?790:short?390:555}px}.numbers{height:100%;background:#e8c366;border-radius:16px;padding:${short?24:40}px 52px;position:relative}.numbers span{display:block;font-size:23px;color:#5c451b}.numbers b{font:600 ${short?72:100}px Archivo;letter-spacing:-4px;display:block}.numbers i{position:absolute;right:76px;top:100px;font:80px Archivo}.numbers em{position:absolute;right:45px;bottom:50px;background:#292216;color:#fff3cf;padding:16px 28px;border-radius:10px;font:38px Archivo;font-style:normal}.shot{height:100%;overflow:hidden;background:#17150f;border:1px solid #4a412b;border-radius:16px;box-shadow:0 18px 45px #33251420}.shot img{width:100%;display:block}.shot.result img{transform:translateY(-${portrait?310:short?340:320}px)}.shot.review img{width:1540px;max-width:none;transform:translate(-305px,-${portrait?315:short?480:440}px)}.prices{padding:35px 0}.prices b{font:600 ${short?125:160}px Archivo;letter-spacing:-7px}.prices b span{font:32px Inter;letter-spacing:0}.prices p{font:44px Archivo;margin:22px 0}.prices small{font-size:23px;color:#625743}.cta-panel{height:100%;border-top:2px solid #d6bc74;padding-top:${short?30:70}px}.cta-panel span{font-size:27px;color:#625743}.cta-panel b{display:block;font:44px Archivo;background:#2b2519;color:#fff3cf;padding:29px 34px;border-radius:10px;margin:30px 0}.cta-panel strong{display:block;font:39px Archivo;color:#795713}footer{position:absolute;left:72px;right:110px;bottom:${portrait?225:short?60:80}px;font-size:${portrait?23:20}px;line-height:1.45;color:#71644e}.bar{position:absolute;left:0;bottom:0;width:100%;height:12px;background:#c29733}</style></head><body><header>${mark}lemonade</header><div class="kicker">${c.kicker}</div><h1>${c.title}</h1><p class="body">${c.body}</p><div class="visual">${visual}</div><footer>${esc(c.note)}</footer><div class="bar"></div></body></html>`;
+}
+app.whenReady().then(async()=>{
+ fs.mkdirSync(path.join(out,'artwork'),{recursive:true});fs.mkdirSync(path.join(out,'source'),{recursive:true});
+ const w=new BrowserWindow({show:false,width:1080,height:1920,webPreferences:{contextIsolation:true,nodeIntegration:false}});
+ const manifest=[];
+ for(const h of [1920,1350,1080])for(const c of cards){
+  if(h===1080&&!['hook-a','review','trial','price'].includes(c.id))continue;
+  const name=`${c.id}-${h}`;const file=path.join(out,'source',name+'.html');fs.writeFileSync(file,html(c,h));
+  w.setContentSize(1080,h);await w.loadFile(file);await w.webContents.executeJavaScript('document.fonts.ready.then(()=>true)');await new Promise(r=>setTimeout(r,70));
+  fs.writeFileSync(path.join(out,'artwork',name+'.png'),(await w.webContents.capturePage()).toPNG());
+  manifest.push({id:c.id,width:1080,height:h,path:`artwork/${name}.png`,priceGated:c.id==='price'});
+ }
+ fs.writeFileSync(path.join(out,'artwork-manifest.json'),JSON.stringify(manifest,null,2));console.log(JSON.stringify({artworks:manifest.length,output:out}));w.destroy();app.quit();
+}).catch(e=>{console.error(e);app.exit(1)});

@@ -109,6 +109,28 @@ print(json.dumps({'working':c.working,'private':c.private}))
             self.assertEqual(limits.supervise(args), 73)
         self.assertEqual(json.loads(self.status.read_text())['state'], 'stopped')
 
+    def test_application_exit_stops_its_supervised_job(self):
+        owner = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])
+        parent = subprocess.Popen(self.command('watchdog-test', '--owner-pid', str(owner.pid)), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                if self.status.exists() and json.loads(self.status.read_text()).get('state') == 'running':
+                    break
+                time.sleep(0.1)
+            self.assertEqual(json.loads(self.status.read_text())['ownerPid'], owner.pid)
+            owner.terminate()
+            owner.wait(timeout=5)
+            self.assertEqual(parent.wait(timeout=5), 74)
+            self.assertEqual(json.loads(self.status.read_text())['reason'], 'The owning application exited.')
+        finally:
+            if owner.poll() is None:
+                owner.terminate()
+            if parent.poll() is None:
+                parent.terminate()
+            owner.wait(timeout=5)
+            parent.wait(timeout=5)
+
     def test_supervisor_exit_kills_only_its_worker(self):
         parent = subprocess.Popen(self.command('watchdog-test'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         handle = None

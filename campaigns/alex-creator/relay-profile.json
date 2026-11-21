@@ -1,0 +1,153 @@
+{
+  "status": "fast-preview-not-accepted-eye-quality",
+  "pipeline": "LTX 2.5 low resolution, then RelayVSR native 2x, then original narration and final edit",
+  "fastProfile": "relay_fast",
+  "guidedFallback": "guided_speech_relay",
+  "nativeResolution": [
+    384,
+    672
+  ],
+  "outputResolution": [
+    768,
+    1344
+  ],
+  "fps": 24,
+  "relayDetail": 0.8,
+  "comfyRevision": "53986ff1e0f2b0d78dd28f6fff7b680f178d8cb6",
+  "modelRevision": "ba556c9fab83606eb82285b7eb3a9375232744b6",
+  "resources": {
+    "gpuJobsAtOnce": 1,
+    "ltxCommitLimitGiB": 12,
+    "relayCommitLimitGiB": 10,
+    "residentWorkingSetGiB": 2,
+    "minimumAvailableRamGiB": 8,
+    "minimumAvailableCommitGiB": 10,
+    "wholeGpuUsageStopGiB": 7,
+    "gpuLimitType": "Sampled watchdog including other apps, with dynamic weight offload; not a hard GPU allocation cap."
+  },
+  "longForm": "Explicit shots of 1-8 seconds assembled around one continuous narration. Resumable per-shot receipts. Relay chunks use up to 120 frames including context. No promise of a seamless single long take.",
+  "qualityApproved": false,
+  "recurringWorkerEnabled": false,
+  "shortBenchmark": {
+    "date": "2026-11-09",
+    "durationSeconds": 3.0416666666666665,
+    "ltxSeconds": 87.987,
+    "relaySeconds": 36.561,
+    "video": "output/alex-creator/relay-benchmark-2026-11-09/video.mp4",
+    "receipt": "output/alex-creator/relay-benchmark-2026-11-09/receipt.json",
+    "comparison": "output/alex-creator/relay-benchmark-2026-11-09/comparison.jpg",
+    "qualityApproved": false
+  },
+  "measuredLimits": {
+    "ltx": {
+      "state": "running",
+      "supervisorPid": 29504,
+      "ramLimitBytes": 12884901888,
+      "gpuLimitBytes": 0,
+      "reserveRamBytes": 8589934592,
+      "reserveCommitBytes": 10737418240,
+      "workingSetLimitBytes": 2147483648,
+      "gpuControl": "dynamic headroom target with sampled watchdog; not a hard allocation cap",
+      "reserveGpuBytes": 1073741824,
+      "deviceVramBudgetBytes": 7516192768,
+      "availableRamBytes": 11822501888,
+      "availableCommitBytes": 17368326144,
+      "availableGpuBytes": 8971194368,
+      "usedGpuBytes": 1766223872,
+      "gpuTemperatureC": 54,
+      "ownerPid": 20532,
+      "workingSetEnforced": true,
+      "pid": 29888,
+      "enforced": true,
+      "updatedAt": 1794271137011,
+      "peakJobCommitBytes": 12832477184,
+      "peakProcessCommitBytes": 12831244288,
+      "minimumAvailableRamBytes": 9405890560,
+      "minimumAvailableCommitBytes": 11321376768,
+      "peakSystemGpuUsedBytes": 6309376000,
+      "peakGpuTemperatureC": 61
+    },
+    "relay": {
+      "state": "running",
+      "supervisorPid": 11564,
+      "ramLimitBytes": 10737418240,
+      "gpuLimitBytes": 0,
+      "reserveRamBytes": 8589934592,
+      "reserveCommitBytes": 10737418240,
+      "workingSetLimitBytes": 2147483648,
+      "gpuControl": "dynamic headroom target with sampled watchdog; not a hard allocation cap",
+      "reserveGpuBytes": 1073741824,
+      "deviceVramBudgetBytes": 7516192768,
+      "availableRamBytes": 15467954176,
+      "availableCommitBytes": 20051525632,
+      "availableGpuBytes": 9069367296,
+      "usedGpuBytes": 1668050944,
+      "gpuTemperatureC": 49,
+      "ownerPid": 22600,
+      "workingSetEnforced": true,
+      "pid": 29140,
+      "enforced": true,
+      "updatedAt": 1794271208881,
+      "peakJobCommitBytes": 5341904896,
+      "peakProcessCommitBytes": 5340635136,
+      "minimumAvailableRamBytes": 15073161216,
+      "minimumAvailableCommitBytes": 19000057856,
+      "peakSystemGpuUsedBytes": 2540466176,
+      "peakGpuTemperatureC": 54
+    }
+  },
+  "longDurationUpscaleTest": {
+    "durationSeconds": 60,
+    "frames": 1440,
+    "elapsedSeconds": 355.775,
+    "fixture": "Repeated three-second clip, not newly generated long-form content",
+    "receipt": "output/alex-creator/relay-stress-60s/upscaled/receipt.json",
+    "limits": {
+      "peakGpuGiB": 2.6506004333496094,
+      "minimumAvailableRamGiB": 12.970413208007812,
+      "peakCommitGiB": 5.857074737548828
+    },
+    "audioExactMatch": true
+  },
+  "validation": {
+    "nodeTestsPassed": 24,
+    "pythonGuardTestsPassed": 17,
+    "windowsAllocationLimitVerified": true,
+    "operatorReceiptAdapterVerified": true,
+    "playbackReview": "pending",
+    "longFormLtxGeneration": "not benchmarked"
+  },
+  "latestUserReview": {
+    "date": "2026-11-09",
+    "feedback": "his eyes seem odd are you sure vsr is being used?",
+    "accepted": false,
+    "scope": "Three-second fast LTX plus RelayVSR preview",
+    "verified": "RelayVSR graph completed successfully with no cached nodes, and final video hash matches receipt.",
+    "comparison": "output/alex-creator/relay-benchmark-2026-11-09/eyes-early.jpg",
+    "nextCandidate": "Video-aware localized face correction on the fast source before unchanged Relay detail 0.8; researched, not installed or benchmarked."
+  },
+  "eyeConsistencyRequirement": {
+    "date": "2026-11-09",
+    "source": "Owner correction",
+    "requirement": "Fix eye consistency in the generated source before upscaling. Do not reduce RelayVSR detail.",
+    "relayDetail": 0.8,
+    "discardedCandidate": "VSR detail 0.4 test",
+    "currentTest": "Guided comparison completed; not selected for fast production. Face correction remains experimental."
+  },
+  "guidedEyeBenchmark": {
+    "date": "2026-11-09",
+    "durationSeconds": 3.0416666666666665,
+    "ltxSeconds": 779.329,
+    "ltxWallSeconds": 790.018,
+    "relaySeconds": 34.451,
+    "totalFreshWallSeconds": 827.246,
+    "video": "output/alex-creator/relay-guided-eyes-2026-11-09-attempt2/video.mp4",
+    "receipt": "output/alex-creator/relay-guided-eyes-2026-11-09-attempt2/receipt.json",
+    "comparison": "output/alex-creator/relay-guided-eyes-2026-11-09-attempt2/eyes-fast-guided-relay.jpg",
+    "sourceComparison": "output/alex-creator/relay-guided-eyes-2026-11-09-attempt2/base-fast-vs-guided.mp4",
+    "qualityApproved": false,
+    "assessment": "Sampled guided source eyes look more coherent; full-motion user acceptance remains pending. Too slow for the requested fast workflow.",
+    "peakWholeGpuGiB": 5.779247283935547,
+    "minimumAvailableRamGiB": 9.52376937866211
+  }
+}

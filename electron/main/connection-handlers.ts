@@ -22,6 +22,8 @@ export function registerConnectionHandlers(ipc: IpcMain, app: App, service: Conn
   ipc.handle(IPC.connectionAction, async (event, input: unknown): Promise<ConnectionResult> => {
     trustedSignalFrame(event); const action = connectionActionSchema.parse(input);
     if (action.type === 'connect') await service.connect(action.value);
+    if (action.type === 'reconnect-token') await service.connect(action.value, action.id);
+    if (action.type === 'reconnect-oauth') await service.reconnectOAuth(action.productId, action.id);
     if (action.type === 'rename') service.rename(action.productId, action.id, action.label);
     if (action.type === 'share') await service.shareAccount(action.productId, action.id, action.targetProductId);
     if (action.type === 'x-posting') await service.authorizeXPosting(action.productId, action.id);

@@ -86,7 +86,7 @@ try {
   await until('window.signal.operations().then(v=>v.states[0].publicReplyLimit===5 && v.states[0].testChannels && v.states[0].replyToRequests && v.states[0].discovery.queries.some(q=>q.kind==="bluesky"))');
   await until('Boolean(document.querySelector(".acquisition-intake-form"))');
   await until('Boolean(document.querySelector(".operation-channel-tests"))');
-  if (!await evaluate('document.querySelectorAll(".operation-channel-tests details .conversation-message").length === 19')) throw new Error('Channel inventory incomplete');
+  if (!await evaluate('document.querySelectorAll(".operation-channel-tests details.conversation-message").length === 19')) throw new Error('Channel inventory incomplete');
   await click('Overview');
   await evaluate('document.querySelector(".operation-channel-tests").scrollIntoView()'); await screenshot('channel-tests-desktop');
   await send('Emulation.setDeviceMetricsOverride', { width: 720, height: 800, deviceScaleFactor: 1, mobile: false });

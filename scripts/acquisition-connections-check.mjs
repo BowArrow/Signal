@@ -1,0 +1,15 @@
+import { spawn } from 'node:child_process';
+import { mkdtempSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { build } = createRequire(require.resolve('vite'))('esbuild');
+const output = resolve('out/main/acquisition-connections-check.cjs');
+await build({ entryPoints: ['scripts/acquisition-connections-check.ts'], outfile: output, bundle: true, platform: 'node', format: 'cjs', packages: 'external', define: { 'import.meta.url': JSON.stringify(pathToFileURL(output).href) }, logLevel: 'silent' });
+const env = { ...process.env, SIGNAL_OFFLINE: '0', SIGNAL_ACQUISITION_CHECK_PROFILE: mkdtempSync(join(tmpdir(), 'signal-acquisition-check-')) };
+delete env.ELECTRON_RUN_AS_NODE;
+const child = spawn(require('electron'), [output, '--disable-gpu'], { env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+child.stdout.pipe(process.stdout); child.stderr.pipe(process.stderr);
+child.on('exit', code => { unlinkSync(output); process.exitCode = code ?? 1; });

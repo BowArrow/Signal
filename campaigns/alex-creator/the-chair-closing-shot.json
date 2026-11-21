@@ -1,0 +1,13 @@
+{
+  "profile": "guided_speech_high",
+  "duration": 3.31,
+  "validationOnly": false,
+  "image": "output/alex-creator/alex-room-video-v2-tripod.png",
+  "imageSha256": "770d7814bcc9436c903074351b3cd934658415316c6fc6b2280e15c582fc6ce5",
+  "audio": "output/alex-creator/voice/the-chair/ryan-42.wav",
+  "audioSha256": "d70ccc0a9817c9c4447a185c1ac236d50a7cc97377287b3519cc27f0076e1f40",
+  "seed": 42,
+  "prompt": "One continuous shot of the man in the reference image speaking the closing sentence in the supplied audio directly to the viewer in his home workspace. The phone is fixed on a rigid tripod at eye height: composition, focal length, subject scale, window, desk and bookshelves remain stationary throughout, without any zoom, pullback, pan or reframing. He visibly articulates the supplied words in synchronization with the recording, warmly sharing a gentle everyday joke with a friend. His gaze stays naturally on the lens with clearly defined pupils and eyelids and normal brief blinks. His right hand gives one small relaxed open-palm emphasis near his waist on the idea of outfit rotation, then both hands settle. A subtle nod accompanies the final thought and his mouth relaxes into a brief friendly smile after the speech. Keep the same face, dark wavy hair, espresso suede jacket, yellow knit polo and silver necklace. Preserve soft window daylight from camera-left, crisp natural facial detail, the same room geometry and real-time natural movement. No text or graphics.",
+  "roomAudioProfile": "campaigns/alex-creator/room-audio-v2.json",
+  "audioStart": 11.25
+}

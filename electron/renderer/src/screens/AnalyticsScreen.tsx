@@ -20,8 +20,8 @@ function FunnelReport({ snapshot }: { snapshot: AnalyticsSnapshot | undefined })
   </section>;
 }
 
-export function AnalyticsScreen({ onToast }: { onToast: (message: string, kind?: 'ok' | 'warn') => void }) {
-  const [view, setView] = useState<AnalyticsView | null>(null); const [business, setBusiness] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+export function AnalyticsScreen({ onToast, initialProductId = '' }: { initialProductId?: string; onToast: (message: string, kind?: 'ok' | 'warn') => void }) {
+  const [view, setView] = useState<AnalyticsView | null>(null); const [business, setBusiness] = useState(initialProductId); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   useEffect(() => { let alive = true; const refresh = () => { void window.signal.analytics().then(v => { if (alive) { setView(v); setError(''); } }).catch(() => { if (alive) setError('Could not load campaign analytics.'); }); }; refresh(); const timer = setInterval(refresh, 4000); return () => { alive = false; clearInterval(timer); }; }, []);
   const act = async (action: AnalyticsAction) => { setBusy(true); try { const next = await window.signal.analyticsAction(action); setView(next); const state = next.states.find(s => s.productId === action.productId); onToast(state?.detail ?? 'Analytics source removed', state?.status === 'attention' ? 'warn' : 'ok'); } catch (e) { onToast(String(e), 'warn'); } finally { setBusy(false); } };
   if (!view) return <div className="page"><h1>Analytics</h1><p role="status">{error || 'Loading campaign analytics...'}</p></div>;

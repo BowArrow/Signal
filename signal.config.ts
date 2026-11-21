@@ -60,10 +60,10 @@ const config: SignalConfigInput = {
         'who repeatedly read, compare or draft documents and want local AI processing. Start with ' +
         'one person and one useful document task; validate the need and hardware fit. Do not imply ' +
         'a shared team license, hosted service or enterprise deployment. Confirm workplace permission.',
-      priceCents: 4900,
+      priceCents: 14900,
       currency: 'USD',
       proofPoints: [
-        'Public website checked 2026-09-13: $49 perpetual license and a 14-day no-card trial',
+        'Public website checked 2026-11-12: $149 USD per person per year or $15 per month before tax; 14-day no-card, no-account trial. Subscription renews; existing perpetual licenses retain their terms. Verify the current offer before publishing. priceCents is the annual plan price, not lifetime value.',
         'Public website states no behavioral telemetry or cloud inference upload; downloads, licensing and optional approved network tools still use the network',
         'Public website states local inference works offline once models are downloaded',
         'Lemonade installs and manages Ollama and models; an existing Ollama install is not required',

@@ -8,6 +8,7 @@ import { queryLabel, type DemandFinding, type DiscoverySnapshot, type DiscoveryQ
 import type { NormalizedItem } from '../ingest/types.js';
 import { eligibleAcquisitionFindings } from './acquisition.js';
 import { normalizeBlueskyPostUrl } from '../../shared/bluesky-url.js';
+import { searchBlueskyRequests } from './bluesky-discovery.js';
 
 const WINDOW = 14 * 86400000;
 const PREFIX = 'operations.discovery.';
@@ -62,9 +63,11 @@ export class DemandDiscovery {
     let findings: DemandFinding[] = []; let detail = 'Search completed. Results are unqualified public observations.'; let status: 'ok' | 'attention' = 'ok';
     try {
       if (query.kind === 'bluesky') {
-        const account = this.app.connections?.accounts().find(a => a.productId === state.productId && a.provider === 'bluesky' && a.status === 'verified');
-        if (!account) throw new Error('Connect Bluesky to search for public requests.');
-        findings = await this.app.connections!.blueskyRequests(state.productId, account.id, query.query, this.controller.signal);
+        const allowed = () => {
+          const current = this.app.operations?.state(state.productId);
+          if (this.app.env.SIGNAL_OFFLINE === '1' || !current || (!current.running && !allowPaused) || current.revision !== state.revision) throw new Error('Research was paused or changed.');
+        };
+        findings = await searchBlueskyRequests(null, query.query, now, this.controller.signal, allowed, fetch);
       } else {
       const source: Source = { id: `demand:${state.productId}`, kind: query.kind, identifier: query.kind === 'hn' ? query.query : `${query.site}:${query.query}`, displayName: label, enabled: false, pollIntervalSeconds: 3600, ignoreRobotsTxt: false, robotsExemptionReason: null, maxItemAgeHours: WINDOW / 3600000, discovered: true, discoveredVia: 'operations-research', lastPolledAt: null, lastPollError: null, createdAt: now, updatedAt: now };
       const poller = this.app.pollers.find(p => p.kind === query.kind);
@@ -72,8 +75,9 @@ export class DemandDiscovery {
       const result = await poller.poll(source, this.controller.signal);
       findings = result.items.slice(0, 100).map(item => this.finding(query, item, now)).filter((f): f is DemandFinding => Boolean(f));
       }
-    } catch {
-      status = 'attention'; detail = 'Search unavailable or rate limited. Signal will try again later; existing observations may still inform campaigns.';
+    } catch (error) {
+      const code = error instanceof Error ? /^Provider returned HTTP (\d{3})\./.exec(error.message)?.[1] : undefined;
+      status = 'attention'; detail = code === '429' ? 'Public search is rate limited (HTTP 429). Research will retry after the source cooldown.' : code ? `Public search returned HTTP ${code}. Check source access; other research sources continue independently.` : 'Search unavailable. Check the source and network; other research sources continue independently.';
     }
     const current = this.app.operations?.state(state.productId);
     if (this.controller.signal.aborted || String(this.app.env.SIGNAL_OFFLINE) === '1' || !current || (!current.running && !allowPaused) || current.revision !== state.revision || !current.discovery?.enabled) return;

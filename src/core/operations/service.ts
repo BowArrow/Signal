@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import twitterText from 'twitter-text';
-import { and, eq, like } from 'drizzle-orm';
+import { and, eq, inArray, like } from 'drizzle-orm';
 import type { App } from '../app.js';
 import { growthTasks, marketingToolCalls, marketingMedia, marketingWorkflows, products, settings } from '../db/schema.js';
 import { initializeMarketing, queueMarketing, requireProduct } from '../marketing/store.js';
@@ -24,6 +24,7 @@ import { requireNaturalReply, lacksReplyContext } from '../marketing/voice.js';
 import { ConversationTracker } from './conversations.js';
 import { deliveryCapacity } from '../../shared/delivery-capacity.js';
 import { buyerIntent } from '../../shared/buyer-intent.js';
+import { scheduleAcquisitionRecovery } from '../marketing/acquisition-recovery.js';
 
 const STATE = 'operations.policy.';
 const JOB = 'operations.delivery.';
@@ -42,7 +43,9 @@ export class OperationsService {
   private put(key: string, value: unknown) { this.app.db.insert(settings).values({ key, value, updatedAt: this.app.clock.now() }).onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: this.app.clock.now() } }).run(); }
   state(productId: string): OperationState {
     const product = requireProduct(this.app, productId);
-    return this.get<OperationState>(STATE + productId) ?? { productId, objective: `Help ${product.name}'s target buyers solve a specific problem and start a trial. Use verified product facts and measure which campaign brings customers.`, accountIds: [], intervalHours: 24, dailyLimit: 1, running: false, revision: 0, authorizedAt: null, lastCycleAt: null, taskId: null };
+    const saved = this.get<OperationState>(STATE + productId);
+    if (saved) return saved.teamEndsAt && saved.teamEndsAt <= this.app.clock.now() ? { ...saved, running: false } : saved;
+    return { productId, objective: `Help ${product.name}'s target buyers solve a specific problem and start a trial. Use verified product facts and measure which campaign brings customers.`, accountIds: [], intervalHours: 24, dailyLimit: 1, running: false, revision: 0, authorizedAt: null, lastCycleAt: null, taskId: null };
   }
   deliveries(): Delivery[] { return this.app.db.select().from(settings).where(like(settings.key, `${JOB}%`)).all().map(row => row.value as Delivery).sort((a, b) => b.createdAt - a.createdAt); }
   imageBusy() { return this.deliveries().some(j => j.status === 'queued' && j.image && j.image.phase !== 'ready' && j.leaseUntil > this.app.clock.now()); }
@@ -61,7 +64,7 @@ export class OperationsService {
     if (this.deliveries().some(j => j.productId === productId && j.attempts > 0 && ['dispatching', 'retry', 'attention'].includes(j.status))) throw new Error('Reconcile attempted deliveries, or explicitly stop retrying them, before changing operating settings. Pause remains available.');
     this.pause(productId);
     const state = this.state(productId);
-    this.put(STATE + productId, { ...state, ...policy, mode: policy.mode, ownedAudience: policy.ownedAudience, testChannels: policy.testChannels, replyToRequests: policy.replyToRequests, publicReplyLimit: policy.publicReplyLimit, imageWorkflowId: policy.imageWorkflowId, discovery: policy.discovery, demandEvidence: undefined, revision: state.revision + 1, authorizedAt: null, lastCycleAt: null, taskId: null, targetAccountId: null, learning: undefined });
+    this.put(STATE + productId, { ...state, ...policy, teamRunId: undefined, teamEndsAt: undefined, mode: policy.mode, ownedAudience: policy.ownedAudience, testChannels: policy.testChannels, replyToRequests: policy.replyToRequests, publicReplyLimit: policy.publicReplyLimit, imageWorkflowId: policy.imageWorkflowId, discovery: policy.discovery, demandEvidence: undefined, revision: state.revision + 1, authorizedAt: null, lastCycleAt: null, taskId: null, targetAccountId: null, learning: undefined });
     for (const job of this.deliveries().filter(j => j.productId === productId && ['queued', 'retry'].includes(j.status))) this.put(JOB + job.id, { ...job, status: 'cancelled', detail: 'Operating settings changed. A new campaign will use the new settings.', updatedAt: this.app.clock.now() });
   }
   private validateAccounts(productId: string, ids: string[]) {
@@ -74,11 +77,30 @@ export class OperationsService {
       if (!hasPublishingPermission(account)) throw new Error(`Check ${account.provider === 'x' ? 'X' : account.provider === 'facebook' ? 'Facebook Page' : 'LinkedIn'} with publishing access in Connections before running.`);
     }
   }
-  run(productId: string) {
+  run(productId: string, resumeTeam = false) {
     if (this.app.env.SIGNAL_OFFLINE === '1') throw new Error('Turn off offline mode before running the operation.');
     const state = this.state(productId); operationPolicySchema.parse(statePolicy(state)); this.validateAccounts(productId, state.accountIds);
+    const campaign = state.teamRunId ? this.get<{ status: string; execution?: { operationRevision: number; status: string } }>('marketing.team.run.' + state.teamRunId) : undefined;
+    if (state.teamRunId && (campaign?.status !== 'approved' || campaign.execution?.operationRevision !== state.revision)) throw new Error('This campaign needs a fresh approval before running.');
+    if (state.teamEndsAt && state.teamEndsAt <= this.app.clock.now()) throw new Error('This campaign has ended. Approve a new campaign to continue.');
+    if (state.teamRunId && campaign?.execution?.status !== 'active' && !(resumeTeam && campaign?.execution?.status === 'paused')) throw new Error('Resume this campaign from Marketing team to retain its approved scope.');
     const readiness = this.readiness(productId); if (!readiness.ready) throw new Error(readiness.blockers.join(' '));
     this.put(STATE + productId, { ...state, running: true, authorizedAt: this.app.clock.now() });
+  }
+  /** One campaign approval starts the existing dispatcher under a frozen scope. */
+  startTeamCampaign(productId: string, runId: string, objective: string, expectedRevision: number, endsAt: number) {
+    const previous = this.state(productId);
+    if (previous.revision !== expectedRevision) throw new Error('Operating settings changed. Refresh the campaign scope before approval.');
+    if (!previous.accountIds.length) throw new Error('Select a connected destination in Operations before approving the campaign.');
+    if (this.app.env.SIGNAL_OFFLINE === '1') throw new Error('Turn off offline mode before approving and starting a campaign.');
+    const ready = this.readiness(productId); if (!ready.ready) throw new Error(ready.blockers.join(' '));
+    const policy = { ...statePolicy(previous), objective: objective.slice(0, 2000) };
+    this.configure(productId, policy);
+    this.run(productId);
+    const state = { ...this.state(productId), teamRunId: runId, teamEndsAt: endsAt };
+    this.put(STATE + productId, state);
+    if (previous.taskId) this.app.db.update(growthTasks).set({ status: 'cancelled', lease: null, updatedAt: this.app.clock.now() }).where(and(eq(growthTasks.id, previous.taskId), eq(growthTasks.productId, productId), inArray(growthTasks.status, ['queued', 'running']))).run();
+    return { policy, revision: state.revision };
   }
   readiness(productId: string) { return operationReadiness(this.app, this.state(productId)); }
   async assessAcquisition(productId: string, taskId: string, llm: LlmClient, model: string, signal: AbortSignal) {
@@ -169,7 +191,7 @@ export class OperationsService {
     }
     if (state.discovery?.enabled && (!value.demand || (value.demand.findingId !== 'none' && !state.demandEvidence?.some(f => f.id === value.demand!.findingId)))) throw new Error('Explain the public research decision. Select a finding from this cycle, or none when no observation fits.');
     if (!state.discovery?.enabled && value.demand) throw new Error('Public research is not enabled for this cycle. Omit demand.');
-    if (!state.running || !state.authorizedAt) throw new Error('The owner must start this business in Operations before deliveries can be queued.');
+    if (!state.running || !state.authorizedAt || (state.teamEndsAt && state.teamEndsAt <= this.app.clock.now())) throw new Error('The owner must start this business in Operations before deliveries can be queued.');
     if (!state.accountIds.includes(value.accountId)) throw new Error('This destination is not enabled in the operating settings.');
     this.validateAccounts(productId, [value.accountId]);
     const task = this.app.db.select().from(growthTasks).where(and(eq(growthTasks.id, taskId), eq(growthTasks.productId, productId), eq(growthTasks.status, 'running'))).get();
@@ -240,7 +262,7 @@ export class OperationsService {
     if (account.provider === 'linkedin' && body.length > 3000) throw new Error('Shorten the LinkedIn post to fit 3,000 characters including its tracked campaign link.');
     if (account.provider === 'facebook' && body.length > 5000) throw new Error('Keep the Facebook campaign post within 5,000 characters including its tracked campaign link.');
     if (account.provider === 'x' && !twitterText.parseTweet(body).valid) throw new Error('Shorten the X post to fit 280 weighted characters including its tracked campaign link.');
-    const job: Delivery = { ...value, body, id, productId, taskId, provider: account.provider as Delivery['provider'], revision: state.revision, fingerprint: hash, slug, recordKey, author: `${product.name} team`, status: 'queued', createdAt: now, updatedAt: now, nextAttemptAt: now, attempts: 0, leaseUntil: 0, leaseId: '', detail: 'Queued for the selected destination. Not published yet.', receipt: null };
+    const job: Delivery = { ...value, ...(state.teamRunId ? { teamRunId: state.teamRunId } : {}), body, id, productId, taskId, provider: account.provider as Delivery['provider'], revision: state.revision, fingerprint: hash, slug, recordKey, author: `${product.name} team`, status: 'queued', createdAt: now, updatedAt: now, nextAttemptAt: now, attempts: 0, leaseUntil: 0, leaseId: '', detail: 'Queued for the selected destination. Not published yet.', receipt: null };
     if (isReply) job.reply = { ...finding.reply!, text: finding.excerpt };
     if (state.imageWorkflowId && account.provider === 'bluesky' && !isReply) job.image = { workflowId: state.imageWorkflowId, mediaId: newId(), phase: 'pending', detail: 'Waiting to render the campaign image.', reviewAttempts: 0 };
     if (state.learning) job.learning = state.learning;
@@ -252,10 +274,11 @@ export class OperationsService {
     for (const product of this.app.db.select().from(products).where(eq(products.enabled, true)).all().filter(p => !productId || p.id === productId)) {
       this.app.db.transaction(() => {
         const state = this.state(product.id);
+        scheduleAcquisitionRecovery(this.app, product.id);
         if (state.accountIds.length === 0 && state.mode !== 'acquisition') return;
         if (state.discovery?.enabled && this.discovery.snapshot(state).lastAttemptAt === null) return;
         const capacity = deliveryCapacity(state, this.deliveries(), this.app.clock.now());
-        if (!state.running || (!capacity.canPublish && !capacity.canReply)) return;
+        if (!state.running || (state.teamEndsAt && state.teamEndsAt <= this.app.clock.now()) || (!capacity.canPublish && !capacity.canReply)) return;
         const demandEvidence = this.discovery.context(state);
         const decision = acquisitionCycle(this.app, state.productId);
         // Empty scans must not consume the acquisition interval. New candidates
@@ -264,9 +287,13 @@ export class OperationsService {
         const dueAt = state.mode === 'acquisition' ? acquisitionDueAt(state, decision, demandEvidence.map(f => f.id), this.completedAcquisitionAt(state)) : state.lastCycleAt === null ? 0 : state.lastCycleAt + state.intervalHours * 3600000;
         if (dueAt === null || this.app.clock.now() < dueAt) return;
         if (this.app.db.select().from(growthTasks).where(and(eq(growthTasks.productId, state.productId), eq(growthTasks.kind, 'marketing'))).all().some(t => ['queued', 'running'].includes(t.status))) return;
-        try { this.validateAccounts(state.productId, state.accountIds); } catch { return; }
+        // A broken destination must not prevent read-only qualification or a
+        // delivery through another already-authorized, healthy destination.
+        // Acquisition chooses a verified route; preflight rechecks that account.
+        if (state.mode !== 'acquisition') { try { this.validateAccounts(state.productId, state.accountIds); } catch { return; } }
         const learning = state.mode === 'acquisition' ? state.learning : chooseOperation(this.app, state, this.deliveries()); const target = learning?.accountId ?? null;
         const taskId = queueMarketing(this.app, state.productId, state.mode === 'acquisition' ? `Run a customer acquisition cycle. Objective: ${state.objective}\nQualify observed customer requests against current product evidence before deciding whether to publish. Research and an honest no-fit or missing-access outcome are valid work; do not manufacture a promotional post to satisfy a quota. Keep Sales and reporting under their saved policies. No ads or spending.` : `Run an autonomous operation cycle. Objective: ${state.objective}\nDestination account: ${target}. Inspect the current product website, choose a distinct buyer problem based on available evidence, then use operations.enqueue to schedule finished public copy for that account. This is an authorized delivery under the owner's operating policy. Do not stop at a local draft. Do not invent claims. No ads or spending.`);
+        if (state.teamRunId) this.put(`marketing.team.operation-task.${taskId}`, { runId: state.teamRunId, productId: state.productId, revision: state.revision });
         this.put(STATE + state.productId, { ...state, taskId, targetAccountId: target, learning, demandEvidence, lastCycleAt: this.app.clock.now() });
       }, { behavior: 'immediate' });
     }
@@ -286,7 +313,7 @@ export class OperationsService {
     });
     if (!job) return;
     this.controller = new AbortController(); this.activeProduct = job.productId;
-    const check = () => { this.controller!.signal.throwIfAborted(); const state = this.state(job.productId); const current = this.job(job.productId, job.id); if (!state.running || state.revision !== job.revision || current.status !== 'queued' || current.leaseId !== job.leaseId) throw new Error('The image campaign changed or paused.'); this.validateAccounts(job.productId, [job.accountId]); };
+    const check = () => { this.controller!.signal.throwIfAborted(); const state = this.state(job.productId); const current = this.job(job.productId, job.id); if (!state.running || (state.teamEndsAt && state.teamEndsAt <= this.app.clock.now()) || state.revision !== job.revision || current.status !== 'queued' || current.leaseId !== job.leaseId) throw new Error('The image campaign changed or paused.'); this.validateAccounts(job.productId, [job.accountId]); };
     try {
       check();
       if (!this.app.operationImages) throw new Error('Image processing is unavailable. Open this campaign in the Signal desktop app.');
@@ -310,7 +337,7 @@ export class OperationsService {
     this.controller = new AbortController(); this.activeProduct = job.productId;
     const canWrite = () => {
       const state = this.state(job.productId); const current = this.job(job.productId, job.id);
-      if (!state.running || state.revision !== job.revision || !state.accountIds.includes(job.accountId) || current.leaseId !== job.leaseId) throw new DeliveryError('Operation paused or its authorization changed.');
+      if (!state.running || (state.teamEndsAt && state.teamEndsAt <= this.app.clock.now()) || state.revision !== job.revision || !state.accountIds.includes(job.accountId) || current.leaseId !== job.leaseId) throw new DeliveryError('Operation paused or its authorization changed.');
       this.validateAccounts(job.productId, [job.accountId]);
     };
     const finish = (patch: Partial<Delivery>) => { const current = this.job(job.productId, job.id); if (current.leaseId === job.leaseId) this.put(JOB + job.id, { ...current, ...patch, leaseUntil: 0, updatedAt: this.app.clock.now() }); };
