@@ -1,3 +1,4 @@
+import { pipelinePut, contactId } from '../../src/core/sales/pipeline-store.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, type App } from '../../src/core/app.js';
 import { silentLogger } from '../../src/core/lib/logger.js';
@@ -92,7 +93,12 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
   function coldDraft(): ProspectDraft {
     const lead = app.db.select().from(studioLeads).all()[0]!;
     app.db.update(studioLeads).set({ value: { ...lead.value, permission: 'unknown' } }).run();
-    return { id: 'researched-prospect', productId, leadId: 'lead1', kind: 'business', rulesUrl: '', rulesQuote: '', nextStep: '', name: lead.value.name, url: 'https://example.com/services', contact: 'buyer@example.com', contactSource: 'https://example.com/contact', fit: 'Specific public document workflow.', prospectQuote: 'We prepare document reports for clients.', productQuote: fact, productUrl: 'https://siplemona.de/', observedAt: clock.now(), createdAt: clock.now(), updatedAt: clock.now(), status: 'draft', detail: 'Ready for review.', subject: 'One project folder with Lemonade', body: 'We build Lemonade to help find project files. Your site describes preparing reports for clients. Would trying one project folder be useful for that work?' };
+    const draft: ProspectDraft = { id: 'researched-prospect', productId, leadId: 'lead1', kind: 'business', rulesUrl: '', rulesQuote: '', nextStep: '', name: lead.value.name, url: 'https://example.com/services', contact: 'buyer@example.com', contactSource: 'https://example.com/contact', fit: 'Specific public document workflow.', prospectQuote: 'We prepare document reports for clients.', productQuote: fact, productUrl: 'https://siplemona.de/', observedAt: clock.now(), createdAt: clock.now(), updatedAt: clock.now(), status: 'draft', detail: 'Ready for review.', subject: 'One project folder with Lemonade', body: 'We build Lemonade to help find project files. Your site describes preparing reports for clients. Would trying one project folder be useful for that work?' };
+    // Cold transport fixture includes the intent pipeline and verification receipts.
+    pipelinePut(app, 'lead', contactId(productId, draft.contact), { id: draft.leadId, productId, stage: 'DRAFT_READY', qualification: { qualified: true, icp_score: 85, angle_tag: 'local_workflow_speed' }, draft: { subject: draft.subject, body: draft.body, criticPassed: true } });
+    pipelinePut(app, 'inbox', contactId(productId, 'inbox'), { productId, accountId: 'inbox', sender: 'sales@example.org', warmupStartedAt: clock.now() - 15 * DAY, checkedAt: clock.now(), spf: true, dkim: true, dmarc: true });
+    pipelinePut(app, 'verification', contactId(productId, draft.contact), { email: draft.contact, checkedAt: clock.now(), valid: true });
+    return draft;
   }
   it('queues one reviewed cold introduction without changing consent and confirms it through the normal delivery path', async () => {
     const draft = coldDraft(); const id = service.queueReviewedProspect(draft);
@@ -104,14 +110,14 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
     expect(() => service.queueReviewedProspect(draft)).toThrow('already has outreach');
   });
   it('does not automatically prepare unknown contacts without an individual cold approval', async () => {
-    coldDraft(); app.operations!.run(productId); await service.tick(); expect(service.jobs(productId)).toEqual([]); expect(writes()).toEqual([]);
+    coldDraft(); app.operations!.run(productId); await tickAndReview(); expect(service.jobs(productId)).toEqual([]); expect(writes()).toEqual([]);
   });
   it('allows local approval while paused with a stale inbox but waits for a fresh scan before sending', async () => {
     const draft = coldDraft(); clock.advance(6 * 60000);
-    service.queueReviewedProspect(draft); await service.tick(); expect(writes()).toEqual([]); expect(job().status).toBe('queued');
-    clock.advance(6 * 60000); app.operations!.run(productId); await service.tick();
+    service.queueReviewedProspect(draft); await tickAndReview(); expect(writes()).toEqual([]); expect(job().status).toBe('queued');
+    clock.advance(6 * 60000); app.operations!.run(productId); await tickAndReview();
     expect(writes()).toEqual([]); expect(job().status).toBe('queued');
-    fresh(); await service.tick(); expect(job().status).toBe('sent');
+    fresh(); await tickAndReview(); expect(job().status).toBe('sent');
   });
   it('retains opt-out, policy-change, pause and uncertain-send protections for cold email', async () => {
     const draft = coldDraft(); service.queueReviewedProspect(draft);
@@ -125,8 +131,11 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
     expect(() => service.queueReviewedProspect({ ...draft, body: draft.body + ' https://other.example/' })).toThrow('links');
     expect(service.jobs(productId)).toEqual([]);
   });
-  const prepare = () => service.prepare(productId, 'lead1');
-  async function dispatch() { app.operations!.run(productId); clock.advance(5 * 60000); fresh(); await service.tick(); }
+  const prepare = async () => { await service.prepare(productId, 'lead1'); approvePrepared(); };
+  // Delivery fixtures explicitly simulate reviewing newly prepared emails.
+  function approvePrepared() { for (const job of service.jobs(productId).filter(j => j.status === 'needs-review')) service.approvePrepared(productId, job.id, job.updatedAt, job.bodyHash); }
+  async function tickAndReview() { await service.tick(); approvePrepared(); }
+  async function dispatch() { app.operations!.run(productId); clock.advance(5 * 60000); fresh(); await tickAndReview(); }
   if (provider === 'gmail') it.each([false, true])('checks the selected outreach sender before writing; revoked=%s', async revokedBeforeSend => {
     const alias = 'sales@aionx.aionapp.org'; let revoked = false;
     const original = send.getMockImplementation()!;
@@ -160,7 +169,7 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
     put('connections.account.audience', { ...app.connections.accounts()[0], id: 'audience', productId, provider: 'mailchimp', identity: 'Lemonade' });
     app.db.delete(studioLeads).run(); app.prospects = new ProspectService(app);
     await app.prospects.configure(productId, { accountId: 'audience', listId: 'audience1', enabled: true, businessConfirmed: true, marketingPermissionId: '' });
-    app.operations!.run(productId); await app.prospects.tick(); await service.tick(); expect(job().status).toBe('queued');
+    app.operations!.run(productId); await app.prospects.tick(); await tickAndReview(); expect(job().status).toBe('queued');
     delivering = true; await dispatch();
     const sent = consent === 'subscribed' || (consent === 'after-draft' && provider === 'gmail');
     expect(job().status).toBe(sent ? 'sent' : consent === 'unsubscribed' ? 'cancelled' : 'attention');
@@ -169,7 +178,7 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
     if (consent === 'after-draft' && provider === 'outlook') { expect(job().acceptedId).toBeTruthy(); expect(remote?.isDraft).toBe(true); }
     if (consent === 'unavailable') {
       expect(job().retryAt).toBe(clock.now() + 10 * 60000);
-      delivering = false; clock.advance(10 * 60000); fresh(); await service.tick(); expect(job().status).toBe('queued');
+      delivering = false; clock.advance(10 * 60000); fresh(); await tickAndReview(); expect(job().status).toBe('queued');
       await dispatch(); expect(job().status).toBe('sent'); expect(job().prepareAttempts).toBe(2);
       expect(writes()).toHaveLength(provider === 'gmail' ? 1 : 2);
     }
@@ -191,7 +200,7 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
     put('connections.account.website', { ...app.connections!.accounts()[0], id: 'website', productId, provider: 'signal-blog', site: 'https://siplemona.de', identity: 'Lemonade' });
     app.db.delete(studioLeads).run(); app.prospects = new ProspectService(app);
     await app.prospects.configure(productId, { provider: 'signal-blog', accountId: 'website', listId: 'website', enabled: true, businessConfirmed: true, marketingPermissionId: '' });
-    app.operations!.run(productId); await app.prospects.tick(); await service.tick(); expect(job().status).toBe('queued');
+    app.operations!.run(productId); await app.prospects.tick(); await tickAndReview(); expect(job().status).toBe('queued');
     delivering = true; await dispatch();
     const sent = consent === 'subscribed' || (consent === 'after-draft' && provider === 'gmail');
     expect(job().status).toBe(sent ? 'sent' : consent === 'unsubscribed' ? 'cancelled' : 'attention');
@@ -204,10 +213,10 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
     const csv = 'email,source,permission,consent\nunknown@example.com,Conference,unknown,\nbuyer@example.com,Product signup,opted-in,Product marketing checkbox on 2026-09-15';
     const preview = importLeads(app, { productId, csv });
     importLeads(app, { productId, csv, previewId: preview.previewId });
-    await service.tick(); expect(service.jobs(productId)).toHaveLength(0);
-    app.operations!.run(productId); await service.tick(); expect(job().status).toBe('queued');
+    await tickAndReview(); expect(service.jobs(productId)).toHaveLength(0);
+    app.operations!.run(productId); await tickAndReview(); expect(job().status).toBe('queued');
     await dispatch(); expect(job()).toMatchObject({ to: 'buyer@example.com', status: 'sent' });
-    await service.tick(); expect(service.jobs(productId)).toHaveLength(1);
+    await tickAndReview(); expect(service.jobs(productId)).toHaveLength(1);
     expect(app.db.select().from(studioLeads).all().find(l => l.value.contact === 'unknown@example.com')?.value.stage).toBe('discovered');
     expect(writes()).toHaveLength(provider === 'gmail' ? 1 : 2);
   });
@@ -216,11 +225,11 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
     expect(job().body).toContain(`utm_campaign=${job().id}`); expect(job().body).toContain('Promotional message'); expect(job().body).toContain('Reply "stop"');
     await dispatch(); expect(job()).toMatchObject({ status: 'sent', to: 'buyer@example.com' }); expect(job().threadId).toBeTruthy();
     expect(app.db.select().from(studioLeads).get()!.value.stage).toBe('contacted');
-    await service.tick(); await expect(prepare()).rejects.toThrow(); expect(writes()).toHaveLength(provider === 'gmail' ? 1 : 2);
+    await tickAndReview(); await expect(prepare()).rejects.toThrow(); expect(writes()).toHaveLength(provider === 'gmail' ? 1 : 2);
     expect(JSON.stringify(service.view())).not.toContain('fixture-secret-token');
   });
   it('automatically selects opted-in leads only while Run is active', async () => {
-    await service.tick(); expect(service.jobs(productId)).toHaveLength(0); app.operations!.run(productId); await service.tick(); expect(job().status).toBe('queued'); expect(writes()).toHaveLength(0);
+    await tickAndReview(); expect(service.jobs(productId)).toHaveLength(0); app.operations!.run(productId); await tickAndReview(); expect(job().status).toBe('queued'); expect(writes()).toHaveLength(0);
   });
   it.each(['unknown', 'existing-conversation', 'do-not-contact'] as const)('does not infer consent from %s permission', async permission => {
     const lead = app.db.select().from(studioLeads).get()!; app.db.update(studioLeads).set({ value: { ...lead.value, permission } }).run(); await expect(prepare()).rejects.toThrow('opted-in'); expect(complete).not.toHaveBeenCalled();
@@ -293,17 +302,17 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
   });
   it('waits for incomplete inbox scans and rechecks changed lead details before writing', async () => {
     await prepare(); app.operations!.run(productId); clock.advance(5 * 60000);
-    put('sales.source.inbox', { ...app.sales!.source(productId, 'inbox'), status: 'partial' }); await service.tick(); expect(job().status).toBe('queued'); expect(writes()).toHaveLength(0);
-    fresh(); const lead = app.db.select().from(studioLeads).get()!; app.db.update(studioLeads).set({ value: { ...lead.value, contact: 'different@example.com' } }).run(); await service.tick(); expect(writes()).toHaveLength(0); expect(job().status).toBe('attention');
+    put('sales.source.inbox', { ...app.sales!.source(productId, 'inbox'), status: 'partial' }); await tickAndReview(); expect(job().status).toBe('queued'); expect(writes()).toHaveLength(0);
+    fresh(); const lead = app.db.select().from(studioLeads).get()!; app.db.update(studioLeads).set({ value: { ...lead.value, contact: 'different@example.com' } }).run(); await tickAndReview(); expect(writes()).toHaveLength(0); expect(job().status).toBe('attention');
   });
   it('rejects absolute privacy promises before editorial approval', async () => {
     complete.mockResolvedValue({ text: JSON.stringify({ decision: 'email', subject: 'Try a useful document task', body: 'Lemonade helps you answer questions while keeping everything local. Nothing ever leaves your computer.', reason: 'Unsupported promise' }), model: 'fixture', inputTokens: 0, outputTokens: 0, stopReason: 'stop' });
     await prepare(); expect(job().status).toBe('attention'); expect(writes()).toHaveLength(0); expect(complete).toHaveBeenCalledTimes(1);
   });
   it('bounds automatic preparation retries without sending rejected output', async () => {
-    complete.mockResolvedValue({ text: '{}', model: 'fixture', inputTokens: 0, outputTokens: 0, stopReason: 'stop' }); app.operations!.run(productId); await service.tick();
-    for (let i = 0; i < 2; i++) { clock.advance(job().retryAt! - clock.now()); fresh(); await service.tick(); }
-    expect(job()).toMatchObject({ status: 'attention', prepareAttempts: 3, retryAt: null }); await service.tick(); expect(complete).toHaveBeenCalledTimes(3); expect(writes()).toHaveLength(0);
+    complete.mockResolvedValue({ text: '{}', model: 'fixture', inputTokens: 0, outputTokens: 0, stopReason: 'stop' }); app.operations!.run(productId); await tickAndReview();
+    for (let i = 0; i < 2; i++) { clock.advance(job().retryAt! - clock.now()); fresh(); await tickAndReview(); }
+    expect(job()).toMatchObject({ status: 'attention', prepareAttempts: 3, retryAt: null }); await tickAndReview(); expect(complete).toHaveBeenCalledTimes(3); expect(writes()).toHaveLength(0);
   });
   it('rejects internal drafting instructions copied into the message', async () => {
     complete.mockResolvedValue({ text: JSON.stringify({ decision: 'email', subject: 'Try a practical workflow', body: 'Lemonade helps find files. Signal adds the business identity, AI disclosure, mailing address and reply-to-stop instructions.', reason: 'Drafting instruction leaked' }), model: 'fixture', inputTokens: 0, outputTokens: 0, stopReason: 'stop' });
@@ -323,7 +332,7 @@ describe.each(['gmail', 'outlook'] as const)('%s proactive outreach', provider =
       if (request.task === 'sales.outreach') expect(request.prompt).toContain('Name the product in the opening');
       return original(request);
     });
-    app.operations!.run(productId); await service.tick(); expect(job().status).toBe('attention'); clock.advance(job().retryAt! - clock.now()); fresh(); await service.tick();
+    app.operations!.run(productId); await tickAndReview(); expect(job().status).toBe('attention'); clock.advance(job().retryAt! - clock.now()); fresh(); await tickAndReview();
     expect(job()).toMatchObject({ status: 'queued', prepareAttempts: 2 }); expect(writes()).toHaveLength(0);
   });
   it('lets opt-out interrupt model work before a message is queued', async () => {

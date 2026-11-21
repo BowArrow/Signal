@@ -10,7 +10,7 @@ export interface SalesHandoff {
 }
 export interface HandoffSummary { open: number; due: number; waiting: number; uncertain: number; }
 export interface HandoffView {
-  offline: boolean; cases: (SalesHandoff & { canReply: boolean; canRetry: boolean; canReconcile: boolean; messageBody: string })[];
+  offline: boolean; cases: (SalesHandoff & { canReply: boolean; canRetry: boolean; canReconcile: boolean; messageBody: string; suggestedReply?: string; sourceSignal?: string })[];
   counts: { productId: string; summary: HandoffSummary }[];
 }
 const target = { productId: z.string().min(1), id: z.string().min(1), revision: z.number().int().positive() };

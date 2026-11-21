@@ -1,5 +1,7 @@
 # Marketing team
 
+> Current approval policy: every sales email and follow-up requires individual human approval. Run Operations only sends approved text. Cold introductions also require intent qualification and verified sender readiness. See [the intent pipeline guide](agentic-sales-pipeline.md); it supersedes older automatic-email behavior described below.
+
 Open **Marketing team** in the sidebar, choose a business and save one campaign brief. Lemonade is the initial focus. The team uses the business's connected Codex account when available, otherwise its configured marketing model.
 
 Seven specialists prepare buyer research, a measurable zero-cash experiment, finished copy, a creative brief, a placement plan, a sales playbook and a measurement review. They run in dependency order through Signal's existing durable task queue. This keeps local inference serialized and lets each specialist inspect earlier deliverables. These are separate role executions with a bounded tool loop, not seven simultaneous model processes.

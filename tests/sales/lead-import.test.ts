@@ -88,7 +88,7 @@ describe('pipeline import', () => {
     expect(result.counts.optOuts).toBe(2); expect(leads()).toHaveLength(2);
     expect(leads().find(l => l.id === lead.id)?.value).toMatchObject({ permission: 'do-not-contact', followUpAt: null });
     expect(app.sales!.isSuppressed(productId, 'new@example.test')).toBe(true);
-    expect(app.sales!.isSuppressed(secondId, 'new@example.test')).toBe(false);
+    expect(app.sales!.isSuppressed(secondId, 'new@example.test')).toBe(true);
   });
   it('marks known purchases as customers and invalidates previews after a purchase', () => {
     const before = preview(); vi.spyOn(app.revenue!, 'purchaseForContact').mockImplementation((_id, contact) => contact === 'pat@example.test' ? { captured: 4900 } as ReturnType<RevenueService['purchaseForContact']> : undefined);

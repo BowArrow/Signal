@@ -67,7 +67,18 @@ beforeEach(async () => {
   await sales.sync(productId, accountId); await sales.triage(productId, sales.messages(productId)[0]!.id);
 });
 afterEach(async () => { await replies.stop(); await sales.stop(); app.close(); vi.unstubAllEnvs(); __setConfigForTests(null); });
-const prepare = () => replies.prepare(productId, sales.messages(productId)[0]!.id);
+const approvePrepared = () => { const job = replies.replies(productId).find(j => j.status === 'handoff' && j.body && j.evidence.length); if (job) replies.approvePreparedReply(productId, job.id, job.updatedAt, job.bodyHash); };
+// Transport fixtures explicitly simulate reviewing each generated response.
+const prepare = async () => { await replies.prepare(productId, sales.messages(productId)[0]!.id); approvePrepared(); };
+it('never sends an AI-reviewed reply without a separate exact-content human approval', async () => {
+  await replies.prepare(productId, sales.messages(productId)[0]!.id);
+  expect(replies.replies(productId)[0]!.status).toBe('handoff');
+  await dispatch(); expect(posts()).toHaveLength(0);
+  const held = replies.replies(productId)[0]!;
+  expect(() => replies.approvePreparedReply(productId, held.id, held.updatedAt, '0'.repeat(64))).toThrow('current');
+  replies.approvePreparedReply(productId, held.id, held.updatedAt, held.bodyHash);
+  await dispatch(); expect(posts()).toHaveLength(1);
+});
 const posts = () => send.mock.calls.filter(([url, init]) => String(url).endsWith('/messages/send') && init?.method === 'POST');
 it.each(['send', 'revoked', 'changed', 'uncertain', 'owner'] as const)('uses a verified Gmail alias and preserves delivery safeguards: %s', async mode => {
   const alias = 'sales@aionx.aionapp.org'; let revoked = false;
@@ -130,7 +141,7 @@ it('runs research, drafting, editorial review, durable scheduling and confirmed 
   await replies.tick(); expect(posts()).toHaveLength(1); expect(JSON.stringify(replies.view())).not.toContain('fixture-secret-token');
 });
 it('automatically prepares an eligible inquiry only while Operations runs', async () => {
-  await replies.tick(); expect(replies.replies(productId)).toHaveLength(0); app.operations!.run(productId); await replies.tick(); expect(replies.replies(productId)[0]!.status).toBe('queued'); expect(posts()).toHaveLength(0);
+  await replies.tick(); expect(replies.replies(productId)).toHaveLength(0); app.operations!.run(productId); await replies.tick(); expect(replies.replies(productId)[0]!.status).toBe('handoff'); expect(posts()).toHaveLength(0);
 });
 it('reconciles a lost send response after restart without another POST', async () => {
   await prepare(); loseSend = true; await dispatch(); const job = replies.replies(productId)[0]!; expect(job.status).toBe('attention'); expect(job.attemptedAt).not.toBeNull(); expect(job.acceptedId).toBeNull();
@@ -254,7 +265,7 @@ async function enableSequence(delays = [1, 2]) {
   complete.mockImplementation(async request => request.task === 'sales.reply' && request.prompt.includes('FOLLOW-UP CONTEXT:') ? { text: JSON.stringify({ decision: 'reply', body: request.prompt.includes('follow-up 1 of') ? 'Would trying Lemonade on a project help? It helps you find project files. See https://siplemona.de.' : 'One final suggestion: use Lemonade to find project files. If this is useful, you can learn more at https://siplemona.de.', reason: 'Useful next step.' }), model: 'fixture', inputTokens: 1, outputTokens: 1, stopReason: 'stop' } : model(request));
   await prepare(); await dispatch(); expect(replies.sequences.list(productId)).toHaveLength(1); return records;
 }
-async function prepareDueSequence() { const sequence = replies.sequences.list(productId)[0]!; clock.advance(sequence.nextAt! - clock.now()); await sales.sync(productId, accountId); await replies.tick(); }
+async function prepareDueSequence() { const sequence = replies.sequences.list(productId)[0]!; clock.advance(sequence.nextAt! - clock.now()); await sales.sync(productId, accountId); await replies.tick(); approvePrepared(); }
 async function sendDueSequence() { clock.advance(60000); await replies.tick(); }
 it('runs a complete sequence with fresh research at each step and stops after the configured count', async () => {
   await enableSequence(); const first = replies.sequences.list(productId)[0]!; expect(first.completedSteps).toBe(0); expect(first.nextAt).toBe(clock.now() + DAY);

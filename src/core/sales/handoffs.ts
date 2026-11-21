@@ -65,7 +65,9 @@ export class SalesHandoffs {
     const active = ['open', 'snoozed'].includes(row.status);
     const sequenceActive = !reply?.followUp || this.app.salesReplies?.sequences.list(row.productId).some(s => s.id === reply.followUp!.sequenceId && s.status === 'active');
     const uncertain = this.app.salesReplies?.replies(row.productId).some(r => r.messageId === row.messageId && r.attemptedAt !== null && r.status !== 'sent');
-    return { canReply: Boolean(active && row.kind !== 'sequence' && !uncertain && message?.body && !message.automated && !message.truncated), canRetry: Boolean(active && row.kind === 'reply' && !uncertain && reply && !reply.ownerApproval && reply.ownerHandledAt === undefined && sequenceActive && reply.attemptedAt === null), canReconcile: Boolean(row.kind === 'reply' && reply?.attemptedAt !== null && reply?.attemptedAt !== undefined && reply.status !== 'sent'), messageBody: message?.body ?? '' };
+    const pipelineLead = this.app.salesPipeline?.leads(row.productId).find(l => l.email === row.contact);
+    const suggestedReply = reply?.body.replace(/\n\n[^\n]*team[^\n]*\n?[\s\S]*$/, '') ?? '';
+    return { suggestedReply, sourceSignal: pipelineLead?.sourceSignal ?? '', canReply: Boolean(active && row.kind !== 'sequence' && !uncertain && message?.body && !message.automated && !message.truncated), canRetry: Boolean(active && row.kind === 'reply' && !uncertain && reply && !reply.ownerApproval && reply.ownerHandledAt === undefined && sequenceActive && reply.attemptedAt === null), canReconcile: Boolean(row.kind === 'reply' && reply?.attemptedAt !== null && reply?.attemptedAt !== undefined && reply.status !== 'sent'), messageBody: message?.body ?? '' };
   }
   view(): HandoffView {
     this.sync(); const products = this.app.connections?.view().products ?? [];

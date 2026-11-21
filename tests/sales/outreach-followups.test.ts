@@ -83,11 +83,14 @@ describe.each(['gmail', 'outlook'] as const)('%s initial outreach follow-ups', p
     app.operations.run(productId);
   });
   afterEach(async () => { await service.stop(); app.close(); vi.restoreAllMocks(); vi.unstubAllEnvs(); __setConfigForTests(null); });
+  // Every follow-up has an explicit human approval in this transport fixture.
+  function approvePrepared() { for (const job of service.jobs(productId).filter(j => j.status === 'needs-review')) service.approvePrepared(productId, job.id, job.updatedAt, job.bodyHash); }
+  async function tickAndReview() { await service.tick(); approvePrepared(); }
   async function sendQueued() { clock.advance(5 * 60000); fresh(); await service.tick(false); }
-  async function first() { await service.prepare(productId, 'lead'); await sendQueued(); expect(jobs()[0]?.status).toBe('sent'); }
-  async function due(days = 3) { clock.advance(days * DAY); fresh(); await service.tick(); }
+  async function first() { await service.prepare(productId, 'lead'); approvePrepared(); await sendQueued(); expect(jobs()[0]?.status).toBe('sent'); }
+  async function due(days = 3) { clock.advance(days * DAY); fresh(); await tickAndReview(); }
   it('sends two bounded follow-ups in the original thread with distinct copy and provider references', async () => {
-    await first(); await service.tick(); expect(jobs()).toHaveLength(1); await due(); expect(jobs()[1]?.status).toBe('queued'); await sendQueued(); expect(jobs()[1]?.status).toBe('sent');
+    await first(); await tickAndReview(); expect(jobs()).toHaveLength(1); await due(); expect(jobs()[1]?.status).toBe('queued'); await sendQueued(); expect(jobs()[1]?.status).toBe('sent');
     expect(jobs()[1]?.followUp?.inReplyTo).toBe(jobs()[0]?.providerInternetId);
     await due(7); await sendQueued(); expect(jobs()).toHaveLength(3); expect(jobs()[2]?.status).toBe('sent'); expect(jobs()[2]?.followUp?.references).toEqual(jobs().slice(0, 2).map(j => j.providerInternetId));
     await due(7); expect(jobs()).toHaveLength(3); expect(writes()).toHaveLength(provider === 'gmail' ? 3 : 6);
@@ -122,19 +125,19 @@ describe.each(['gmail', 'outlook'] as const)('%s initial outreach follow-ups', p
     await first(); clock.advance(3 * DAY); fresh();
     put(`sales.outreach-policy.${productId}`, { ...service.policy(productId), dailyLimit: 1 });
     app.db.insert(studioLeads).values({ id: 'second-lead', productId, value: { name: 'Second buyer', contact: 'second@example.com', permission: 'opted-in', stage: 'discovered', source: 'Recorded signup', notes: '', followUpAt: null, campaignId: '' }, createdAt: clock.now() }).run();
-    await service.prepare(productId, 'second-lead'); await service.tick();
+    await service.prepare(productId, 'second-lead'); approvePrepared(); await tickAndReview();
     expect(jobs().filter(j => j.followUp)).toHaveLength(0);
     service.cancel(productId, jobs().find(j => j.leadId === 'second-lead')!.id);
-    await service.tick(); expect(jobs().filter(j => j.followUp)).toHaveLength(1);
+    await tickAndReview(); expect(jobs().filter(j => j.followUp)).toHaveLength(1);
     await expect(service.prepare(productId, 'second-lead')).rejects.toThrow('daily outreach limit');
     await sendQueued();
     await expect(service.prepare(productId, 'second-lead')).rejects.toThrow('daily outreach limit');
-    clock.advance(DAY + 1); fresh(); await service.prepare(productId, 'second-lead');
+    clock.advance(DAY + 1); fresh(); await service.prepare(productId, 'second-lead'); approvePrepared();
     expect(jobs().find(j => j.leadId === 'second-lead')?.status).toBe('queued');
   });
   it('measures the next delay from a confirmed send after a pause', async () => {
     await first(); app.operations!.pause(productId); await due(5); expect(jobs()).toHaveLength(1);
-    app.operations!.run(productId); await service.tick(); await sendQueued();
+    app.operations!.run(productId); await tickAndReview(); await sendQueued();
     const firstFollowUp = jobs()[1]!; expect(firstFollowUp.status).toBe('sent');
     const sequence = service.view().sequences!.find(s => s.rootId === jobs()[0]!.id)!;
     expect(sequence.completedSteps).toBe(1); expect(sequence.nextAt).toBe(firstFollowUp.sentAt! + 7 * DAY);

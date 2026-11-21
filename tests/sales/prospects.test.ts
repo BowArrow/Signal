@@ -74,7 +74,7 @@ describe('automatic Mailchimp prospect ingestion', () => {
     await service.sync(productId); pages = [[member(undefined, { status: 'unsubscribed' })]]; await service.sync(productId);
     expect(leads()[0]!.value.permission).toBe('do-not-contact'); expect(app.sales!.isSuppressed(productId, 'buyer@example.test')).toBe(true);
     pages = [[member()]]; await service.sync(productId); expect(leads()[0]!.value.permission).toBe('do-not-contact');
-    expect(app.sales!.isSuppressed(secondId, 'buyer@example.test')).toBe(false);
+    expect(app.sales!.isSuppressed(secondId, 'buyer@example.test')).toBe(true);
   });
   it('marks known Stripe purchasers as customers', async () => {
     vi.spyOn(app.revenue!, 'purchaseForContact').mockReturnValue({ captured: 5000 } as ReturnType<RevenueService['purchaseForContact']>);

@@ -1,5 +1,7 @@
 # Automatic sales replies
 
+> Current approval policy: every sales email and follow-up requires individual human approval. Run Operations only sends approved text. Cold introductions also require intent qualification and verified sender readiness. See [the intent pipeline guide](agentic-sales-pipeline.md); it supersedes older automatic-email behavior described below.
+
 Signal 0.13 adds [owner handoffs and exact response approval](sales-handoffs.md)
 for conversations the agent cannot finish. Owner-approved responses use the
 delivery checks below without AI rewriting and never restart follow-ups.

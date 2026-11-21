@@ -1,5 +1,7 @@
 # Sales follow-up sequences
 
+> Current approval policy: every sales email and follow-up requires individual human approval. Run Operations only sends approved text. Cold introductions also require intent qualification and verified sender readiness. See [the intent pipeline guide](agentic-sales-pipeline.md); it supersedes older automatic-email behavior described below.
+
 Signal can continue an unanswered Gmail or Outlook buying conversation after the first
 confirmed reply. Each business has its own timing, contacts and delivery limits.
 The existing [sales reply setup](sales-replies.md) is required.

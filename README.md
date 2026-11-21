@@ -269,3 +269,7 @@ Create `.env` before using `--env-file`. Keep the `/data` volume persistent: it 
 | Release and validation history | [Release notes and feature guides](docs/), [marketing activity](docs/marketing-activity-0.47.md), [prospect research](docs/prospect-research-0.48.md) |
 
 Release notes describe what was checked at the time of each change. Local validation artifacts under `data/` and generated reports under `output/` are excluded from Git and will not be present in a fresh clone.
+
+## Intent-based sales pipeline
+
+Sales ? Intent pipeline qualifies explicit public buying signals, prepares short source-grounded drafts, and requires human approval before outreach or replies. See [setup, implementation boundaries and validation](docs/agentic-sales-pipeline.md).

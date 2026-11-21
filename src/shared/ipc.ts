@@ -7,6 +7,7 @@ import type { HandoffView, HandoffAction } from './handoffs.js';
 import type { SalesView, SalesAction } from './sales.js';
 import type { ReplyView, ReplyAction } from './sales-replies.js';
 import type { OutreachView, OutreachAction } from './outreach.js';
+import type { PipelineView, PipelineAction } from './sales-pipeline.js';
 import type { ProspectResearchView, ProspectResearchAction } from './prospect-research.js';
 import type { LeadImportAction, LeadImportPreview } from './lead-import.js';
 import type { ProspectView, ProspectAction, MailchimpAudience } from './prospects.js';
@@ -204,6 +205,8 @@ export const IPC = {
   sales: 'signal:sales',
   salesReplies: 'signal:sales-replies',
   outreach: 'signal:outreach',
+  salesPipeline: 'signal:sales-pipeline',
+  salesPipelineAction: 'signal:sales-pipeline-action',
   prospectResearch: 'signal:prospect-research',
   prospectResearchAction: 'signal:prospect-research-action',
   leadImport: 'signal:lead-import',
@@ -261,6 +264,8 @@ export interface SignalBridge {
   sales(): Promise<SalesView>;
   salesReplies(): Promise<ReplyView>;
   outreach(): Promise<OutreachView>;
+  salesPipeline(): Promise<PipelineView>;
+  salesPipelineAction(action: PipelineAction): Promise<PipelineView>;
   prospectResearch(): Promise<ProspectResearchView>;
   prospectResearchAction(action: ProspectResearchAction): Promise<ProspectResearchView>;
   leadImport(action: LeadImportAction): Promise<LeadImportPreview>;

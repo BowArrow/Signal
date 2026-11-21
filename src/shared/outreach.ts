@@ -4,6 +4,7 @@ export const outreachPolicySchema = z.object({ enabled: z.boolean(), accountId: 
 export type OutreachPolicy = z.input<typeof outreachPolicySchema>;
 export interface OutreachPolicyState extends z.output<typeof outreachPolicySchema> { productId: string; revision: number; configuredAt: number; }
 export interface OutreachJob {
+  ownerApproval?: { approvedAt: number; bodyHash: string };
   coldApproval?: { draftId: string; approvedAt: number; sourceUrl: string; contactSource: string };
   mailbox?: string;
   providerInternetId?: string;
@@ -12,7 +13,7 @@ export interface OutreachJob {
   id: string; productId: string; leadId: string; accountId: string; revision: number;
   from: string; to: string; subject: string; body: string; bodyHash: string; internetId: string;
   leadFingerprint: string;
-  status: 'preparing' | 'queued' | 'dispatching' | 'sent' | 'attention' | 'cancelled';
+  status: 'preparing' | 'needs-review' | 'queued' | 'dispatching' | 'sent' | 'attention' | 'cancelled';
   detail: string; createdAt: number; updatedAt: number; dueAt: number;
   attemptedAt: number | null; acceptedId: string | null; sentAt: number | null;
   threadId: string | null; checkedAt: number | null; reconciliationChecks: number;
@@ -25,6 +26,7 @@ export interface OutreachView { policies: OutreachPolicyState[]; jobs: OutreachJ
 export const outreachActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('configure'), productId: z.string(), value: outreachPolicySchema }).strict(),
   z.object({ type: z.literal('prepare'), productId: z.string(), leadId: z.string() }).strict(),
+  z.object({ type: z.literal('approve'), productId: z.string(), id: z.string(), updatedAt: z.number(), bodyHash: z.string().length(64), reviewed: z.literal(true) }).strict(),
   z.object({ type: z.literal('cancel'), productId: z.string(), id: z.string() }).strict(),
   z.object({ type: z.literal('reconcile'), productId: z.string(), id: z.string() }).strict(),
   z.object({ type: z.literal('stop-followups'), productId: z.string(), id: z.string() }).strict(),

@@ -48,7 +48,7 @@ it('routes two aliases separately and scopes opt-outs without reading unrelated 
   records = [mail('lemonade', lemonade, [], 'Please stop contacting me.'), mail('cinegen', cinegen), mail('personal', primary)];
   await sales.sync(first, firstAccount); await sales.sync(second, secondAccount);
   expect(sales.messages(first).map(row => row.providerId)).toEqual(['lemonade']); expect(sales.messages(second).map(row => row.providerId)).toEqual(['cinegen']);
-  expect(sales.isSuppressed(first, 'buyer@example.org')).toBe(true); expect(sales.isSuppressed(second, 'buyer@example.org')).toBe(false);
+  expect(sales.isSuppressed(first, 'buyer@example.org')).toBe(true); expect(sales.isSuppressed(second, 'buyer@example.org')).toBe(true);
   expect(sales.sender(first, firstAccount)).toBe(lemonade); expect(sales.sender(second, secondAccount)).toBe(cinegen);
   expect(send.mock.calls.some(([url]) => new URL(String(url)).searchParams.get('q')?.includes(`to:${lemonade}`))).toBe(true);
 });

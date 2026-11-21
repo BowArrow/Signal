@@ -36,6 +36,7 @@ export class RevenueService {
         if (lead.value.stage !== 'customer' || lead.value.followUpAt !== null) this.app.db.update(studioLeads).set({ value: { ...lead.value, stage: 'customer', followUpAt: null } }).where(eq(studioLeads.id, lead.id)).run();
         this.app.salesReplies?.stopForPurchase(productId, contact);
         this.app.outreach?.stopForPurchase(productId, contact);
+        this.app.salesPipeline?.purchaseConfirmed(productId, contact);
       });
     }
   }

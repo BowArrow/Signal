@@ -4,6 +4,8 @@ import { ProspectService } from '../../src/core/sales/prospects.js';
 import { prospectActionSchema } from '../../src/shared/prospects.js';
 import type { App } from '../../src/core/app.js';
 import { SalesService } from '../../src/core/sales/service.js';
+import { SalesPipeline } from '../../src/core/sales/pipeline.js';
+import { pipelineActionSchema } from '../../src/shared/sales-pipeline.js';
 import { importLeads } from '../../src/core/sales/lead-import.js';
 import { SalesReplyService } from '../../src/core/sales/reply-service.js';
 import { OutreachService } from '../../src/core/sales/outreach-service.js';
@@ -32,6 +34,9 @@ export function registerSalesHandlers(ipc: IpcMain, app: App) {
   const replies = new SalesReplyService(app); app.salesReplies = replies;
   const outreach = new OutreachService(app); app.outreach = outreach;
   const research = new ProspectResearchService(app); app.prospectResearch = research;
+  const pipeline = new SalesPipeline(app); app.salesPipeline = pipeline;
+  ipc.handle(IPC.salesPipeline, event => { trustedSignalFrame(event); return pipeline.view(); });
+  ipc.handle(IPC.salesPipelineAction, (event, input: unknown) => { trustedSignalFrame(event); return pipeline.action(pipelineActionSchema.parse(input)); });
   ipc.handle(IPC.prospectResearch, event => { trustedSignalFrame(event); return research.view(); });
   ipc.handle(IPC.prospectResearchAction, (event, input: unknown) => {
     trustedSignalFrame(event); const action = prospectResearchActionSchema.parse(input);
@@ -50,6 +55,7 @@ export function registerSalesHandlers(ipc: IpcMain, app: App) {
     trustedSignalFrame(event); const action = outreachActionSchema.parse(input);
     if (action.type === 'configure') outreach.configure(action.productId, action.value);
     if (action.type === 'prepare') await outreach.prepare(action.productId, action.leadId);
+    if (action.type === 'approve') outreach.approvePrepared(action.productId, action.id, action.updatedAt, action.bodyHash);
     if (action.type === 'cancel') outreach.cancel(action.productId, action.id);
     if (action.type === 'reconcile') await outreach.reconcile(action.productId, action.id);
     if (action.type === 'stop-followups') outreach.stopFollowUps(action.productId, action.id);
@@ -63,6 +69,7 @@ export function registerSalesHandlers(ipc: IpcMain, app: App) {
     trustedSignalFrame(event); const action = replyActionSchema.parse(input);
     if (action.type === 'configure') replies.configure(action.productId, action.value);
     if (action.type === 'prepare') await replies.prepare(action.productId, action.messageId);
+    if (action.type === 'approve') replies.approvePreparedReply(action.productId, action.id, action.updatedAt, action.bodyHash);
     if (action.type === 'cancel') replies.cancel(action.productId, action.id);
     if (action.type === 'reconcile') await replies.reconcile(action.productId, action.id);
     if (action.type === 'retry-reply') await replies.retryReply(action.productId, action.id);

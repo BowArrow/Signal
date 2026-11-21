@@ -28,6 +28,7 @@ export interface SalesReply {
   checkedAt: number | null; reconciliationChecks: number;
   prepareAttempts: number; retryAt: number | null;
   ownerApproval?: { approvedAt: number; bodyHash: string };
+  approvalKind?: 'prepared';
   ownerHandledAt?: number;
   followUp?: { sequenceId: string; step: number; previousReplyId: string };
   evidence: { url: string; quote: string; observedAt: number }[];
@@ -36,6 +37,7 @@ export interface ReplyView { policies: ReplyPolicyState[]; replies: SalesReply[]
 export const replyActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('configure'), productId: z.string().min(1), value: replyPolicySchema }).strict(),
   z.object({ type: z.literal('prepare'), productId: z.string().min(1), messageId: z.string().min(1) }).strict(),
+  z.object({ type: z.literal('approve'), productId: z.string().min(1), id: z.string().min(1), updatedAt: z.number(), bodyHash: z.string().length(64), reviewed: z.literal(true) }).strict(),
   z.object({ type: z.literal('cancel'), productId: z.string().min(1), id: z.string().min(1) }).strict(),
   z.object({ type: z.literal('reconcile'), productId: z.string().min(1), id: z.string().min(1) }).strict(),
   z.object({ type: z.literal('retry-reply'), productId: z.string().min(1), id: z.string().min(1) }).strict(),

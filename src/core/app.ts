@@ -13,6 +13,7 @@ import type { SalesHandoffs } from './sales/handoffs.js';
 import type { SalesReplyService } from './sales/reply-service.js';
 import type { OutreachService } from './sales/outreach-service.js';
 import type { ProspectResearchService } from './sales/prospect-research.js';
+import type { SalesPipeline } from './sales/pipeline.js';
 import type { ProspectService } from './sales/prospects.js';
 import type { RuntimeSupervisor } from './runtime/continuity.js';
 import { capabilities, type Capability } from './config/env.js';
@@ -66,6 +67,7 @@ export interface App {
   salesReplies?: SalesReplyService;
   outreach?: OutreachService;
   prospectResearch?: ProspectResearchService;
+  salesPipeline?: SalesPipeline;
   prospects?: ProspectService;
   sales?: SalesService;
   salesHandoffs?: SalesHandoffs;

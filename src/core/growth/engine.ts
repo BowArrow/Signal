@@ -117,6 +117,7 @@ export class GrowthEngine {
         this.app.salesHandoffs?.sync();
         await this.app.revenue?.tick();
         await this.app.outreach?.tick(agentsReady);
+        await this.app.salesPipeline?.tick(agentsReady);
         await this.app.prospectResearch?.tick(agentsReady);
         await this.app.analytics?.tick();
         await this.app.seo?.tick();
@@ -154,6 +155,7 @@ export class GrowthEngine {
     await this.app.salesReplies?.stop();
     await this.app.outreach?.stop();
     await this.app.prospectResearch?.stop();
+    await this.app.salesPipeline?.stop();
     await this.app.prospects?.stop();
     await this.deliveryActive;
     await this.active;

@@ -67,7 +67,9 @@ beforeEach(async () => {
   await sales.sync(productId, accountId); await sales.triage(productId, sales.messages(productId)[0]!.id);
 });
 afterEach(async () => { await replies.stop(); await sales.stop(); app.close(); vi.unstubAllEnvs(); __setConfigForTests(null); });
-const prepare = () => replies.prepare(productId, sales.messages(productId)[0]!.id);
+const approvePrepared = () => { const job = replies.replies(productId).find(j => j.status === 'handoff' && j.body && j.evidence.length); if (job) replies.approvePreparedReply(productId, job.id, job.updatedAt, job.bodyHash); };
+// Transport fixtures explicitly simulate reviewing each generated response.
+const prepare = async () => { await replies.prepare(productId, sales.messages(productId)[0]!.id); approvePrepared(); };
 const writes = (suffix: string) => send.mock.calls.filter(([url, init]) => String(url).endsWith(suffix) && init?.method === 'POST');
 const dispatch = async () => { app.operations!.run(productId); clock.advance(60000); await replies.tick(); };
 
@@ -143,7 +145,7 @@ async function enableSequence(days = [1, 1]) {
   complete.mockImplementation(async request => { const response = await original(request); if (request.task === 'sales.reply' && ++generated > 1) return { ...response, text: JSON.stringify({ decision: 'reply', body: `For your next step ${generated}, start with a project file you need to find. Lemonade helps find project files. You can learn more at https://siplemona.de.`, reason: 'Useful next step.' }) }; return response; });
   await prepare(); await dispatch(); expect(replies.sequences.list(productId)[0]!.status).toBe('active');
 }
-async function prepareFollowUp() { clock.advance(DAY + 2000); await sales.sync(productId, accountId); await replies.tick(); }
+async function prepareFollowUp() { clock.advance(DAY + 2000); await sales.sync(productId, accountId); await replies.tick(); approvePrepared(); }
 async function sendFollowUp() { clock.advance(60000); await sales.sync(productId, accountId); await replies.tick(); }
 it('completes two Outlook follow-ups using confirmed immutable sent history', async () => {
   await enableSequence();

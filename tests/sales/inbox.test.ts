@@ -81,7 +81,7 @@ it('keeps business identities and all message actions scoped, including duplicat
   expect(() => service.sync(other, accountId)).toThrow();
   await connection.connect({ productId: other, provider: 'gmail', label: 'Duplicate', credential: 'second-secret' }); const duplicate = connection.accounts().find(a => a.productId === other)!;
   expect(() => service.configure(other, { accountId: duplicate.id, since: clock.now() - DAY, autoSync: true, aiTriage: true })).toThrow('already configured');
-  expect(service.messages(other)).toHaveLength(0); service.suppress(productId, 'buyer@example.com', 'Owner requested no contact'); expect(service.isSuppressed(other, 'buyer@example.com')).toBe(false);
+  expect(service.messages(other)).toHaveLength(0); service.suppress(productId, 'buyer@example.com', 'Owner requested no contact'); expect(service.isSuppressed(other, 'buyer@example.com')).toBe(true);
 });
 it('rejects late page results after source edits, removal, or credential disconnection', async () => {
   const original = send.getMockImplementation()!; let finish!: () => void;

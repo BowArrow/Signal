@@ -126,7 +126,7 @@ export class OpenAiCompatibleClient implements LlmClient {
         max_tokens: request.maxTokens,
         temperature: request.temperature ?? 0,
         ...(request.reasoningEffort ? { reasoning_effort: request.reasoningEffort } : {}),
-        ...(request.jsonSchema ? { response_format: { type: 'json_schema', json_schema: { name: 'signal_action', schema: request.jsonSchema } } } : request.expectsJson && (request.task?.startsWith('growth.') || request.task?.startsWith('marketing.')) ? { response_format: { type: 'json_object' } } : {}),
+        ...(request.jsonSchema ? { response_format: { type: 'json_schema', json_schema: { name: 'signal_action', strict: true, schema: request.jsonSchema } } } : request.expectsJson && (request.task?.startsWith('growth.') || request.task?.startsWith('marketing.')) ? { response_format: { type: 'json_object' } } : {}),
         messages: [
           { role: 'user', content: request.images?.length ? [{ type: 'text', text: request.prompt }, ...request.images.map(image => ({ type: 'image_url', image_url: { url: `data:${image.mime};base64,${image.base64}` } }))] : request.prompt },
           // Prefill works the same way here: an assistant turn ending mid-JSON

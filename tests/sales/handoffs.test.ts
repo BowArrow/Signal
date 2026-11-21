@@ -58,7 +58,7 @@ beforeEach(async () => {
 afterEach(async () => { await replies.stop(); await sales.stop(); app.close(); vi.unstubAllEnvs(); __setConfigForTests(null); });
 const prepare = () => replies.prepare(productId, sales.messages(productId)[0]!.id);
 const posts = () => send.mock.calls.filter(([url, init]) => String(url).endsWith('/messages/send') && init?.method === 'POST');
-async function dispatch() { app.operations!.run(productId); clock.advance(60000); await replies.tick(); }
+async function dispatch() { const job = replies.replies(productId).find(j => j.status === 'handoff' && j.body && j.evidence.length); if (job) replies.approvePreparedReply(productId, job.id, job.updatedAt, job.bodyHash); app.operations!.run(productId); clock.advance(60000); await replies.tick(); }
 
 let handoffs: SalesHandoffs;
 beforeEach(() => { handoffs = new SalesHandoffs(app); app.salesHandoffs = handoffs; });
